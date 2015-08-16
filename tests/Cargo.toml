@@ -1,0 +1,8 @@
+[package]
+name = "tests"
+version = "0.0.0"
+authors = ["Lolirofle <lolipopple@hotmail.com>"]
+
+[dependencies]
+enumerated = {version="*",path="../enumerated"}
+enumerated_macros = {version="*",path="../enumerated_macros"}

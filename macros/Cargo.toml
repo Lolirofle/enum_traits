@@ -1,0 +1,18 @@
+[package]
+name = "enumerated_macros"
+version = "0.1.0"
+authors = ["Lolirofle <lolipopple@hotmail.com>"]
+
+[lib]
+name = "enumerated_macros"
+plugin = true
+
+[build-dependencies]
+quasi_codegen = {version = "*",default-features=false}
+
+[dependencies]
+aster        = {version="*",default-features=false}
+quasi        = {version="*",default-features=false}
+quasi_macros = {version="*",default-features=false}
+
+enumerated = {version="*",path="../enumerated"}
