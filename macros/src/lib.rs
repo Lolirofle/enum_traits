@@ -8,28 +8,14 @@ extern crate rustc;
 extern crate quasi;
 
 use aster::AstBuilder;
-use aster::ident::ToIdent;
-use aster::struct_def::{StructDefBuilder,StructFieldBuilder};
-use syntax::ast::{
-	self,
-	Attribute_,
-	EnumDef,
-	Item,Item_,
-	MetaItem,
-	Mod,
-	StructDef,
-	StructField_,
-	Variant,Variant_,
-	VariantArg,
-	VariantKind,
-};
-use syntax::ast_util::empty_generics;
+//use aster::ident::ToIdent;
+use syntax::ast;
 use syntax::attr;
 use syntax::codemap::{Span,Spanned};
 use syntax::ext::base::{Annotatable,ExtCtxt};
 use syntax::ptr;
 use rustc::plugin::Registry;
-use std::{iter,slice};
+//use std::{iter,slice};
 
 fn minimum_type_from_value(context: &ExtCtxt,value: usize) -> ptr::P<ast::Ty>{
 	if value <= u8::max_value() as usize{
@@ -46,7 +32,7 @@ fn minimum_type_from_value(context: &ExtCtxt,value: usize) -> ptr::P<ast::Ty>{
 }
 
 fn type_from_repr_attr<'i,I>(context: &ExtCtxt,attrs: I) -> Option<ptr::P<ast::Ty>>
-	where I: Iterator<Item = &'i Spanned<Attribute_>>
+	where I: Iterator<Item = &'i Spanned<ast::Attribute_>>
 {
 	for attr in attrs{
 		for repr in attr::find_repr_attrs(&context.parse_sess.span_diagnostic,attr).iter(){
@@ -71,10 +57,10 @@ fn type_from_repr_attr<'i,I>(context: &ExtCtxt,attrs: I) -> Option<ptr::P<ast::T
 }
 
 #[allow(non_snake_case)]
-fn expand_derive_EnumFromIndex(context: &mut ExtCtxt,span: Span,meta_item: &MetaItem,annotatable: &Annotatable,push: &mut FnMut(Annotatable)){
+fn expand_derive_EnumIndex(context: &mut ExtCtxt,span: Span,meta_item: &ast::MetaItem,annotatable: &Annotatable,push: &mut FnMut(Annotatable)){
 	if let &Annotatable::Item(ref item) = annotatable{
 		match item.node{
-			Item_::ItemEnum(EnumDef{ref variants},ref generics) => {
+			ast::Item_::ItemEnum(ast::EnumDef{ref variants},ref generics) => {
 				let builder = AstBuilder::new().span(span);
 
 				//Type of the enum
@@ -89,6 +75,39 @@ fn expand_derive_EnumFromIndex(context: &mut ExtCtxt,span: Span,meta_item: &Meta
 				//Output type by type representation from `repr(..)` or minimum type required to store
 				let output_type = type_from_repr_attr(context,item.attrs.iter()).unwrap_or(minimum_type_from_value(context,variants.len()));
 
+				//Push the generated `impl` item
+				push(Annotatable::Item(quote_item!(context,
+					#[automatically_derived]
+					impl $generics ::enum_traits::Index for $ty $where_clause{
+						type Type = $output_type;
+					}
+				).unwrap()));
+				return;
+			},
+			_ => {}
+		}
+	}
+
+	//Wrong application
+	context.span_err(meta_item.span,"`derive(EnumFromIndex)` may only be applied to enum items");
+}
+
+#[allow(non_snake_case)]
+fn expand_derive_EnumFromIndex(context: &mut ExtCtxt,span: Span,meta_item: &ast::MetaItem,annotatable: &Annotatable,push: &mut FnMut(Annotatable)){
+	if let &Annotatable::Item(ref item) = annotatable{
+		match item.node{
+			ast::Item_::ItemEnum(ast::EnumDef{ref variants},ref generics) => {
+				let builder = AstBuilder::new().span(span);
+
+				//Type of the enum
+				let ty_path = builder.path()
+					.segment(&item.ident).with_generics(generics.clone()).build()
+					.build();
+				let ty = builder.ty().build_path(ty_path.clone());
+
+				//Borrow the where clause
+				let where_clause = &generics.where_clause;
+
 				let mut error = false;
 				let mut match_arms: Vec<_> = variants.into_iter().enumerate().map(|(i,variant)|{
 					//Variant path
@@ -99,7 +118,7 @@ fn expand_derive_EnumFromIndex(context: &mut ExtCtxt,span: Span,meta_item: &Meta
 
 					//Pattern
 					match variant.node.kind{
-						VariantKind::TupleVariantKind(ref args) if args.is_empty() => (),
+						ast::VariantKind::TupleVariantKind(ref args) if args.is_empty() => (),
 						_ => {
 							//Wrong application
 							context.span_err(meta_item.span,"`derive(EnumFromIndex)` may only be applied to enum items with no fields");
@@ -120,11 +139,9 @@ fn expand_derive_EnumFromIndex(context: &mut ExtCtxt,span: Span,meta_item: &Meta
 				//Push the generated `impl` item
 				push(Annotatable::Item(quote_item!(context,
 					#[automatically_derived]
-					impl $generics ::enumerated::FromIndex for $ty $where_clause{
-						type Index = $output_type;
-
+					impl $generics ::enum_traits::FromIndex for $ty $where_clause{
 						#[inline]
-						fn from_index(index: Self::Index) -> Option<Self>{
+						fn from_index(index: <Self as ::enum_traits::Index>::Type) -> Option<Self>{
 							match index{$match_arms}
 						}
 					}
@@ -140,10 +157,10 @@ fn expand_derive_EnumFromIndex(context: &mut ExtCtxt,span: Span,meta_item: &Meta
 }
 
 #[allow(non_snake_case)]
-fn expand_derive_EnumToIndex(context: &mut ExtCtxt,span: Span,meta_item: &MetaItem,annotatable: &Annotatable,push: &mut FnMut(Annotatable)){
+fn expand_derive_EnumToIndex(context: &mut ExtCtxt,span: Span,meta_item: &ast::MetaItem,annotatable: &Annotatable,push: &mut FnMut(Annotatable)){
 	if let &Annotatable::Item(ref item) = annotatable{
 		match item.node{
-			Item_::ItemEnum(EnumDef{ref variants},ref generics) => {
+			ast::Item_::ItemEnum(ast::EnumDef{ref variants},ref generics) => {
 				let builder = AstBuilder::new().span(span);
 
 				//Type of the enum
@@ -155,9 +172,6 @@ fn expand_derive_EnumToIndex(context: &mut ExtCtxt,span: Span,meta_item: &MetaIt
 				//Borrow the where clause
 				let where_clause = &generics.where_clause;
 
-				//Output type by type representation from `repr(..)` or minimum type required to store
-				let output_type = type_from_repr_attr(context,item.attrs.iter()).unwrap_or(minimum_type_from_value(context,variants.len()));
-
 				let match_arms: Vec<_> = variants.into_iter().enumerate().map(|(i,variant)|{
 					//Variant path
 					let variant_path = builder.path()
@@ -167,28 +181,26 @@ fn expand_derive_EnumToIndex(context: &mut ExtCtxt,span: Span,meta_item: &MetaIt
 
 					//Pattern
 					let variant_pattern = match variant.node.kind{
-						VariantKind::TupleVariantKind(_)  => quote_pat!(context,$variant_path(..)),
-						VariantKind::StructVariantKind(_) => quote_pat!(context,$variant_path{..}),
+						ast::VariantKind::TupleVariantKind(_)  => quote_pat!(context,$variant_path(..)),
+						ast::VariantKind::StructVariantKind(_) => quote_pat!(context,$variant_path{..}),
 					};
 
 					quote_arm!(context,
-						$variant_pattern => $i as $output_type,
+						$variant_pattern => $i as <Self as ::enum_traits::Index>::Type,
 					)
 				}).collect();
 
 				//Push the generated `impl` item
 				push(Annotatable::Item(quote_item!(context,
 					#[automatically_derived]
-					impl $generics ::enumerated::ToIndex for $ty $where_clause{
-						type Index = $output_type;
-
+					impl $generics ::enum_traits::ToIndex for $ty $where_clause{
 						#[inline]
-						fn into_index(self) -> Self::Index{
+						fn into_index(self) -> <Self as ::enum_traits::Index>::Type{
 							match self{$match_arms}
 						}
 
 						#[inline]
-						fn index(&self) -> Self::Index{
+						fn index(&self) -> <Self as ::enum_traits::Index>::Type{
 							match *self{$match_arms}
 						}
 					}
@@ -204,10 +216,10 @@ fn expand_derive_EnumToIndex(context: &mut ExtCtxt,span: Span,meta_item: &MetaIt
 }
 
 #[allow(non_snake_case)]
-fn expand_derive_EnumLen(context: &mut ExtCtxt,span: Span,meta_item: &MetaItem,annotatable: &Annotatable,push: &mut FnMut(Annotatable)){
+fn expand_derive_EnumLen(context: &mut ExtCtxt,span: Span,meta_item: &ast::MetaItem,annotatable: &Annotatable,push: &mut FnMut(Annotatable)){
 	if let &Annotatable::Item(ref item) = annotatable{
 		match item.node{
-			Item_::ItemEnum(EnumDef{ref variants},ref generics) => {
+			ast::Item_::ItemEnum(ast::EnumDef{ref variants},ref generics) => {
 				let builder = AstBuilder::new().span(span);
 
 				let len = variants.len();
@@ -223,7 +235,7 @@ fn expand_derive_EnumLen(context: &mut ExtCtxt,span: Span,meta_item: &MetaItem,a
 
 				push(Annotatable::Item(quote_item!(context,
 					#[automatically_derived]
-					impl $generics ::enumerated::Len for $ty $where_clause{
+					impl $generics ::enum_traits::Len for $ty $where_clause{
 						const LEN: usize = $len;
 					}
 				).unwrap()));
@@ -239,15 +251,15 @@ fn expand_derive_EnumLen(context: &mut ExtCtxt,span: Span,meta_item: &MetaItem,a
 }
 
 #[allow(non_snake_case)]
-fn expand_derive_EnumIterator(context: &mut ExtCtxt,span: Span,meta_item: &MetaItem,annotatable: &Annotatable,push: &mut FnMut(Annotatable)){
+fn expand_derive_EnumIterator(context: &mut ExtCtxt,span: Span,meta_item: &ast::MetaItem,annotatable: &Annotatable,push: &mut FnMut(Annotatable)){
 	if let &Annotatable::Item(ref item) = annotatable{
 		match item.node{
-			Item_::ItemEnum(EnumDef{..},ref generics) => {
+			ast::Item_::ItemEnum(ast::EnumDef{..},ref generics) => {
 				let builder = AstBuilder::new().span(span);
 
 				//Borrow the where clause
 				let where_clause = &generics.where_clause;
-//TODO: Should only work for enums with no fields
+//TODO: Should only work for enums with no struct fields
 				//Type of the enum
 				let ty_path = builder.path()
 					.segment(&item.ident).with_generics(generics.clone()).build()
@@ -278,7 +290,7 @@ fn expand_derive_EnumIterator(context: &mut ExtCtxt,span: Span,meta_item: &MetaI
 				push(Annotatable::Item(quote_item!(context,
 					#[automatically_derived]
 					impl $generics ::std::iter::ExactSizeIterator for $ty $where_clause{
-						#[inline(always)]fn len(&self) -> usize{<Self as enumerated::Len>::LEN}
+						#[inline(always)]fn len(&self) -> usize{<Self as enum_traits::Len>::LEN}
 					}
 				).unwrap()));
 				return;
@@ -293,10 +305,10 @@ fn expand_derive_EnumIterator(context: &mut ExtCtxt,span: Span,meta_item: &MetaI
 }
 
 #[allow(non_snake_case)]
-fn expand_derive_EnumEnds(context: &mut ExtCtxt,span: Span,meta_item: &MetaItem,annotatable: &Annotatable,push: &mut FnMut(Annotatable)){
+fn expand_derive_EnumEnds(context: &mut ExtCtxt,span: Span,meta_item: &ast::MetaItem,annotatable: &Annotatable,push: &mut FnMut(Annotatable)){
 	if let &Annotatable::Item(ref item) = annotatable{
 		match item.node{
-			Item_::ItemEnum(EnumDef{ref variants},ref generics) => {
+			ast::Item_::ItemEnum(ast::EnumDef{ref variants},ref generics) => {
 				let builder = AstBuilder::new().span(span);
 
 				let first = match variants.first(){Some(v) => v,None => {context.span_err(meta_item.span,"`derive(EnumEnds)` may only be applied to non-empty enums");;return;}};
@@ -314,7 +326,7 @@ fn expand_derive_EnumEnds(context: &mut ExtCtxt,span: Span,meta_item: &MetaItem,
 
 				//Borrow the where clause
 				let where_clause = &generics.where_clause;
-//TODO: Should only work for enums with no fields
+//TODO: Should only work for enums with no struct fields
 				//Type of the enum
 				let ty_path = builder.path()
 					.segment(&item.ident).with_generics(generics.clone()).build()
@@ -323,7 +335,7 @@ fn expand_derive_EnumEnds(context: &mut ExtCtxt,span: Span,meta_item: &MetaItem,
 
 				push(Annotatable::Item(quote_item!(context,
 					#[automatically_derived]
-					impl $generics ::enumerated::Ends for $ty $where_clause{
+					impl $generics ::enum_traits::Ends for $ty $where_clause{
 						#[inline(always)]fn first() -> Self{$first_path}
 						#[inline(always)]fn last()  -> Self{$last_path}
 					}
@@ -339,13 +351,12 @@ fn expand_derive_EnumEnds(context: &mut ExtCtxt,span: Span,meta_item: &MetaItem,
 	return;
 }
 
-fn enum_stripped_variants(enum_def: EnumDef) -> EnumDef{
-	use syntax::ast::Variant_;
-
-	EnumDef{
+/*
+fn enum_stripped_variants(enum_def: ast::EnumDef) -> ast::EnumDef{
+	ast::EnumDef{
 		variants: enum_def.variants.into_iter().map(|variant| variant.map(|spanned| Spanned{
-			node: Variant_{
-				kind: VariantKind::TupleVariantKind(Vec::new()),
+			node: ast::Variant_{
+				kind: ast::VariantKind::TupleVariantKind(Vec::new()),
 				..spanned.node
 			},
 			..spanned
@@ -353,38 +364,56 @@ fn enum_stripped_variants(enum_def: EnumDef) -> EnumDef{
 	}
 }
 
-fn enumvariants_to_structdefs<'l>(enum_def: &'l EnumDef) -> iter::Map<slice::Iter<'l,ptr::P<Spanned<Variant_>>>,fn(&ptr::P<Variant>) -> ptr::P<StructDef>>{
-	fn map_variant_to_structdef(variant: &ptr::P<Variant>) -> ptr::P<StructDef>{
-		fn map_variantarg_to_structfield(variant_arg: &VariantArg) -> Spanned<StructField_>{
-			StructFieldBuilder::unnamed().build_ty(
+fn structdef_field_visibility(struct_def: ast::StructDef,visibility: ast::Visibility) -> ast::StructDef{
+	ast::StructDef{
+		fields: struct_def.fields.iter().map(|field|{
+			let mut field = field.clone();
+			field.node.kind = match field.node.kind{
+				ast::StructFieldKind::NamedField(ident,_) => ast::StructFieldKind::NamedField(ident,visibility),
+				ast::StructFieldKind::UnnamedField(_)     => ast::StructFieldKind::UnnamedField(visibility)
+			};
+			field
+		}).collect(),
+		..struct_def
+	}
+}
+
+fn enumvariants_to_structdefs<'l>(enum_def: &'l ast::EnumDef) -> iter::Map<slice::Iter<'l,ptr::P<Spanned<ast::Variant_>>>,fn(&ptr::P<ast::Variant>) -> ptr::P<ast::StructDef>>{
+	use aster::struct_def::{StructDefBuilder,StructFieldBuilder};
+
+	fn map_variant_to_structdef(variant: &ptr::P<ast::Variant>) -> ptr::P<ast::StructDef>{
+		fn map_variantarg_to_structfield(variant_arg: &ast::VariantArg) -> Spanned<ast::StructField_>{
+			StructFieldBuilder::unnamed().pub_().build_ty(
 				variant_arg.ty.clone()
 			)
 		}
 
 		match variant.node.kind{
-			VariantKind::TupleVariantKind(ref variant_args) => ptr::P(StructDef{
+			ast::VariantKind::TupleVariantKind(ref variant_args) => ptr::P(ast::StructDef{
 				ctor_id: Some(ast::DUMMY_NODE_ID),
 				..(*StructDefBuilder::new().with_fields(
 					variant_args.into_iter().map(map_variantarg_to_structfield as fn(&_) -> _)
 				).build()).clone()
 			}),
-			VariantKind::StructVariantKind(ref struct_def) => struct_def.clone(),
+			ast::VariantKind::StructVariantKind(ref struct_def) => {
+				struct_def.clone().map(|struct_def| structdef_field_visibility(struct_def,ast::Visibility::Public))
+			},
 		}
 	}
 
-	enum_def.variants.iter().map(map_variant_to_structdef as fn(&ptr::P<Variant>) -> ptr::P<StructDef>)
+	enum_def.variants.iter().map(map_variant_to_structdef as fn(&ptr::P<ast::Variant>) -> ptr::P<ast::StructDef>)
 }
 
-fn expand_enum_variant_structs(context: &mut ExtCtxt,span: Span,meta_item: &MetaItem,annotatable: &Annotatable,push: &mut FnMut(Annotatable)){
+fn expand_enum_variant_structs(context: &mut ExtCtxt,span: Span,meta_item: &ast::MetaItem,annotatable: &Annotatable,push: &mut FnMut(Annotatable)){
 	if let &Annotatable::Item(ref item) = annotatable{
 		match item.node{
-			Item_::ItemEnum(ref enum_def,ref generics) => {
+			ast::Item_::ItemEnum(ref enum_def,ref generics) => {
 				for (struct_def,variant) in enumvariants_to_structdefs(enum_def).zip(enum_def.variants.iter()){
-					push(Annotatable::Item(ptr::P(Item{
+					push(Annotatable::Item(ptr::P(ast::Item{
 						ident: variant.node.name,
 						attrs: vec!(),
 						id   : ast::DUMMY_NODE_ID,
-						node : Item_::ItemStruct(struct_def,generics.clone()),
+						node : ast::Item_::ItemStruct(struct_def,generics.clone()),
 						vis  : item.vis.clone(),
 						span : span,
 					})))
@@ -401,29 +430,33 @@ fn expand_enum_variant_structs(context: &mut ExtCtxt,span: Span,meta_item: &Meta
 	return;
 }
 
-fn expand_enum_as_separate_mod(context: &mut ExtCtxt,span: Span,meta_item: &MetaItem,annotatable: Annotatable) -> Annotatable{
+fn expand_enum_as_separate_mod(context: &mut ExtCtxt,span: Span,meta_item: &ast::MetaItem,annotatable: Annotatable) -> Annotatable{
+	use syntax::ast_util::empty_generics;
+
 	if let Annotatable::Item(ref item) = annotatable{
 		match item.node{
-			Item_::ItemEnum(ref enum_def,_/*TODO: ref generics*/) => return Annotatable::Item(ptr::P(Item{
+			ast::Item_::ItemEnum(ref enum_def,_/*TODO: ref generics*/) => return Annotatable::Item(ptr::P(ast::Item{
 				ident: item.ident,
-				attrs: vec!(),
+				attrs: vec!(quote_attr!(context,#[allow(non_snake_case)])),
 				id   : ast::DUMMY_NODE_ID,
 				node : {
-					Item_::ItemMod(Mod{
+					ast::Item_::ItemMod(ast::Mod{
 						inner: span,
 						items: {
 							let mut items = Vec::new();
 
 							expand_enum_variant_structs(context,span,meta_item,&annotatable,&mut |annotatable| match annotatable{
-								Annotatable::Item(item) => {items.push(item);},
+								Annotatable::Item(item) => {
+									items.push(item.map(|item| ast::Item{vis: ast::Visibility::Public,..item}));
+								},
 								_ => ()
 							});
-							items.push(ptr::P(Item{
+							items.push(ptr::P(ast::Item{
 								ident: "Kind".to_ident(),
 								attrs: vec!(),
 								id   : ast::DUMMY_NODE_ID,
-								node : Item_::ItemEnum(enum_stripped_variants(enum_def.clone()),empty_generics()),
-								vis  : item.vis.clone(),
+								node : ast::Item_::ItemEnum(enum_stripped_variants(enum_def.clone()),empty_generics()),
+								vis  : ast::Visibility::Public,
 								span : item.span.clone(),
 							}));
 
@@ -442,9 +475,14 @@ fn expand_enum_as_separate_mod(context: &mut ExtCtxt,span: Span,meta_item: &Meta
 	context.span_err(meta_item.span,"`separate_enum_as_mod` may only be applied to enum items");
 	return annotatable;
 }
+*/
 
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry){
+	reg.register_syntax_extension(
+		syntax::parse::token::intern("derive_EnumIndex"),
+		syntax::ext::base::MultiDecorator(Box::new(expand_derive_EnumIndex))
+	);
 	reg.register_syntax_extension(
 		syntax::parse::token::intern("derive_EnumFromIndex"),
 		syntax::ext::base::MultiDecorator(Box::new(expand_derive_EnumFromIndex))
@@ -465,12 +503,12 @@ pub fn plugin_registrar(reg: &mut Registry){
 		syntax::parse::token::intern("derive_EnumEnds"),
 		syntax::ext::base::MultiDecorator(Box::new(expand_derive_EnumEnds))
 	);
-	reg.register_syntax_extension(
+	/*reg.register_syntax_extension(
 		syntax::parse::token::intern("enum_variant_structs"),
 		syntax::ext::base::MultiDecorator(Box::new(expand_enum_variant_structs))
 	);
 	reg.register_syntax_extension(
 		syntax::parse::token::intern("enum_as_separate_mod"),
 		syntax::ext::base::MultiModifier(Box::new(expand_enum_as_separate_mod))
-	);
+	);*/
 }
