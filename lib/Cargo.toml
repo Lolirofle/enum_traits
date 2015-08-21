@@ -1,4 +1,11 @@
 [package]
-name = "enumerated"
+name = "enum_traits"
 version = "0.1.0"
 authors = ["Lolirofle <lolipopple@hotmail.com>"]
+description = "Simple traits for the builtin enums"
+#documentation = "..."
+homepage = "https://github.com/Lolirofle/enum_traits"
+repository = "https://github.com/Lolirofle/enum_traits.git"
+#readme = "README.md"
+keywords = ["enum","trait","traits"]
+license = "MIT"
