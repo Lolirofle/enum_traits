@@ -1,6 +1,6 @@
 [package]
 name = "enum_traits_macros"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Lolirofle <lolipopple@hotmail.com>"]
 description = "Syntax extension for the crate `enum_traits`"
 #documentation = "..."
