@@ -16,7 +16,7 @@ enum Fields<'t,T: 't>{
 }
 
 
-#[derive(EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumIterator)]
+#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumIterator)]
 enum NoFields{
 	A,B,C,D,E,F
 }
@@ -41,6 +41,8 @@ fn test_fields_index(){
 
 	e = Fields::VariantF;
 	assert_eq!(5,e.index());
+
+	let _ = e.index() as <Fields<i32> as Index>::Type;
 }
 
 #[test]
@@ -64,6 +66,22 @@ fn test_fields_into_index(){
 	e = Fields::VariantF;
 	assert_eq!(5,e.into_index());
 }
+
+#[test]
+fn test_nofields_from_index(){
+	assert_eq!(NoFields::A,NoFields::from_index(0).unwrap());
+	assert_eq!(NoFields::B,NoFields::from_index(1).unwrap());
+	assert_eq!(NoFields::C,NoFields::from_index(2).unwrap());
+	assert_eq!(NoFields::D,NoFields::from_index(3).unwrap());
+	assert_eq!(NoFields::E,NoFields::from_index(4).unwrap());
+	assert_eq!(NoFields::F,NoFields::from_index(5).unwrap());
+}
+
+#[test]
+fn test_nofields_index(){
+	let _ = NoFields::E.index() as <Fields<i32> as Index>::Type;
+}
+
 
 #[allow(dead_code)]
 #[test]

@@ -119,6 +119,7 @@ fn expand_derive_EnumFromIndex(context: &mut ExtCtxt,span: Span,meta_item: &ast:
 					//Pattern
 					match variant.node.data{
 						ast::VariantData::Tuple(ref args,_) if args.is_empty() => (),
+						ast::VariantData::Unit(..) => (),
 						_ => {
 							//Wrong application
 							context.span_err(meta_item.span,"`derive(EnumFromIndex)` may only be applied to enum items with no fields");

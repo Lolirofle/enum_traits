@@ -34,7 +34,7 @@ pub trait Len{
 }
 
 ///Derive this trait for an enum using `#[derive(EnumEnds)]`
-pub trait Ends{
+pub trait Ends: Sized{
 	///First variant in defined order in an enum
 	fn first() -> Self;
 
