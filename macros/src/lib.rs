@@ -117,8 +117,8 @@ fn expand_derive_EnumFromIndex(context: &mut ExtCtxt,span: Span,meta_item: &ast:
 						.build();
 
 					//Pattern
-					match variant.node.kind{
-						ast::VariantKind::TupleVariantKind(ref args) if args.is_empty() => (),
+					match variant.node.data{
+						ast::VariantData::Tuple(ref args,_) if args.is_empty() => (),
 						_ => {
 							//Wrong application
 							context.span_err(meta_item.span,"`derive(EnumFromIndex)` may only be applied to enum items with no fields");
@@ -180,9 +180,10 @@ fn expand_derive_EnumToIndex(context: &mut ExtCtxt,span: Span,meta_item: &ast::M
 						.build();
 
 					//Pattern
-					let variant_pattern = match variant.node.kind{
-						ast::VariantKind::TupleVariantKind(_)  => quote_pat!(context,$variant_path(..)),
-						ast::VariantKind::StructVariantKind(_) => quote_pat!(context,$variant_path{..}),
+					let variant_pattern = match variant.node.data{
+						ast::VariantData::Tuple(..) |
+						ast::VariantData::Unit(..)  => quote_pat!(context,$variant_path(..)),
+						ast::VariantData::Struct(..) => quote_pat!(context,$variant_path{..}),
 					};
 
 					quote_arm!(context,
@@ -356,7 +357,7 @@ fn enum_stripped_variants(enum_def: ast::EnumDef) -> ast::EnumDef{
 	ast::EnumDef{
 		variants: enum_def.variants.into_iter().map(|variant| variant.map(|spanned| Spanned{
 			node: ast::Variant_{
-				kind: ast::VariantKind::TupleVariantKind(Vec::new()),
+				kind: ast::VariantData::Tuple(Vec::new()),
 				..spanned.node
 			},
 			..spanned
@@ -368,7 +369,7 @@ fn structdef_field_visibility(struct_def: ast::StructDef,visibility: ast::Visibi
 	ast::StructDef{
 		fields: struct_def.fields.iter().map(|field|{
 			let mut field = field.clone();
-			field.node.kind = match field.node.kind{
+			field.node.data = match field.node.data{
 				ast::StructFieldKind::NamedField(ident,_) => ast::StructFieldKind::NamedField(ident,visibility),
 				ast::StructFieldKind::UnnamedField(_)     => ast::StructFieldKind::UnnamedField(visibility)
 			};
@@ -388,14 +389,14 @@ fn enumvariants_to_structdefs<'l>(enum_def: &'l ast::EnumDef) -> iter::Map<slice
 			)
 		}
 
-		match variant.node.kind{
-			ast::VariantKind::TupleVariantKind(ref variant_args) => ptr::P(ast::StructDef{
+		match variant.node.data{
+			ast::VariantData::Tuple(ref variant_args,_) => ptr::P(ast::StructDef{
 				ctor_id: Some(ast::DUMMY_NODE_ID),
 				..(*StructDefBuilder::new().with_fields(
 					variant_args.into_iter().map(map_variantarg_to_structfield as fn(&_) -> _)
 				).build()).clone()
 			}),
-			ast::VariantKind::StructVariantKind(ref struct_def) => {
+			ast::VariantData::Struct(ref struct_def) => {
 				struct_def.clone().map(|struct_def| structdef_field_visibility(struct_def,ast::Visibility::Public))
 			},
 		}

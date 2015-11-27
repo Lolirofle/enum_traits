@@ -13,7 +13,7 @@ pub trait Index{
 }
 
 ///Derive this trait for an enum using `#[derive(EnumFromIndex)]`
-pub trait FromIndex: Index{
+pub trait FromIndex: Index + Sized{
 	///Tries to construct an enum from a index in the enum's variants' defined order
 	fn from_index(index: <Self as Index>::Type) -> Option<Self>;
 }
