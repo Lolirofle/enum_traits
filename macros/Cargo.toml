@@ -1,6 +1,6 @@
 [package]
 name = "enum_traits_macros"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Lolirofle <lolipopple@hotmail.com>"]
 description = "Syntax extension for the crate `enum_traits`"
 #documentation = "..."
@@ -14,9 +14,9 @@ license = "MIT"
 plugin = true
 
 [build-dependencies]
-quasi_codegen = {version = "*",default-features=false}
+quasi_codegen = {version = "0.*",default-features=false}
 
 [dependencies]
-aster        = {version="*",default-features=false}
-quasi        = {version="*",default-features=false}
-quasi_macros = {version="*",default-features=false}
+aster        = {version="0.*",default-features=false}
+quasi        = {version="0.*",default-features=false}
+quasi_macros = {version="0.*",default-features=false}
