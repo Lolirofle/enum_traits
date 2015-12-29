@@ -8,7 +8,6 @@ extern crate rustc_plugin;
 extern crate quasi;
 
 use aster::AstBuilder;
-//use aster::ident::ToIdent;
 use syntax::ast;
 use syntax::attr;
 use syntax::codemap::{Span,Spanned};
@@ -16,19 +15,6 @@ use syntax::ext::base::{Annotatable,ExtCtxt};
 use syntax::ptr;
 #[cfg(feature = "with-syntex")]use syntex::Registry;
 #[cfg(not(feature = "syntex"))]use rustc_plugin::Registry;
-//use std::{iter,slice};
-
-fn attr_mark_used(item: &ptr::P<ast::Item>,name: &'static str){
-	for attr in item.attrs.iter(){
-		match attr.node.value.node{
-			ast::MetaWord(ref attr_name) if attr_name==&name => {
-				attr::mark_used(attr);
-				return
-			},
-			_ => ()
-		}
-	}
-}
 
 fn minimum_type_from_value(context: &ExtCtxt,value: usize) -> ptr::P<ast::Ty>{
 	if value <= u8::max_value() as usize{
@@ -87,13 +73,16 @@ fn expand_derive_EnumIndex(context: &mut ExtCtxt,span: Span,meta_item: &ast::Met
 				//Output type by type representation from `repr(..)` or minimum type required to store
 				let output_type = type_from_repr_attr(context,item.attrs.iter()).unwrap_or(minimum_type_from_value(context,variants.len()));
 
+				//Mark the attribute as used
+				let attr = quote_attr!(context,#[automatically_derived]);
+				attr::mark_used(&attr);
+
 				//Push the generated `impl` item
 				push(Annotatable::Item(quote_item!(context,
-					#[automatically_derived]
 					impl $generics ::enum_traits::Index for $ty_path $where_clause{
 						type Type = $output_type;
 					}
-				).unwrap()));
+				).unwrap().map(|item| ast::Item{attrs: vec![attr],..item})));
 				return;
 			},
 			_ => {}
@@ -148,16 +137,19 @@ fn expand_derive_EnumFromIndex(context: &mut ExtCtxt,span: Span,meta_item: &ast:
 					_ => None,
 				));
 
+				//Mark the attribute as used
+				let attr = quote_attr!(context,#[automatically_derived]);
+				attr::mark_used(&attr);
+
 				//Push the generated `impl` item
 				push(Annotatable::Item(quote_item!(context,
-					#[automatically_derived]
 					impl $generics ::enum_traits::FromIndex for $ty_path $where_clause{
 						#[inline]
 						fn from_index(index: <Self as ::enum_traits::Index>::Type) -> Option<Self>{
 							match index{$match_arms}
 						}
 					}
-				).unwrap()));
+				).unwrap().map(|item| ast::Item{attrs: vec![attr],..item})));
 				return;
 			},
 			_ => {}
@@ -202,9 +194,12 @@ fn expand_derive_EnumToIndex(context: &mut ExtCtxt,span: Span,meta_item: &ast::M
 					)
 				}).collect();
 
+				//Mark the attribute as used
+				let attr = quote_attr!(context,#[automatically_derived]);
+				attr::mark_used(&attr);
+
 				//Push the generated `impl` item
 				push(Annotatable::Item(quote_item!(context,
-					#[automatically_derived]
 					impl $generics ::enum_traits::ToIndex for $ty_path $where_clause{
 						#[inline]
 						fn into_index(self) -> <Self as ::enum_traits::Index>::Type{
@@ -216,7 +211,7 @@ fn expand_derive_EnumToIndex(context: &mut ExtCtxt,span: Span,meta_item: &ast::M
 							match *self{$match_arms}
 						}
 					}
-				).unwrap()));
+				).unwrap().map(|item| ast::Item{attrs: vec![attr],..item})));
 				return;
 			},
 			_ => {}
@@ -244,12 +239,16 @@ fn expand_derive_EnumLen(context: &mut ExtCtxt,span: Span,meta_item: &ast::MetaI
 					.segment(&item.ident).with_generics(generics.clone()).build()
 					.build();
 
+				//Mark the attribute as used
+				let attr = quote_attr!(context,#[automatically_derived]);
+				attr::mark_used(&attr);
+
+				//Push the generated `impl` item
 				push(Annotatable::Item(quote_item!(context,
-					#[automatically_derived]
 					impl $generics ::enum_traits::Len for $ty_path $where_clause{
 						const LEN: usize = $len;
 					}
-				).unwrap()));
+				).unwrap().map(|item| ast::Item{attrs: vec![attr],..item})));
 				return;
 			},
 			_ => {}
@@ -276,33 +275,37 @@ fn expand_derive_EnumIterator(context: &mut ExtCtxt,span: Span,meta_item: &ast::
 					.segment(&item.ident).with_generics(generics.clone()).build()
 					.build();
 
+				//Mark the attribute as used
+				let attr = quote_attr!(context,#[automatically_derived]);
+				attr::mark_used(&attr);
+
+				//Push the generated `impl` items
 				push(Annotatable::Item(quote_item!(context,
-					#[automatically_derived]
 					impl $generics ::std::iter::Iterator for $ty_path $where_clause{
 						type Item = Self;
-						#[inline(always)]fn next(&mut self) -> Option<Self>{
+						#[inline(always)]
+						fn next(&mut self) -> Option<Self>{
 							Self::from_index(self.index()+1)
 						}
-						#[inline(always)]fn size_hint(&self) -> (usize,Option<usize>){
+						#[inline(always)]
+						fn size_hint(&self) -> (usize,Option<usize>){
 							use ::std::iter::ExactSizeIterator;
 							(self.len(),Some(self.len()))
 						}
 					}
-				).unwrap()));
+				).unwrap().map(|item| ast::Item{attrs: vec![attr.clone()],..item})));
 				push(Annotatable::Item(quote_item!(context,
-					#[automatically_derived]
 					impl $generics ::std::iter::DoubleEndedIterator for $ty_path $where_clause{
 						#[inline]fn next_back(&mut self) -> Option<Self::Item>{
 							self.index().checked_sub(1).and_then(|i| Self::from_index(i))
 						}
 					}
-				).unwrap()));
+				).unwrap().map(|item| ast::Item{attrs: vec![attr.clone()],..item})));
 				push(Annotatable::Item(quote_item!(context,
-					#[automatically_derived]
 					impl $generics ::std::iter::ExactSizeIterator for $ty_path $where_clause{
 						#[inline(always)]fn len(&self) -> usize{<Self as enum_traits::Len>::LEN}
 					}
-				).unwrap()));
+				).unwrap().map(|item| ast::Item{attrs: vec![attr],..item})));
 				return;
 			},
 			_ => {}
@@ -342,13 +345,17 @@ fn expand_derive_EnumEnds(context: &mut ExtCtxt,span: Span,meta_item: &ast::Meta
 					.segment(&item.ident).with_generics(generics.clone()).build()
 					.build();
 
+				//Mark the attribute as used
+				let attr = quote_attr!(context,#[automatically_derived]);
+				attr::mark_used(&attr);
+
+				//Push the generated `impl` items
 				push(Annotatable::Item(quote_item!(context,
-					#[automatically_derived]
 					impl $generics ::enum_traits::Ends for $ty_path $where_clause{
 						#[inline(always)]fn first() -> Self{$first_path}
 						#[inline(always)]fn last()  -> Self{$last_path}
 					}
-				).unwrap()));
+				).unwrap().map(|item| ast::Item{attrs: vec![attr],..item})));
 				return;
 			},
 			_ => {}
