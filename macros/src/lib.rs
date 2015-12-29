@@ -4,7 +4,7 @@
 
 extern crate aster;
 extern crate syntax;
-extern crate rustc;
+extern crate rustc_plugin;
 extern crate quasi;
 
 use aster::AstBuilder;
@@ -14,8 +14,21 @@ use syntax::attr;
 use syntax::codemap::{Span,Spanned};
 use syntax::ext::base::{Annotatable,ExtCtxt};
 use syntax::ptr;
-use rustc::plugin::Registry;
+#[cfg(feature = "with-syntex")]use syntex::Registry;
+#[cfg(not(feature = "syntex"))]use rustc_plugin::Registry;
 //use std::{iter,slice};
+
+fn attr_mark_used(item: &ptr::P<ast::Item>,name: &'static str){
+	for attr in item.attrs.iter(){
+		match attr.node.value.node{
+			ast::MetaWord(ref attr_name) if attr_name==&name => {
+				attr::mark_used(attr);
+				return
+			},
+			_ => ()
+		}
+	}
+}
 
 fn minimum_type_from_value(context: &ExtCtxt,value: usize) -> ptr::P<ast::Ty>{
 	if value <= u8::max_value() as usize{
@@ -67,7 +80,6 @@ fn expand_derive_EnumIndex(context: &mut ExtCtxt,span: Span,meta_item: &ast::Met
 				let ty_path = builder.path()
 					.segment(&item.ident).with_generics(generics.clone()).build()
 					.build();
-				let ty = builder.ty().build_path(ty_path.clone());
 
 				//Borrow the where clause
 				let where_clause = &generics.where_clause;
@@ -78,7 +90,7 @@ fn expand_derive_EnumIndex(context: &mut ExtCtxt,span: Span,meta_item: &ast::Met
 				//Push the generated `impl` item
 				push(Annotatable::Item(quote_item!(context,
 					#[automatically_derived]
-					impl $generics ::enum_traits::Index for $ty $where_clause{
+					impl $generics ::enum_traits::Index for $ty_path $where_clause{
 						type Type = $output_type;
 					}
 				).unwrap()));
@@ -89,7 +101,7 @@ fn expand_derive_EnumIndex(context: &mut ExtCtxt,span: Span,meta_item: &ast::Met
 	}
 
 	//Wrong application
-	context.span_err(meta_item.span,"`derive(EnumFromIndex)` may only be applied to enum items");
+	context.span_err(meta_item.span,"`derive(EnumIndex)` may only be applied to enum items");
 }
 
 #[allow(non_snake_case)]
@@ -103,7 +115,6 @@ fn expand_derive_EnumFromIndex(context: &mut ExtCtxt,span: Span,meta_item: &ast:
 				let ty_path = builder.path()
 					.segment(&item.ident).with_generics(generics.clone()).build()
 					.build();
-				let ty = builder.ty().build_path(ty_path.clone());
 
 				//Borrow the where clause
 				let where_clause = &generics.where_clause;
@@ -140,7 +151,7 @@ fn expand_derive_EnumFromIndex(context: &mut ExtCtxt,span: Span,meta_item: &ast:
 				//Push the generated `impl` item
 				push(Annotatable::Item(quote_item!(context,
 					#[automatically_derived]
-					impl $generics ::enum_traits::FromIndex for $ty $where_clause{
+					impl $generics ::enum_traits::FromIndex for $ty_path $where_clause{
 						#[inline]
 						fn from_index(index: <Self as ::enum_traits::Index>::Type) -> Option<Self>{
 							match index{$match_arms}
@@ -168,7 +179,6 @@ fn expand_derive_EnumToIndex(context: &mut ExtCtxt,span: Span,meta_item: &ast::M
 				let ty_path = builder.path()
 					.segment(&item.ident).with_generics(generics.clone()).build()
 					.build();
-				let ty = builder.ty().build_path(ty_path.clone());
 
 				//Borrow the where clause
 				let where_clause = &generics.where_clause;
@@ -182,8 +192,8 @@ fn expand_derive_EnumToIndex(context: &mut ExtCtxt,span: Span,meta_item: &ast::M
 
 					//Pattern
 					let variant_pattern = match variant.node.data{
-						ast::VariantData::Tuple(..) |
-						ast::VariantData::Unit(..)  => quote_pat!(context,$variant_path(..)),
+						ast::VariantData::Tuple(..)  => quote_pat!(context,$variant_path(..)),
+						ast::VariantData::Unit(..)   => quote_pat!(context,$variant_path),
 						ast::VariantData::Struct(..) => quote_pat!(context,$variant_path{..}),
 					};
 
@@ -195,7 +205,7 @@ fn expand_derive_EnumToIndex(context: &mut ExtCtxt,span: Span,meta_item: &ast::M
 				//Push the generated `impl` item
 				push(Annotatable::Item(quote_item!(context,
 					#[automatically_derived]
-					impl $generics ::enum_traits::ToIndex for $ty $where_clause{
+					impl $generics ::enum_traits::ToIndex for $ty_path $where_clause{
 						#[inline]
 						fn into_index(self) -> <Self as ::enum_traits::Index>::Type{
 							match self{$match_arms}
@@ -233,11 +243,10 @@ fn expand_derive_EnumLen(context: &mut ExtCtxt,span: Span,meta_item: &ast::MetaI
 				let ty_path = builder.path()
 					.segment(&item.ident).with_generics(generics.clone()).build()
 					.build();
-				let ty = builder.ty().build_path(ty_path.clone());
 
 				push(Annotatable::Item(quote_item!(context,
 					#[automatically_derived]
-					impl $generics ::enum_traits::Len for $ty $where_clause{
+					impl $generics ::enum_traits::Len for $ty_path $where_clause{
 						const LEN: usize = $len;
 					}
 				).unwrap()));
@@ -266,11 +275,10 @@ fn expand_derive_EnumIterator(context: &mut ExtCtxt,span: Span,meta_item: &ast::
 				let ty_path = builder.path()
 					.segment(&item.ident).with_generics(generics.clone()).build()
 					.build();
-				let ty = builder.ty().build_path(ty_path.clone());
 
 				push(Annotatable::Item(quote_item!(context,
 					#[automatically_derived]
-					impl $generics ::std::iter::Iterator for $ty $where_clause{
+					impl $generics ::std::iter::Iterator for $ty_path $where_clause{
 						type Item = Self;
 						#[inline(always)]fn next(&mut self) -> Option<Self>{
 							Self::from_index(self.index()+1)
@@ -283,7 +291,7 @@ fn expand_derive_EnumIterator(context: &mut ExtCtxt,span: Span,meta_item: &ast::
 				).unwrap()));
 				push(Annotatable::Item(quote_item!(context,
 					#[automatically_derived]
-					impl $generics ::std::iter::DoubleEndedIterator for $ty $where_clause{
+					impl $generics ::std::iter::DoubleEndedIterator for $ty_path $where_clause{
 						#[inline]fn next_back(&mut self) -> Option<Self::Item>{
 							self.index().checked_sub(1).and_then(|i| Self::from_index(i))
 						}
@@ -291,7 +299,7 @@ fn expand_derive_EnumIterator(context: &mut ExtCtxt,span: Span,meta_item: &ast::
 				).unwrap()));
 				push(Annotatable::Item(quote_item!(context,
 					#[automatically_derived]
-					impl $generics ::std::iter::ExactSizeIterator for $ty $where_clause{
+					impl $generics ::std::iter::ExactSizeIterator for $ty_path $where_clause{
 						#[inline(always)]fn len(&self) -> usize{<Self as enum_traits::Len>::LEN}
 					}
 				).unwrap()));
@@ -333,11 +341,10 @@ fn expand_derive_EnumEnds(context: &mut ExtCtxt,span: Span,meta_item: &ast::Meta
 				let ty_path = builder.path()
 					.segment(&item.ident).with_generics(generics.clone()).build()
 					.build();
-				let ty = builder.ty().build_path(ty_path.clone());
 
 				push(Annotatable::Item(quote_item!(context,
 					#[automatically_derived]
-					impl $generics ::enum_traits::Ends for $ty $where_clause{
+					impl $generics ::enum_traits::Ends for $ty_path $where_clause{
 						#[inline(always)]fn first() -> Self{$first_path}
 						#[inline(always)]fn last()  -> Self{$last_path}
 					}
