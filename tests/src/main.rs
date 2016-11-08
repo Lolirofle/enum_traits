@@ -1,6 +1,6 @@
-#![feature(plugin,custom_derive,custom_attribute)]
-#![plugin(enum_traits_macros)]
+#![feature(associated_consts,proc_macro)]
 
+#[macro_use]extern crate enum_traits_macros;
 extern crate enum_traits;
 
 use enum_traits::*;
@@ -16,7 +16,7 @@ enum Fields<'t,T: 't>{
 }
 
 
-#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumIterator)]
+#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds)]
 enum NoFields{
 	A,B,C,D,E,F
 }
@@ -154,76 +154,76 @@ fn test_ends(){
 	}
 }
 
-/*
+
 #[allow(dead_code)]
 #[test]
 fn test_iter(){
 	use std::iter::Iterator;
 
 	{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator,EnumIndex,EnumFromIndex,EnumToIndex)]enum T{A}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter,EnumLen,EnumIndex,EnumFromIndex,EnumToIndex)]enum T{A}
 		let mut t = T::first();
-		//assert_eq!(T::A,t.next().unwrap());
-		//assert!(t.next().is_none());
+		assert_eq!(T::A,t);
+		assert_eq!(None,t.next());
 	}{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator,EnumIndex,EnumFromIndex,EnumToIndex)]enum T{A,B,C}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter,EnumLen,EnumIndex,EnumFromIndex,EnumToIndex)]enum T{A,B,C}
 		let mut t = T::first();
-		assert_eq!(T::A,t.next().unwrap());
-		assert_eq!(T::B,t.next().unwrap());
-		assert_eq!(T::C,t.next().unwrap());
-		assert!(t.next().is_none());
+		assert_eq!(T::A,t);
+		assert_eq!(Some(T::B),t.next());
+		assert_eq!(Some(T::C),t.next());
+		assert_eq!(None      ,t.next());
 	}{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator,EnumIndex,EnumFromIndex,EnumToIndex)]enum T{A,B,C,D,E,F,G}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter,EnumLen,EnumIndex,EnumFromIndex,EnumToIndex)]enum T{A,B,C,D,E,F,G}
 		let mut t = T::first();
-		assert_eq!(T::A,t.next().unwrap());
-		assert_eq!(T::B,t.next().unwrap());
-		assert_eq!(T::C,t.next().unwrap());
-		assert_eq!(T::D,t.next().unwrap());
-		assert_eq!(T::E,t.next().unwrap());
-		assert_eq!(T::F,t.next().unwrap());
-		assert_eq!(T::G,t.next().unwrap());
-		assert!(t.next().is_none());
+		assert_eq!(T::A,t);
+		assert_eq!(Some(T::B),t.next());
+		assert_eq!(Some(T::C),t.next());
+		assert_eq!(Some(T::D),t.next());
+		assert_eq!(Some(T::E),t.next());
+		assert_eq!(Some(T::F),t.next());
+		assert_eq!(Some(T::G),t.next());
+		assert_eq!(None      ,t.next());
 	}{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator,EnumIndex,EnumFromIndex,EnumToIndex)]enum T{A,B,C,D,E,F,G,H}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter,EnumLen,EnumIndex,EnumFromIndex,EnumToIndex)]enum T{A,B,C,D,E,F,G,H}
 		let mut t = T::first();
-		assert_eq!(T::A,t.next().unwrap());
-		assert_eq!(T::B,t.next().unwrap());
-		assert_eq!(T::C,t.next().unwrap());
-		assert_eq!(T::D,t.next().unwrap());
-		assert_eq!(T::E,t.next().unwrap());
-		assert_eq!(T::F,t.next().unwrap());
-		assert_eq!(T::G,t.next().unwrap());
-		assert_eq!(T::H,t.next().unwrap());
-		assert!(t.next().is_none());
+		assert_eq!(T::A,t);
+		assert_eq!(Some(T::B),t.next());
+		assert_eq!(Some(T::C),t.next());
+		assert_eq!(Some(T::D),t.next());
+		assert_eq!(Some(T::E),t.next());
+		assert_eq!(Some(T::F),t.next());
+		assert_eq!(Some(T::G),t.next());
+		assert_eq!(Some(T::H),t.next());
+		assert_eq!(None      ,t.next());
 	}{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator,EnumIndex,EnumFromIndex,EnumToIndex)]enum T{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,X,Y,Z}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter,EnumLen,EnumIndex,EnumFromIndex,EnumToIndex)]enum T{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,X,Y,Z}
 		let mut t = T::first();
-		assert_eq!(T::A,t.next().unwrap());
-		assert_eq!(T::B,t.next().unwrap());
-		assert_eq!(T::C,t.next().unwrap());
-		assert_eq!(T::D,t.next().unwrap());
-		assert_eq!(T::E,t.next().unwrap());
-		assert_eq!(T::F,t.next().unwrap());
-		assert_eq!(T::G,t.next().unwrap());
-		assert_eq!(T::H,t.next().unwrap());
-		assert_eq!(T::I,t.next().unwrap());
-		assert_eq!(T::J,t.next().unwrap());
-		assert_eq!(T::K,t.next().unwrap());
-		assert_eq!(T::L,t.next().unwrap());
-		assert_eq!(T::M,t.next().unwrap());
-		assert_eq!(T::N,t.next().unwrap());
-		assert_eq!(T::O,t.next().unwrap());
-		assert_eq!(T::P,t.next().unwrap());
-		assert_eq!(T::Q,t.next().unwrap());
-		assert_eq!(T::R,t.next().unwrap());
-		assert_eq!(T::S,t.next().unwrap());
-		assert_eq!(T::T,t.next().unwrap());
-		assert_eq!(T::U,t.next().unwrap());
-		assert_eq!(T::V,t.next().unwrap());
-		assert_eq!(T::X,t.next().unwrap());
-		assert_eq!(T::Y,t.next().unwrap());
-		assert_eq!(T::Z,t.next().unwrap());
-		assert!(t.next().is_none());
+		assert_eq!(T::A,t);
+		assert_eq!(Some(T::B),t.next());
+		assert_eq!(Some(T::C),t.next());
+		assert_eq!(Some(T::D),t.next());
+		assert_eq!(Some(T::E),t.next());
+		assert_eq!(Some(T::F),t.next());
+		assert_eq!(Some(T::G),t.next());
+		assert_eq!(Some(T::H),t.next());
+		assert_eq!(Some(T::I),t.next());
+		assert_eq!(Some(T::J),t.next());
+		assert_eq!(Some(T::K),t.next());
+		assert_eq!(Some(T::L),t.next());
+		assert_eq!(Some(T::M),t.next());
+		assert_eq!(Some(T::N),t.next());
+		assert_eq!(Some(T::O),t.next());
+		assert_eq!(Some(T::P),t.next());
+		assert_eq!(Some(T::Q),t.next());
+		assert_eq!(Some(T::R),t.next());
+		assert_eq!(Some(T::S),t.next());
+		assert_eq!(Some(T::T),t.next());
+		assert_eq!(Some(T::U),t.next());
+		assert_eq!(Some(T::V),t.next());
+		assert_eq!(Some(T::X),t.next());
+		assert_eq!(Some(T::Y),t.next());
+		assert_eq!(Some(T::Z),t.next());
+		assert_eq!(None      ,t.next());
 	}
 }
-*/
+
