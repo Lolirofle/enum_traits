@@ -159,23 +159,23 @@ fn test_ends(){
 
 #[allow(dead_code)]
 #[test]
-fn test_iter(){
+fn test_iterator(){
 	use std::iter::Iterator;
 
 	{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator)]enum T{A}
 		let mut t = T::first();
 		assert_eq!(T::A,t);
 		assert_eq!(None,t.next());
 	}{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator)]enum T{A,B,C}
 		let mut t = T::first();
 		assert_eq!(T::A,t);
 		assert_eq!(Some(T::B),t.next());
 		assert_eq!(Some(T::C),t.next());
 		assert_eq!(None      ,t.next());
 	}{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C,D,E,F,G}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator)]enum T{A,B,C,D,E,F,G}
 		let mut t = T::first();
 		assert_eq!(T::A,t);
 		assert_eq!(Some(T::B),t.next());
@@ -186,7 +186,7 @@ fn test_iter(){
 		assert_eq!(Some(T::G),t.next());
 		assert_eq!(None      ,t.next());
 	}{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C,D,E,F,G,H}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator)]enum T{A,B,C,D,E,F,G,H}
 		let mut t = T::first();
 		assert_eq!(T::A,t);
 		assert_eq!(Some(T::B),t.next());
@@ -198,9 +198,82 @@ fn test_iter(){
 		assert_eq!(Some(T::H),t.next());
 		assert_eq!(None      ,t.next());
 	}{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,X,Y,Z}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator)]enum T{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,X,Y,Z}
 		let mut t = T::first();
 		assert_eq!(T::A,t);
+		assert_eq!(Some(T::B),t.next());
+		assert_eq!(Some(T::C),t.next());
+		assert_eq!(Some(T::D),t.next());
+		assert_eq!(Some(T::E),t.next());
+		assert_eq!(Some(T::F),t.next());
+		assert_eq!(Some(T::G),t.next());
+		assert_eq!(Some(T::H),t.next());
+		assert_eq!(Some(T::I),t.next());
+		assert_eq!(Some(T::J),t.next());
+		assert_eq!(Some(T::K),t.next());
+		assert_eq!(Some(T::L),t.next());
+		assert_eq!(Some(T::M),t.next());
+		assert_eq!(Some(T::N),t.next());
+		assert_eq!(Some(T::O),t.next());
+		assert_eq!(Some(T::P),t.next());
+		assert_eq!(Some(T::Q),t.next());
+		assert_eq!(Some(T::R),t.next());
+		assert_eq!(Some(T::S),t.next());
+		assert_eq!(Some(T::T),t.next());
+		assert_eq!(Some(T::U),t.next());
+		assert_eq!(Some(T::V),t.next());
+		assert_eq!(Some(T::X),t.next());
+		assert_eq!(Some(T::Y),t.next());
+		assert_eq!(Some(T::Z),t.next());
+		assert_eq!(None      ,t.next());
+	}
+}
+
+#[allow(dead_code)]
+#[test]
+fn test_iter(){
+	use std::iter::Iterator;
+	use enum_traits::Iterable;
+
+	{
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A}
+		let mut t = T::variants();
+		assert_eq!(Some(T::A),t.next());
+		assert_eq!(None,t.next());
+	}{
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C}
+		let mut t = T::variants();
+		assert_eq!(Some(T::A),t.next());
+		assert_eq!(Some(T::B),t.next());
+		assert_eq!(Some(T::C),t.next());
+		assert_eq!(None      ,t.next());
+	}{
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C,D,E,F,G}
+		let mut t = T::variants();
+		assert_eq!(Some(T::A),t.next());
+		assert_eq!(Some(T::B),t.next());
+		assert_eq!(Some(T::C),t.next());
+		assert_eq!(Some(T::D),t.next());
+		assert_eq!(Some(T::E),t.next());
+		assert_eq!(Some(T::F),t.next());
+		assert_eq!(Some(T::G),t.next());
+		assert_eq!(None      ,t.next());
+	}{
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C,D,E,F,G,H}
+		let mut t = T::variants();
+		assert_eq!(Some(T::A),t.next());
+		assert_eq!(Some(T::B),t.next());
+		assert_eq!(Some(T::C),t.next());
+		assert_eq!(Some(T::D),t.next());
+		assert_eq!(Some(T::E),t.next());
+		assert_eq!(Some(T::F),t.next());
+		assert_eq!(Some(T::G),t.next());
+		assert_eq!(Some(T::H),t.next());
+		assert_eq!(None      ,t.next());
+	}{
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,X,Y,Z}
+		let mut t = T::variants();
+		assert_eq!(Some(T::A),t.next());
 		assert_eq!(Some(T::B),t.next());
 		assert_eq!(Some(T::C),t.next());
 		assert_eq!(Some(T::D),t.next());
