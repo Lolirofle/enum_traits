@@ -8,13 +8,13 @@ extern crate quote;
 extern crate proc_macro;
 use proc_macro::TokenStream;
 
-use syn::{Body,Generics,Ident,Variant,VariantData};
+use syn::{Attribute,Body,Ident,Lit,IntTy,MacroInput,Variant,VariantData};
 use quote::Tokens;
 
 #[proc_macro_derive(EnumLen)]
 pub fn derive_EnumLen(input: TokenStream) -> TokenStream{
-	fn gen_impl(ident: &Ident,generics: &Generics,data: &Vec<Variant>) -> Tokens{
-		let (impl_generics,ty_generics,where_clause) = generics.split_for_impl();
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 		let len = data.len();
 
 		quote!{
@@ -28,8 +28,8 @@ pub fn derive_EnumLen(input: TokenStream) -> TokenStream{
 
 #[proc_macro_derive(EnumEnds)]
 pub fn derive_EnumEnds(input: TokenStream) -> TokenStream{
-	fn gen_impl(ident: &Ident,generics: &Generics,data: &Vec<Variant>) -> Tokens{
-		let (impl_generics,ty_generics,where_clause) = generics.split_for_impl();
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 		let variant_first_ident = &data.first().expect("`derive(EnumEnds)` may only be applied to non-empty enums").ident;
 		let variant_last_ident  = &data.last().expect("`derive(EnumEnds)` may only be applied to non-empty enums").ident;
 
@@ -45,11 +45,12 @@ pub fn derive_EnumEnds(input: TokenStream) -> TokenStream{
 
 #[proc_macro_derive(EnumToIndex)]
 pub fn derive_EnumToIndex(input: TokenStream) -> TokenStream{
-	fn gen_impl(ident: &Ident,generics: &Generics,data: &Vec<Variant>) -> Tokens{
-		let (impl_generics,ty_generics,where_clause) = generics.split_for_impl();
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 
 		let match_arms = data.iter().enumerate().map(|(i,variant)|{
 			let variant_ident = &variant.ident;
+			let i = Lit::Int(i as u64,IntTy::Unsuffixed);
 
 			match variant.data{
 				VariantData::Unit => {
@@ -66,6 +67,8 @@ pub fn derive_EnumToIndex(input: TokenStream) -> TokenStream{
 
 		let match_arms_into = data.iter().enumerate().map(|(i,variant)|{
 			let variant_ident = &variant.ident;
+			let i = Lit::Int(i as u64,IntTy::Unsuffixed);
+
 			match variant.data{
 				VariantData::Unit => {
 					quote! { #ident::#variant_ident => #i, }
@@ -99,11 +102,12 @@ pub fn derive_EnumToIndex(input: TokenStream) -> TokenStream{
 
 #[proc_macro_derive(EnumFromIndex)]
 pub fn derive_EnumFromIndex(input: TokenStream) -> TokenStream{
-	fn gen_impl(ident: &Ident,generics: &Generics,data: &Vec<Variant>) -> Tokens{
-		let (impl_generics,ty_generics,where_clause) = generics.split_for_impl();
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 
 		let match_arms = data.iter().enumerate().map(|(i,variant)|{
 			let variant_ident = &variant.ident;
+			let i = Lit::Int(i as u64,IntTy::Unsuffixed);
 
 			match variant.data{
 				VariantData::Unit => {
@@ -129,12 +133,13 @@ pub fn derive_EnumFromIndex(input: TokenStream) -> TokenStream{
 
 #[proc_macro_derive(EnumIndex)]
 pub fn derive_EnumIndex(input: TokenStream) -> TokenStream{
-	fn gen_impl(ident: &Ident,generics: &Generics,data: &Vec<Variant>) -> Tokens{
-		let (impl_generics,ty_generics,where_clause) = generics.split_for_impl();
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+		let ty = type_from_repr_attr(item.attrs.iter()).unwrap_or_else(|| minimum_type_from_value(data.len()));
 
 		quote!{
 			impl #impl_generics ::enum_traits::Index for #ident #ty_generics #where_clause{
-				type Type = usize;
+				type Type = #ty;
 			}
 		}
 	}
@@ -143,8 +148,8 @@ pub fn derive_EnumIndex(input: TokenStream) -> TokenStream{
 
 #[proc_macro_derive(EnumIter)]
 pub fn derive_EnumIter(input: TokenStream) -> TokenStream{
-	fn gen_impl(ident: &Ident,generics: &Generics,data: &Vec<Variant>) -> Tokens{
-		let (impl_generics,ty_generics,where_clause) = generics.split_for_impl();
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 
 		let len = data.len();
 
@@ -203,14 +208,84 @@ pub fn derive_EnumIter(input: TokenStream) -> TokenStream{
 	derive_enum(input,gen_impl)
 }
 
-fn derive_enum(input: TokenStream,gen_impl: fn(&Ident,&Generics,&Vec<Variant>) -> Tokens) -> TokenStream{
+#[proc_macro_derive(EnumDiscriminant)]
+pub fn derive_EnumDiscriminant(input: TokenStream) -> TokenStream{
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+
+		let match_arms = data.iter().filter_map(|variant|{
+			let variant_ident = &variant.ident;
+
+			variant.discriminant.as_ref().map(|ref variant_discriminant|{
+				match variant.data{
+					VariantData::Unit => {
+						quote! { #variant_discriminant => Some(#ident::#variant_ident), }
+					}
+					VariantData::Tuple(_) => {
+						quote! { #variant_discriminant::#variant_ident(..) => Some(#ident::#variant_ident), }
+					}
+					VariantData::Struct(_) => {
+						quote! { #variant_discriminant::#variant_ident{..} => Some(#ident::#variant_ident), }
+					}
+				}
+			})
+		});
+		let ty = type_from_repr_attr(item.attrs.iter()).unwrap_or(Ident::from("usize"));
+
+		quote!{
+			impl #impl_generics ::enum_traits::Discriminant for #ident #ty_generics #where_clause{
+				type Type = #ty;
+				#[inline]fn from_discriminant(index: <Self as Discriminant>::Type) -> Option<Self>{
+					match index{
+						#( #match_arms )*
+						_ => None
+					}
+				}
+			}
+		}
+	}
+	derive_enum(input,gen_impl)
+}
+
+fn derive_enum<F>(input: TokenStream,gen_impl: F) -> TokenStream
+	where F: FnOnce(&Ident,&MacroInput,&Vec<Variant>) -> Tokens
+{
 	let input = input.to_string();
 	let ast = syn::parse_macro_input(&input).unwrap();
 
 	let quote_tokens = match ast.body{
-		Body::Enum(ref data) => gen_impl(&ast.ident,&ast.generics,data),
+		Body::Enum(ref data) => gen_impl(&ast.ident,&ast,data),
 		_ => panic!("`derive(Enum_?)` may only be applied to enum items")
 	}.to_string();
 
 	format!("{}{}",input,quote_tokens.to_string()).parse().unwrap()
+}
+
+fn minimum_type_from_value(value: usize) -> Ident{
+	if value <= u8::max_value() as usize{
+		Ident::from("u8")
+	}else if value <= u16::max_value() as usize{
+		Ident::from("u16")
+	}else if value <= u32::max_value() as usize{
+		Ident::from("u32")
+	}else if value <= u64::max_value() as usize{
+		Ident::from("u64")
+	}else{
+		Ident::from("usize")
+	}
+}
+
+fn type_from_repr_attr<'i,I>(attrs: I) -> Option<Ident>
+	where I: Iterator<Item = &'i Attribute>
+{
+	use syn::{MetaItem,NestedMetaItem};
+
+	for attr in attrs{match attr.value{
+		MetaItem::List(ref ident,ref content) if ident=="attr" && content.len()==1 => match &content[0]{
+			&NestedMetaItem::MetaItem(MetaItem::Word(ref ty)) if ty!="C" => return Some(ty.clone()),
+			_ => continue,
+		},
+		_ => continue,
+	}}
+	None
 }
