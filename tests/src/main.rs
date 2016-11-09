@@ -1,3 +1,5 @@
+//cargo rustc -- -Z unstable-options --pretty=expanded --test
+
 #![feature(associated_consts,proc_macro)]
 
 #[macro_use]extern crate enum_traits_macros;
@@ -161,19 +163,19 @@ fn test_iter(){
 	use std::iter::Iterator;
 
 	{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter,EnumLen,EnumIndex,EnumFromIndex,EnumToIndex)]enum T{A}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A}
 		let mut t = T::first();
 		assert_eq!(T::A,t);
 		assert_eq!(None,t.next());
 	}{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter,EnumLen,EnumIndex,EnumFromIndex,EnumToIndex)]enum T{A,B,C}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C}
 		let mut t = T::first();
 		assert_eq!(T::A,t);
 		assert_eq!(Some(T::B),t.next());
 		assert_eq!(Some(T::C),t.next());
 		assert_eq!(None      ,t.next());
 	}{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter,EnumLen,EnumIndex,EnumFromIndex,EnumToIndex)]enum T{A,B,C,D,E,F,G}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C,D,E,F,G}
 		let mut t = T::first();
 		assert_eq!(T::A,t);
 		assert_eq!(Some(T::B),t.next());
@@ -184,7 +186,7 @@ fn test_iter(){
 		assert_eq!(Some(T::G),t.next());
 		assert_eq!(None      ,t.next());
 	}{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter,EnumLen,EnumIndex,EnumFromIndex,EnumToIndex)]enum T{A,B,C,D,E,F,G,H}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C,D,E,F,G,H}
 		let mut t = T::first();
 		assert_eq!(T::A,t);
 		assert_eq!(Some(T::B),t.next());
@@ -196,7 +198,7 @@ fn test_iter(){
 		assert_eq!(Some(T::H),t.next());
 		assert_eq!(None      ,t.next());
 	}{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter,EnumLen,EnumIndex,EnumFromIndex,EnumToIndex)]enum T{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,X,Y,Z}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,X,Y,Z}
 		let mut t = T::first();
 		assert_eq!(T::A,t);
 		assert_eq!(Some(T::B),t.next());

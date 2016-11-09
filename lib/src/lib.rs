@@ -41,3 +41,11 @@ pub trait Ends: Sized{
 	///Last variant in defined order in an enum
 	fn last() -> Self;
 }
+
+///Derive this trait for an enum using `#[derive(EnumDiscriminant)]`
+pub trait Discriminant: Sized{
+	type Type;
+
+	///Tries to construct an enum from the discriminant of the variants/enum items
+	fn from_discriminant(index: <Self as FromDiscriminant>::Type) -> Option<Self>;
+}
