@@ -47,5 +47,11 @@ pub trait Discriminant: Sized{
 	type Type;
 
 	///Tries to construct an enum from the discriminant of the variants/enum items
-	fn from_discriminant(index: <Self as FromDiscriminant>::Type) -> Option<Self>;
+	fn from_discriminant(index: <Self as Discriminant>::Type) -> Option<Self>;
+}
+
+///Derive this trait for an enum using `#[derive(EnumIter)]`
+pub trait Iterable{
+	type Iter: Iterator;
+	fn variants() -> Self::Iter;
 }

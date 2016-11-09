@@ -150,6 +150,7 @@ pub fn derive_EnumIndex(input: TokenStream) -> TokenStream{
 pub fn derive_EnumIter(input: TokenStream) -> TokenStream{
 	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+		let visibility = &item.vis;
 
 		let len = data.len();
 
@@ -158,6 +159,110 @@ pub fn derive_EnumIter(input: TokenStream) -> TokenStream{
 				&variant.ident
 			}
 			_ => panic!("`derive(EnumIter)` may only be applied to enum items with no fields")
+		}}
+
+		let prev_match_arms = {
+				let iter = data.iter().rev().map(map_variant_ident);
+				iter.zip(data.iter().rev().map(map_variant_ident).skip(1))
+			}.map(|(variant_ident1,variant_ident2)|{
+				quote! { &Some(#ident::#variant_ident1) => {self.0 = Some(#ident::#variant_ident2); #ident::#variant_ident2}, }
+			});
+
+		let next_match_arms = {
+				let iter = data.iter().map(map_variant_ident);
+				iter.zip(data.iter().map(map_variant_ident).skip(1))
+			}.map(|(variant_ident1,variant_ident2)|{
+				quote! { &Some(#ident::#variant_ident1) => {self.0 = Some(#ident::#variant_ident2); #ident::#variant_ident2}, }
+			});
+
+		let variant_first_ident = &data.first().expect("`derive(EnumIter)` may only be applied to non-empty enums").ident;
+		let variant_last_ident  = &data.last().expect("`derive(EnumIter)` may only be applied to non-empty enums").ident;
+
+		let struct_ident = {
+			let mut str = ident.as_ref().to_owned();
+			str.push_str("Iter");
+			Ident::from(str)
+		};
+
+		let struct_iter = quote!{
+			#visibility struct #struct_ident #ty_generics #where_clause (pub Option<#ident #ty_generics>);
+		};
+
+		let impl_default = quote!{
+			impl #impl_generics ::std::default::Default for #struct_ident #ty_generics #where_clause{
+				#[inline(always)]
+				fn default() -> Self{#struct_ident (None)}
+			}
+		};
+
+		let impl_iter = quote!{
+			impl #impl_generics ::std::iter::Iterator for #struct_ident #ty_generics #where_clause{
+				type Item = #ident;
+				#[inline]
+				fn next(&mut self) -> Option<Self::Item>{
+					Some(match &self.0{
+						&None => {self.0 = Some(#ident::#variant_first_ident); #ident::#variant_first_ident},
+						#( #next_match_arms )*
+						_ => return None
+					})
+				}
+				#[inline(always)]
+				fn size_hint(&self) -> (usize,Option<usize>){
+					use ::std::iter::ExactSizeIterator;
+					(0,Some(self.len()))//TODO: How many left
+				}
+			}
+		};
+
+		let impl_diter = quote!{
+			impl #impl_generics ::std::iter::DoubleEndedIterator for #struct_ident #ty_generics #where_clause{
+				#[inline]fn next_back(&mut self) -> Option<Self::Item>{
+					Some(match &self.0{
+						&None => {self.0 = Some(#ident::#variant_last_ident); #ident::#variant_last_ident},
+						#( #prev_match_arms )*
+						_ => return None
+					})
+				}
+			}
+		};
+
+		let impl_exactiter = quote!{
+			impl #impl_generics ::std::iter::ExactSizeIterator for #struct_ident #ty_generics #where_clause{
+				#[inline(always)]fn len(&self) -> usize{#len}
+			}
+		};
+
+		let impl_intoiter = quote!{
+			impl #impl_generics ::enum_traits::Iterable for #ident #ty_generics #where_clause{
+				type Iter = #struct_ident;
+				#[inline(always)]fn variants() -> Self::Iter{#struct_ident(None)}
+			}
+		};
+
+		quote!{
+			#struct_iter
+			#impl_intoiter
+			#impl_default
+			#impl_iter
+			#impl_diter
+			#impl_exactiter
+		}
+	}
+	derive_enum(input,gen_impl)
+}
+
+#[proc_macro_derive(EnumIterator)]
+pub fn derive_EnumIterator(input: TokenStream) -> TokenStream{
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+
+		let len = data.len();
+
+		fn map_variant_ident(variant: &Variant) -> &Ident{match variant.data{
+			VariantData::Unit => {
+				&variant.ident
+			}
+			_ => panic!("`derive(EnumIterator)` may only be applied to enum items with no fields")
 		}}
 
 		let prev_match_arms = {
@@ -178,7 +283,7 @@ pub fn derive_EnumIter(input: TokenStream) -> TokenStream{
 			impl #impl_generics ::std::iter::Iterator for #ident #ty_generics #where_clause{
 				type Item = Self;
 				#[inline]
-				fn next(&mut self) -> Option<Self>{
+				fn next(&mut self) -> Option<Self::Item>{
 					Some(match self{
 						#( #next_match_arms )*
 						_ => return None
