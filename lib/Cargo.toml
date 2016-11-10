@@ -1,6 +1,6 @@
 [package]
 name = "enum_traits"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Lolirofle <1522957+Lolirofle@users.noreply.github.com>"]
 description = "Simple traits for the builtin enums"
 #documentation = "..."
