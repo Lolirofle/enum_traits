@@ -14,8 +14,11 @@ pub trait Index{
 
 ///Derive this trait for an enum using `#[derive(EnumFromIndex)]`
 pub trait FromIndex: Index + Sized{
-	///Tries to construct an enum from a index in the enum's variants' defined order
+	///Tries to construct an enum from an index in the enum's variants' defined order
 	fn from_index(index: <Self as Index>::Type) -> Option<Self>;
+
+	///Constructs an enum from an index in the enum's variants' defined order
+	unsafe fn from_index_unchecked(index: <Self as Index>::Type) -> Self;
 }
 
 ///Derive this trait for an enum using `#[derive(EnumToIndex)]`
@@ -47,7 +50,10 @@ pub trait Discriminant: Sized{
 	type Type;
 
 	///Tries to construct an enum from the discriminant of the variants/enum items
-	fn from_discriminant(index: <Self as Discriminant>::Type) -> Option<Self>;
+	fn from_discriminant(discriminant: <Self as Discriminant>::Type) -> Option<Self>;
+
+	///Constructs an enum from the discriminant of the variants/enum items
+	unsafe fn from_discriminant_unchecked(discriminant: <Self as Discriminant>::Type) -> Self;
 }
 
 ///Derive this trait for an enum using `#[derive(EnumIter)]`
