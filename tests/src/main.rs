@@ -17,10 +17,20 @@ enum Fields<'t,T: 't>{
 	VariantF,
 }
 
-
-#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds)]
+#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumIterator,EnumIter)]
 enum NoFields{
 	A,B,C,D,E,F
+}
+
+#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumIterator,EnumIter,EnumDiscriminant)]
+enum Discriminants{
+	A=1,B=2,C=4,D=8,E=16,F=33
+}
+
+#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumIterator,EnumIter,EnumDiscriminant)]
+#[repr(u32)]
+enum SomeDiscriminants{
+	A=1,B,C=4,D,E=16,F
 }
 
 #[test]
@@ -84,11 +94,26 @@ fn test_nofields_index(){
 	let _ = NoFields::E.index() as <Fields<i32> as Index>::Type;
 }
 
+#[test]
+fn test_discriminants(){
+	assert_eq!(None                  ,Discriminants::from_discriminant(0));
+	assert_eq!(Some(Discriminants::A),Discriminants::from_discriminant(1));
+	assert_eq!(Some(Discriminants::B),Discriminants::from_discriminant(2));
+	assert_eq!(None                  ,Discriminants::from_discriminant(3));
+	assert_eq!(Some(Discriminants::C),Discriminants::from_discriminant(4));
+	assert_eq!(Some(Discriminants::D),Discriminants::from_discriminant(8));
+	assert_eq!(Some(Discriminants::E),Discriminants::from_discriminant(16));
+	assert_eq!(None                  ,Discriminants::from_discriminant(32));
+	assert_eq!(Some(Discriminants::F),Discriminants::from_discriminant(33));
+}
+
 
 #[allow(dead_code)]
 #[test]
 fn test_len(){
 	assert_eq!(6,Fields::<'static,u32>::LEN);
+	assert_eq!(6,NoFields::LEN);
+	assert_eq!(6,Discriminants::LEN);
 
 	{
 		#[derive(EnumLen)]enum T{}
