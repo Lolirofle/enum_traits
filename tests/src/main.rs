@@ -1,7 +1,8 @@
 //cargo rustc -- -Z unstable-options --pretty=expanded --test
 
-#![feature(associated_consts,proc_macro)]
+#![feature(associated_consts,proc_macro,plugin,custom_attribute)]
 
+#![plugin(enum_traits_gen)]
 #[macro_use]extern crate enum_traits_macros;
 extern crate enum_traits;
 
@@ -190,15 +191,20 @@ fn test_iterator(){
 	{
 		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator)]enum T{A}
 		let mut t = T::first();
-		assert_eq!(T::A,t);
-		assert_eq!(None,t.next());
+		assert_eq!(T::A,t);        assert_eq!(t.len(),0);
+		assert_eq!(None,t.next()); assert_eq!(t.len(),0);
+
+		assert_eq!(t.last(),Some(T::A));
 	}{
 		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator)]enum T{A,B,C}
 		let mut t = T::first();
-		assert_eq!(T::A,t);
-		assert_eq!(Some(T::B),t.next());
-		assert_eq!(Some(T::C),t.next());
-		assert_eq!(None      ,t.next());
+
+		assert_eq!(T::A,t);              assert_eq!(t.len(),2);
+		assert_eq!(Some(T::B),t.next()); assert_eq!(t.len(),1);
+		assert_eq!(Some(T::C),t.next()); assert_eq!(t.len(),0);
+		assert_eq!(None      ,t.next()); assert_eq!(t.len(),0);
+
+		assert_eq!(t.count(),0);
 	}{
 		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator)]enum T{A,B,C,D,E,F,G}
 		let mut t = T::first();
@@ -263,15 +269,23 @@ fn test_iter(){
 	{
 		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A}
 		let mut t = T::variants();
-		assert_eq!(Some(T::A),t.next());
-		assert_eq!(None,t.next());
+		assert_eq!(t.len(),1);
+
+		assert_eq!(Some(T::A),t.next()); assert_eq!(t.len(),0);
+		assert_eq!(None,t.next());       assert_eq!(t.len(),0);
+
+		assert_eq!(t.last(),Some(T::A));
 	}{
 		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C}
 		let mut t = T::variants();
-		assert_eq!(Some(T::A),t.next());
-		assert_eq!(Some(T::B),t.next());
-		assert_eq!(Some(T::C),t.next());
-		assert_eq!(None      ,t.next());
+		assert_eq!(t.len(),3);
+
+		assert_eq!(Some(T::A),t.next()); assert_eq!(t.len(),2);
+		assert_eq!(Some(T::B),t.next()); assert_eq!(t.len(),1);
+		assert_eq!(Some(T::C),t.next()); assert_eq!(t.len(),0);
+		assert_eq!(None      ,t.next()); assert_eq!(t.len(),0);
+
+		assert_eq!(t.count(),0);
 	}{
 		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C,D,E,F,G}
 		let mut t = T::variants();

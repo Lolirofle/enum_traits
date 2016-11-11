@@ -1,8 +1,8 @@
 [package]
-name = "enum_traits_macros"
-version = "1.2.1"
+name = "enum_traits_gen"
+version = "0.1.0"
 authors = ["Lolirofle <lolipopple@hotmail.com>"]
-description = "Procedural macros that adds functionality to enums by deriving traits from the crate `enum_traits`"
+description = "Procedural macros that adds functionality to enums by generating code and implementing traits from the crate `enum_traits`"
 documentation = "https://docs.rs/enum_traits"
 homepage = "https://github.com/Lolirofle/enum_traits"
 repository = "https://github.com/Lolirofle/enum_traits.git"
@@ -11,7 +11,7 @@ keywords = ["enum","trait","derive","deriving","macro"]
 license = "MIT"
 
 [lib]
-proc-macro = true
+plugin = true
 
 [dependencies]
 quote = "0.3"

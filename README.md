@@ -5,12 +5,12 @@ A library with traits and accompanying procedural macros that adds functionality
 Provides traits and "derives" for enum items in the Rust programming language:
 
 ### Derives ###
-- EnumIndex,
-- EnumFromIndex,
-- EnumToIndex
-- EnumLen,
-- EnumEnds,
-- EnumIter,
+- EnumIndex
+- EnumFromIndex
+- EnumToInde
+- EnumLen
+- EnumEnds
+- EnumIter
 
 ### Traits ###
 - Index
@@ -21,4 +21,5 @@ Provides traits and "derives" for enum items in the Rust programming language:
 - Discriminant
 - Iterable
 
-See the docs, the tests or the source code for more information.
+See the tests for examples.
+See the [docs](https://docs.rs/crate/enum_traits/), the tests or the source code for more information.
