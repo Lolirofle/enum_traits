@@ -1,4 +1,8 @@
-Provides traits and "derives" for these traits for enums in the Rust programming language.
+# enum_traits #
+
+A library with traits and accompanying procedural macros that adds functionality to enums.
+
+Provides traits and "derives" for enum items in the Rust programming language:
 
 ### Derives ###
 - EnumIndex,
@@ -14,3 +18,7 @@ Provides traits and "derives" for these traits for enums in the Rust programming
 - ToIndex
 - Len
 - Ends
+- Discriminant
+- Iterable
+
+See the docs, the tests or the source code for more information.

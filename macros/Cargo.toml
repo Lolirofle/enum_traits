@@ -2,12 +2,12 @@
 name = "enum_traits_macros"
 version = "1.2.0"
 authors = ["Lolirofle <lolipopple@hotmail.com>"]
-description = "Syntax extension for the crate `enum_traits`"
-#documentation = "..."
+description = "Procedural macros that adds functionality to enums by deriving traits from the crate `enum_traits`"
+documentation = "https://docs.rs/enum_traits"
 homepage = "https://github.com/Lolirofle/enum_traits"
 repository = "https://github.com/Lolirofle/enum_traits.git"
 #readme = "README.md"
-keywords = ["enum","trait","traits"]
+keywords = ["enum","trait","derive","deriving","macro"]
 license = "MIT"
 
 [lib]
