@@ -1,8 +1,7 @@
 //cargo rustc -- -Z unstable-options --pretty=expanded --test
 
-#![feature(associated_consts,proc_macro,plugin,custom_attribute)]
+#![feature(associated_consts)]
 
-#![plugin(enum_traits_gen)]
 #[macro_use]extern crate enum_traits_macros;
 extern crate enum_traits;
 

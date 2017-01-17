@@ -1,4 +1,3 @@
-#![feature(proc_macro,proc_macro_lib)]
 #![allow(non_snake_case)]
 
 extern crate syn;
@@ -58,7 +57,7 @@ fn derive_enum<F>(input: TokenStream,gen_impl: F) -> TokenStream
 		_ => panic!("`derive(Enum*)` may only be applied to enum items")
 	}.to_string();
 
-	format!("{}{}",input,quote_tokens.to_string()).parse().unwrap()
+	format!("{}",quote_tokens.to_string()).parse().unwrap()
 }
 
 #[proc_macro_derive(EnumLen)]
