@@ -15,6 +15,8 @@ pub trait Index{
 	type Type;
 }
 
+///Constructors for an enum type from indices based on the variants' defined order
+///
 ///Derive this trait for an enum automatically using `#[derive(EnumFromIndex)]`
 pub trait FromIndex: Index + Sized{
 	///Tries to construct `Self` from an index based on the variants' defined order
@@ -24,6 +26,8 @@ pub trait FromIndex: Index + Sized{
 	unsafe fn from_index_unchecked(index: <Self as Index>::Type) -> Self;
 }
 
+///Indices for an enum type based on the variants' defined order
+///
 ///Derive this trait for an enum automatically using `#[derive(EnumToIndex)]`
 pub trait ToIndex: Index{
 	///Index in the defined order of an enum
@@ -33,12 +37,16 @@ pub trait ToIndex: Index{
 	fn index(&self) -> <Self as Index>::Type;
 }
 
+///Number of variants in an enum type
+///
 ///Derive this trait for an enum automatically using `#[derive(EnumLen)]`
 pub trait Len{
 	///Number of variants in an enum
 	const LEN: usize;
 }
 
+///Constructors for an enum type from its endpoints based on the variants' defined order
+///
 ///Derive this trait for an enum automatically using `#[derive(EnumEnds)]`
 pub trait Ends: Sized{
 	///The first variant in the defined order of an enum
@@ -49,7 +57,7 @@ pub trait Ends: Sized{
 }
 
 ///Derive this trait for an enum automatically using `#[derive(EnumDiscriminant)]`
-///This trait can only be derived when every item have an explicitly defined discriminant.
+///When this trait is derived, non-unit variants will be mapped to `None` in `from_discriminant`.
 pub trait Discriminant: Sized{
 	///The type of the discriminant
 	type Type;
