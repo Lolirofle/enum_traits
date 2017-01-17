@@ -370,6 +370,73 @@ fn variant_name() {
 
 #[test]
 #[allow(dead_code)]
+fn common_fields() {
+    {
+		#[derive(Debug,EnumCommonFields)]
+		enum Enum {
+			Dog{age: u32},
+			Cat{age: u32},
+			Robot{age: u32},
+		}
+		assert_eq!(Enum::Dog{age: 3}.age(), &3);
+	}
+	{
+		#[derive(Debug,EnumCommonFields)]
+		enum Enum {
+			Dog{age: u32},
+			Cat{age: u32},
+			Robot{age: u32, speed: f32},
+		}
+		assert_eq!(Enum::Dog{age: 3}.age(), &3);
+		assert_eq!(Enum::Robot{age: 7, speed: 90.0}.age(), &7);
+	}
+	{
+		#[derive(Debug,EnumCommonFields)]
+		enum Enum {
+			Dog{age: u32, speed: f32},
+			Cat{age: u32, speed: f32},
+			Robot{age: u32, speed: f32},
+		}
+		assert_eq!(Enum::Dog{age: 3, speed: 20.0}.age(), &3);
+		assert_eq!(Enum::Robot{age: 7, speed: 90.0}.speed(), &90.0);
+	}
+	{
+		#[derive(Debug,EnumCommonFields)]
+		enum Enum {
+			Dog{age: u32},
+			Cat{age: u32},
+			Robot{age: u32},
+		}
+
+		impl Enum {
+			pub fn zero(&mut self) -> usize {
+				0
+			}
+		}
+
+		assert_eq!(Enum::Dog{age: 3}.age(), &3);
+		assert_eq!(Enum::Dog{age: 3}.zero(), 0);
+	}
+}
+
+#[test]
+#[allow(dead_code)]
+fn common_fields_mut() {
+	{
+		#[derive(Debug,PartialEq,EnumCommonFields)]
+		enum Enum {
+			Dog{age: u32},
+			Cat{age: u32},
+			Robot{age: u32},
+		}
+		let mut d = Enum::Dog{age: 3};
+		*d.age_mut() = 5;
+		assert_eq!(d, Enum::Dog{age: 5});
+	}
+}
+
+#[test]
+#[allow(dead_code)]
 fn f1(){
 	#[derive(Debug,EnumIndex,EnumToIndex,EnumLen)]
 	enum Enum<'t,T: 't>{

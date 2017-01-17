@@ -13,6 +13,7 @@ Provides traits and "derives" for enum items in the Rust programming language:
 - EnumIter
 - EnumIterator
 - EnumVariantName
+- EnumCommonFields
 
 ### Traits ###
 - Index
