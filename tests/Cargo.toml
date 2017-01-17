@@ -6,4 +6,3 @@ authors = ["Lolirofle <lolipopple@hotmail.com>"]
 [dependencies]
 enum_traits = {version="*",path="../lib"}
 enum_traits_macros = {version="*",path="../macros"}
-enum_traits_gen = {version="*",path="../gen"}
