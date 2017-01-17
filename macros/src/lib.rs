@@ -7,6 +7,7 @@ extern crate quote;
 extern crate proc_macro;
 use proc_macro::TokenStream;
 
+use std::cmp;
 use syn::{Attribute,Body,Ident,Lit,IntTy,MacroInput,Variant,VariantData};
 use quote::Tokens;
 
@@ -30,7 +31,7 @@ fn type_from_repr_attr<'i,I>(attrs: I) -> Option<Ident>
 	use syn::{MetaItem,NestedMetaItem};
 
 	for attr in attrs{match attr.value{
-		MetaItem::List(ref ident,ref content) if ident=="attr" && content.len()==1 => match &content[0]{
+		MetaItem::List(ref ident,ref content) if ident=="repr" => match &content[0]{
 			&NestedMetaItem::MetaItem(MetaItem::Word(ref ty)) if ty!="C" => return Some(ty.clone()),
 			_ => continue,
 		},
@@ -39,11 +40,11 @@ fn type_from_repr_attr<'i,I>(attrs: I) -> Option<Ident>
 	None
 }
 
-fn variant_unit_ident(variant: &Variant) -> &Ident{match variant.data{
+fn variant_unit_ident<'v>(variant: &'v Variant,derive_name: &'static str) -> &'v Ident{match variant.data{
 	VariantData::Unit => {
 		&variant.ident
 	}
-	_ => panic!("`derive(Enum_?)` may only be applied to enum items with no fields")
+	_ => panic!(format!("`derive({})` may only be applied to enum items with no fields",derive_name))
 }}
 
 fn derive_enum<F>(input: TokenStream,gen_impl: F) -> TokenStream
@@ -58,6 +59,24 @@ fn derive_enum<F>(input: TokenStream,gen_impl: F) -> TokenStream
 	}.to_string();
 
 	format!("{}",quote_tokens.to_string()).parse().unwrap()
+}
+
+#[allow(dead_code)]
+fn minimum_type_containing_enum(item: &MacroInput,data: &Vec<Variant>) -> syn::Ident{//TODO: Maybe useful to export?
+	//First, check if there's a repr attribute
+	type_from_repr_attr(item.attrs.iter())
+	.unwrap_or_else(||
+		//Second, use the maximum value of an explicit discriminant or the length of the enum (depending on which is the greatest)
+		minimum_type_from_value(match data.iter().filter_map(|variant| match variant.discriminant{
+				Some(syn::ConstExpr::Lit(syn::Lit::Int(discrimimant,_))) => Some(discrimimant),
+				_ => None
+			}).max(){
+				Some(max) => cmp::max(cmp::max(data.len(),1)-1 , max as usize),
+				//Third, use the length of the enum
+				_ => cmp::max(data.len(),1)-1
+			}
+		)
+	)
 }
 
 #[proc_macro_derive(EnumLen)]
@@ -157,6 +176,10 @@ pub fn derive_EnumToIndex(input: TokenStream) -> TokenStream{
 
 #[proc_macro_derive(EnumFromIndex)]
 pub fn derive_EnumFromIndex(input: TokenStream) -> TokenStream{
+	fn variant_unit_ident(variant: &Variant) -> &Ident{
+		::variant_unit_ident(variant,"EnumFromIndex")
+	}
+
 	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 
@@ -196,7 +219,10 @@ pub fn derive_EnumFromIndex(input: TokenStream) -> TokenStream{
 pub fn derive_EnumIndex(input: TokenStream) -> TokenStream{
 	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
-		let ty = type_from_repr_attr(item.attrs.iter()).unwrap_or_else(|| minimum_type_from_value(data.len()));
+
+		//Determine which type to use (attribute or number of variants)
+		let ty = type_from_repr_attr(item.attrs.iter())
+			.unwrap_or_else(|| minimum_type_from_value(cmp::max(data.len(),1)-1));
 
 		quote!{
 			#[automatically_derived]
@@ -211,6 +237,10 @@ pub fn derive_EnumIndex(input: TokenStream) -> TokenStream{
 
 #[proc_macro_derive(EnumIter)]
 pub fn derive_EnumIter(input: TokenStream) -> TokenStream{
+	fn variant_unit_ident(variant: &Variant) -> &Ident{
+		::variant_unit_ident(variant,"EnumIter")
+	}
+
 	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 		let visibility = &item.vis;
@@ -323,6 +353,7 @@ pub fn derive_EnumIter(input: TokenStream) -> TokenStream{
 			}
 		};
 
+		//TODO: May be an incorrect use of DoubleEndedIterator. Use Step instead
 		let impl_diter = quote!{
 			#[automatically_derived]
 			#[allow(unused_attributes)]
@@ -376,6 +407,10 @@ pub fn derive_EnumIter(input: TokenStream) -> TokenStream{
 
 #[proc_macro_derive(EnumIterator)]
 pub fn derive_EnumIterator(input: TokenStream) -> TokenStream{
+	fn variant_unit_ident(variant: &Variant) -> &Ident{
+		::variant_unit_ident(variant,"EnumIterator")
+	}
+
 	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 
@@ -504,25 +539,33 @@ pub fn derive_EnumDiscriminant(input: TokenStream) -> TokenStream{
 	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 
-		fn match_arm_transform(ident: &Ident,variant: &Variant) -> Option<Tokens>{
+		fn variant_to_match_arm(ident: &Ident,variant: &Variant,only_unit_variants: bool) -> Option<Tokens>{
 			let variant_ident = &variant.ident;
 
+			//If an explicit discriminant exists
 			variant.discriminant.as_ref().map(|ref variant_discriminant|{
 				match variant.data{
 					VariantData::Unit => {
 						quote! { #variant_discriminant => #ident::#variant_ident, }
 					}
-					VariantData::Tuple(_) => {
-						quote! { #variant_discriminant::#variant_ident(..) => #ident::#variant_ident, }
-					}
+					VariantData::Tuple(_)  |
 					VariantData::Struct(_) => {
-						quote! { #variant_discriminant::#variant_ident{..} => #ident::#variant_ident, }
+						//Tuple and struct variants cannot have explicit discriminants
+						unreachable!()
 					}
+				}
+			}).or_else(||{
+				match variant.data{
+					VariantData::Unit if only_unit_variants => Some({
+						quote! { n if n==#ident::#variant_ident as Self::Type => #ident::#variant_ident, }
+					}),
+					_ => None
 				}
 			})
 		};
-		let match_arms1 = data.iter().filter_map(|variant| match_arm_transform(ident,variant));
-		let match_arms2 = data.iter().filter_map(|variant| match_arm_transform(ident,variant));
+		let only_unit_variants = data.iter().all(|variant| match variant.data{VariantData::Unit => true , _ => false});
+		let match_arms1 = data.iter().filter_map(|variant| variant_to_match_arm(ident,variant,only_unit_variants));
+		let match_arms2 = data.iter().filter_map(|variant| variant_to_match_arm(ident,variant,only_unit_variants));
 		let ty = type_from_repr_attr(item.attrs.iter()).unwrap_or(Ident::from("usize"));
 
 		quote!{

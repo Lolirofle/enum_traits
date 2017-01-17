@@ -63,7 +63,7 @@ pub trait Discriminant: Sized{
 
 ///Derive this trait for an enum automatically using `#[derive(EnumIter)]`
 ///When derived, a struct named ((name of Self) + "Iter") will be created with the same visibility as `Self`.
-///This struct will then be implement `Iterator` and be used as `Iter` when implementing `Iterable` for `Self`.
+///This struct will then implement `Iterator` and `Iter` will be assigned to it when implementing `Iterable` for `Self`.
 pub trait Iterable{
 	///The type of the iterator
 	type Iter: Iterator;
