@@ -7,8 +7,9 @@ extern crate quote;
 extern crate proc_macro;
 use proc_macro::TokenStream;
 
-use std::cmp;
-use syn::{Attribute,Body,Ident,Lit,IntTy,MacroInput,Variant,VariantData};
+use std::{cmp,iter};
+use std::iter::FromIterator;
+use syn::{Attribute,Body,Expr,ExprKind,Ident,Lit,IntTy,MacroInput,Variant,VariantData};
 use quote::Tokens;
 
 fn minimum_type_from_value(value: usize) -> Ident{
@@ -85,6 +86,16 @@ pub fn derive_EnumLen(input: TokenStream) -> TokenStream{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 		let len = data.len();
 
+		#[cfg(feature = "stable")]
+		quote!{
+			#[automatically_derived]
+			#[allow(unused_attributes)]
+			impl #impl_generics ::enum_traits::Len for #ident #ty_generics #where_clause{
+				fn len() -> usize{#len}
+			}
+		}
+
+		#[cfg(not(feature = "stable"))]
 		quote!{
 			#[automatically_derived]
 			#[allow(unused_attributes)]
@@ -630,4 +641,42 @@ pub fn derive_EnumVariantName(input: TokenStream) -> TokenStream {
 		}
 	}
 	derive_enum(input, gen_impl)
+}
+
+#[proc_macro_derive(EnumBitPattern)]
+pub fn derive_EnumBitPattern(input: TokenStream) -> TokenStream{
+	fn variant_unit_ident(variant: &Variant) -> &Ident{
+		::variant_unit_ident(variant,"EnumBitPattern")
+	}
+
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+
+		let n = (data.len() as f64 / 8.0).ceil() as usize;
+		fn match_arm_transform(ident: &Ident,(i,variant_ident): (usize,&Ident),n: usize) -> Tokens{
+			let lit = Expr::from(ExprKind::Array({
+				let mut l = Vec::from_iter(iter::repeat(Expr::from(ExprKind::Lit(Lit::Int(0,IntTy::Unsuffixed)))).take(n));
+				l[i/8] = Expr::from(ExprKind::Lit(Lit::Int(1<<(i%8),IntTy::Unsuffixed)));
+				l
+			}));
+			quote! { #ident::#variant_ident => #lit, }
+		}
+		let match_arms = data.iter().map(variant_unit_ident).enumerate().map(|arg| match_arm_transform(ident,arg,n));
+
+		quote!{
+			#[automatically_derived]
+			#[allow(unused_attributes)]
+			impl #impl_generics ::enum_traits::BitPattern for #ident #ty_generics #where_clause{
+				type ByteArray = [u8; #n];
+
+				#[inline]
+				fn bit_pattern(self) -> Self::ByteArray{
+					match self{
+						#( #match_arms )*
+					}
+				}
+			}
+		}
+	}
+	derive_enum(input,gen_impl)
 }
