@@ -356,6 +356,19 @@ fn test_iter(){
 }
 
 #[test]
+fn variant_name() {
+	#[derive(Debug,EnumVariantName)]
+	enum Enum {
+		Dog,
+		Cat(i32),
+		Robot{speed: f32},
+	}
+	assert_eq!(Enum::Dog.variant_name(), "Dog");
+	assert_eq!(Enum::Cat(0).variant_name(), "Cat");
+	assert_eq!(Enum::Robot{speed: 0.0}.variant_name(), "Robot");
+}
+
+#[test]
 #[allow(dead_code)]
 fn f1(){
 	#[derive(Debug,EnumIndex,EnumToIndex,EnumLen)]

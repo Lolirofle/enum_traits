@@ -79,3 +79,9 @@ pub trait Iterable{
 	///Constructs an iterator that iterates over every variant in the defined order
 	fn variants() -> Self::Iter;
 }
+
+/// Derive this trait for an enum automatically using `#[derive(EnumVariantName)]`
+pub trait VariantName {
+	/// The name of the currently instantiated variant
+	fn variant_name(&self) -> &'static str;
+}
