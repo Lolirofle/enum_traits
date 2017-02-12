@@ -594,3 +594,40 @@ pub fn derive_EnumDiscriminant(input: TokenStream) -> TokenStream{
 	}
 	derive_enum(input,gen_impl)
 }
+
+#[proc_macro_derive(EnumVariantName)]
+pub fn derive_EnumVariantName(input: TokenStream) -> TokenStream {
+	fn gen_impl(ident: &Ident, item: &MacroInput, data: &Vec<Variant>) -> Tokens {
+		let (impl_generics, ty_generics, where_clause) = item.generics.split_for_impl();
+
+		let match_arms = data.iter().map(|variant| {
+			let variant_ident = &variant.ident;
+			let variant_str = variant.ident.as_ref();
+
+			match variant.data {
+				VariantData::Unit => {
+					quote! { &#ident::#variant_ident => #variant_str, }
+				}
+				VariantData::Tuple(_) => {
+					quote! { &#ident::#variant_ident(..) => #variant_str, }
+				}
+				VariantData::Struct(_) => {
+					quote! { &#ident::#variant_ident{..} => #variant_str, }
+				}
+			}
+		});
+
+		quote!{
+			#[automatically_derived]
+			#[allow(unused_attributes)]
+			impl #impl_generics ::enum_traits::VariantName for #ident #ty_generics #where_clause{
+				fn variant_name(&self) -> &'static str{
+					match self{
+						#( #match_arms )*
+					}
+				}
+			}
+		}
+	}
+	derive_enum(input, gen_impl)
+}

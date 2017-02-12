@@ -12,6 +12,7 @@ Provides traits and "derives" for enum items in the Rust programming language:
 - EnumEnds
 - EnumIter
 - EnumIterator
+- EnumVariantName
 
 ### Traits ###
 - Index
@@ -21,6 +22,7 @@ Provides traits and "derives" for enum items in the Rust programming language:
 - Ends
 - Discriminant
 - Iterable
+- VariantName
 
 ### Examples ###
 ```rust
