@@ -631,3 +631,98 @@ pub fn derive_EnumVariantName(input: TokenStream) -> TokenStream {
 	}
 	derive_enum(input, gen_impl)
 }
+
+#[proc_macro_derive(EnumCommonFields)]
+pub fn derive_EnumCommonFields(input: TokenStream) -> TokenStream {
+    fn gen_impl(ident: &Ident, item: &MacroInput, data: &Vec<Variant>) -> Tokens {
+        let (impl_generics, ty_generics, where_clause) = item.generics.split_for_impl();
+
+		let mut field_list: Vec<(Ident, syn::Ty)> = Vec::new();
+		// collect all struct fields
+        for variant in data {
+            match variant.data {
+                VariantData::Unit |
+                VariantData::Tuple(_) => {
+					panic!("`derive(EnumCommonFields)` may only be applied to enum items with struct variants")
+                }
+                VariantData::Struct(ref fields) => {
+					for field in fields.iter().filter(|f| f.ident.is_some()) {
+						let value_name = field.ident.as_ref().unwrap().to_owned();
+						let value_type = field.ty.clone();
+						if !field_list.iter().any(|f| &f.0 == &value_name) {
+							field_list.push((value_name, value_type));
+						}
+					}
+                }
+            }
+        }
+
+		// remove struct fields, that are not available in all variants
+		if !field_list.is_empty() {
+			for variant in data {
+				match variant.data {
+					VariantData::Unit |
+					VariantData::Tuple(_) => {
+						unreachable!()
+					}
+					VariantData::Struct(ref fields) => {
+						let mut local_field_list = Vec::new();
+						for field in fields.iter().filter(|f| f.ident.is_some()) {
+							let value_name = field.ident.as_ref().unwrap().to_owned();
+							let value_type = field.ty.clone();
+							local_field_list.push((value_name, value_type));
+						}
+						field_list.retain(|f| local_field_list.iter().any(|lf| f == lf));
+					}
+				}
+			}
+		}
+
+		if field_list.is_empty() {
+			panic!("`derive(EnumCommonFields)` may only be applied to enum items that share at least one common struct field")
+		}
+
+		// create functions
+		let functions = field_list.iter().map(|&(ref value_name, ref value_type)| {
+			let match_arms = data.iter().map(|variant| {
+				let variant_ident = &variant.ident;
+				quote! { #ident::#variant_ident{ref #value_name, ..} => #value_name, }
+			});
+
+			quote!{
+				pub fn #value_name(&self) -> &#value_type{
+					match *self {
+						#( #match_arms )*
+					}
+				}
+			}
+		});
+
+		let functions_mut = field_list.iter().map(|&(ref value_name, ref value_type)| {
+			let match_arms = data.iter().map(|variant| {
+				let variant_ident = &variant.ident;
+				quote! { #ident::#variant_ident{ref mut #value_name, ..} => #value_name, }
+			});
+
+			let value_name_mut = quote::Ident::from(format!("{}_mut", value_name));
+
+			quote!{
+				pub fn #value_name_mut(&mut self) -> &mut #value_type{
+					match *self {
+						#( #match_arms )*
+					}
+				}
+			}
+		});
+
+		quote!{
+			#[automatically_derived]
+			#[allow(unused)]
+			impl #impl_generics #ident #ty_generics #where_clause{
+				#( #functions )*
+				#( #functions_mut )*
+			}
+		}
+    }
+    derive_enum(input, gen_impl)
+}

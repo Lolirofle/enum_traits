@@ -1,6 +1,35 @@
 //! Simple traits for builtin enum items.
 //! Primarily used by `enum_traits_macros` when automatically deriving types.
 //! The crate `enum_traits_macros` is required for the derives.
+//!
+//! ## EnumCommonFields
+//!
+//! Using `#[derive(EnumCommonFields)]` on enums containing exclusively struct variants
+//! will implement member functions for all struct fields with the same name and type.
+//!
+//! ### Examples
+//!
+//! ```ignore
+//! #[derive(Debug, EnumCommonFields)]
+//! enum Enum {
+//!     Cat{age: u32},
+//!     Dog{age: u32},
+//!     Robot{age: u32},
+//! }
+//! assert_eq!(Enum::Dog{age: 3}.age(), &3);
+//! ```
+//!
+//! ```ignore
+//! #[derive(Debug, PartialEq, EnumCommonFields)]
+//! enum Enum {
+//!     Cat{age: u32},
+//!     Dog{age: u32},
+//!     Robot{age: u32},
+//! }
+//! let mut d = Enum::Dog{age: 3};
+//! *d.age_mut() = 5;
+//! assert_eq!(d, Enum::Dog{age: 5});
+//! ```
 
 #![feature(associated_consts)]
 
