@@ -1,6 +1,6 @@
 [package]
 name = "enum_traits_macros"
-version = "2.0.0"
+version = "3.0.0"
 authors = ["Lolirofle <lolipopple@hotmail.com>"]
 description = "Procedural macros that adds functionality to enums by deriving traits from the crate `enum_traits`"
 documentation = "https://docs.rs/enum_traits"
@@ -14,4 +14,7 @@ proc-macro = true
 
 [dependencies]
 quote = "0.3"
-syn = "0.10"
+syn = {version="0.11" , features=["full"]}
+
+[features]
+stable = []

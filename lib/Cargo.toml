@@ -1,11 +1,13 @@
 [package]
 name = "enum_traits"
-version = "0.3.0"
+version = "1.0.0"
 authors = ["Lolirofle <lolipopple@hotmail.com>"]
 description = "Traits for builtin enum items that are primarily used by `enum_traits_macros` when automatically deriving types"
 documentation = "https://docs.rs/enum_traits"
-homepage = "https://github.com/Lolirofle/enum_traits"
 repository = "https://github.com/Lolirofle/enum_traits.git"
 #readme = "README.md"
 keywords = ["enum","trait","derive","deriving","macro"]
 license = "MIT"
+
+[features]
+stable = []

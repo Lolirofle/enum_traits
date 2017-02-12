@@ -2,7 +2,7 @@
 //! Primarily used by `enum_traits_macros` when automatically deriving types.
 //! The crate `enum_traits_macros` is required for the derives.
 
-#![feature(associated_consts)]
+#![cfg_attr(not(feature = "stable"),feature(associated_consts))]
 
 ///Represents the type used for indexing the variants of the enum item.
 ///`Type` should be an primitive integer type and have more values or an equal number of values compared to the number of variants in the enum item.
@@ -40,9 +40,18 @@ pub trait ToIndex: Index{
 ///Number of variants in an enum type
 ///
 ///Derive this trait for an enum automatically using `#[derive(EnumLen)]`
+#[cfg(not(feature = "stable"))]
 pub trait Len{
 	///Number of variants in an enum
 	const LEN: usize;
+
+	#[inline(always)]
+	fn len() -> usize{<Self as Len>::LEN}
+}
+#[cfg(feature = "stable")]
+pub trait Len{
+	///Number of variants in an enum
+	fn len() -> usize;
 }
 
 ///Constructors for an enum type from its endpoints based on the variants' defined order
@@ -80,8 +89,24 @@ pub trait Iterable{
 	fn variants() -> Self::Iter;
 }
 
-/// Derive this trait for an enum automatically using `#[derive(EnumVariantName)]`
-pub trait VariantName {
-	/// The name of the currently instantiated variant
+///Derive this trait for an enum automatically using `#[derive(EnumVariantName)]`
+pub trait VariantName{
+	///The name of the currently instantiated variant
 	fn variant_name(&self) -> &'static str;
+}
+
+///Derive this trait for an enum automatically using `#[derive(EnumBitPattern)]`
+pub trait BitPattern{
+	type ByteArray;
+
+	///Bit pattern of the currently instantiated variant in the defined order of an enum
+	fn bit_pattern(self) -> Self::ByteArray;
+}
+
+///Derive this trait for an enum automatically using `#[derive(EnumKind)]`
+pub trait Kind{
+	type Kind;
+
+	///Kind of the currently instantiated variant
+	fn kind(&self) -> Self::Kind;
 }
