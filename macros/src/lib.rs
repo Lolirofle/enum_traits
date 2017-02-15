@@ -632,6 +632,7 @@ pub fn derive_EnumVariantName(input: TokenStream) -> TokenStream {
 			#[automatically_derived]
 			#[allow(unused_attributes)]
 			impl #impl_generics ::enum_traits::VariantName for #ident #ty_generics #where_clause{
+				#[inline]
 				fn variant_name(&self) -> &'static str{
 					match self{
 						#( #match_arms )*
@@ -656,12 +657,21 @@ pub fn derive_EnumBitPattern(input: TokenStream) -> TokenStream{
 		fn match_arm_transform(ident: &Ident,(i,variant_ident): (usize,&Ident),n: usize) -> Tokens{
 			let lit = Expr::from(ExprKind::Array({
 				let mut l = Vec::from_iter(iter::repeat(Expr::from(ExprKind::Lit(Lit::Int(0,IntTy::Unsuffixed)))).take(n));
-				l[i/8] = Expr::from(ExprKind::Lit(Lit::Int(1<<(i%8),IntTy::Unsuffixed)));
+				l[n-i/8-1] = Expr::from(ExprKind::Lit(Lit::Int((0b00000001u8.rotate_left((i as u32)%8) as u64),IntTy::Unsuffixed)));
 				l
 			}));
 			quote! { #ident::#variant_ident => #lit, }
 		}
-		let match_arms = data.iter().map(variant_unit_ident).enumerate().map(|arg| match_arm_transform(ident,arg,n));
+		fn match_arm_transform_rev(ident: &Ident,(i,variant_ident): (usize,&Ident),n: usize) -> Tokens{
+			let lit = Expr::from(ExprKind::Array({
+				let mut l = Vec::from_iter(iter::repeat(Expr::from(ExprKind::Lit(Lit::Int(0,IntTy::Unsuffixed)))).take(n));
+				l[i/8] = Expr::from(ExprKind::Lit(Lit::Int((0b10000000u8.rotate_right((i as u32)%8) as u64),IntTy::Unsuffixed)));
+				l
+			}));
+			quote! { #ident::#variant_ident => #lit, }
+		}
+		let match_arms     = data.iter().map(variant_unit_ident).enumerate().map(|arg| match_arm_transform(ident,arg,n));
+		let match_arms_rev = data.iter().map(variant_unit_ident).enumerate().map(|arg| match_arm_transform_rev(ident,arg,n));
 
 		quote!{
 			#[automatically_derived]
@@ -673,6 +683,13 @@ pub fn derive_EnumBitPattern(input: TokenStream) -> TokenStream{
 				fn bit_pattern(self) -> Self::ByteArray{
 					match self{
 						#( #match_arms )*
+					}
+				}
+
+				#[inline]
+				fn bit_pattern_rev(self) -> Self::ByteArray{
+					match self{
+						#( #match_arms_rev )*
 					}
 				}
 			}

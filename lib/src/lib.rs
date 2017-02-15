@@ -100,7 +100,12 @@ pub trait BitPattern{
 	type ByteArray;
 
 	///Bit pattern of the currently instantiated variant in the defined order of an enum
+	///Most significant bit first (e.g. 1000 is 8)
 	fn bit_pattern(self) -> Self::ByteArray;
+
+	///Bit pattern of the currently instantiated variant in the defined order of an enum
+	///Least significant bit first (e.g. 1000 is 1)
+	fn bit_pattern_rev(self) -> Self::ByteArray;
 }
 
 ///Derive this trait for an enum automatically using `#[derive(EnumKind)]`
