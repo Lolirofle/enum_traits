@@ -8,7 +8,7 @@ extern crate enum_traits;
 
 use enum_traits::*;
 
-#[derive(Copy,Clone,EnumIndex,EnumToIndex,EnumLen,EnumDiscriminant,EnumUnitVariant)]
+#[derive(Copy,Clone,EnumIndex,EnumToIndex,EnumLen,EnumDiscriminant,EnumIsVariantFns,EnumUnitVariant)]
 enum Fields<'t,T: 't>{
 	VariantA(&'t T),
 	VariantB(T),
@@ -830,4 +830,56 @@ fn test_unitvariant(){
 
 	e = Fields::VariantF;
 	assert_eq!(FieldsUnitVariants::VariantF,e.unit_variant());
+}
+
+#[test]
+fn test_isvariantfns(){
+	let i = 0u8;
+	let mut e = Fields::VariantA(&i);
+	assert!(e.is_varianta());
+	assert!(!e.is_variantb());
+	assert!(!e.is_variantc());
+	assert!(!e.is_variantd());
+	assert!(!e.is_variante());
+	assert!(!e.is_variantf());
+
+	e = Fields::VariantB(0);
+	assert!(!e.is_varianta());
+	assert!(e.is_variantb());
+	assert!(!e.is_variantc());
+	assert!(!e.is_variantd());
+	assert!(!e.is_variante());
+	assert!(!e.is_variantf());
+
+	e = Fields::VariantC(0,1,2,3);
+	assert!(!e.is_varianta());
+	assert!(!e.is_variantb());
+	assert!(e.is_variantc());
+	assert!(!e.is_variantd());
+	assert!(!e.is_variante());
+	assert!(!e.is_variantf());
+
+	e = Fields::VariantD{d: 0};
+	assert!(!e.is_varianta());
+	assert!(!e.is_variantb());
+	assert!(!e.is_variantc());
+	assert!(e.is_variantd());
+	assert!(!e.is_variante());
+	assert!(!e.is_variantf());
+
+	e = Fields::VariantE{a: 0,b: 1,c: 2,d: 3,e: 4};
+	assert!(!e.is_varianta());
+	assert!(!e.is_variantb());
+	assert!(!e.is_variantc());
+	assert!(!e.is_variantd());
+	assert!(e.is_variante());
+	assert!(!e.is_variantf());
+
+	e = Fields::VariantF;
+	assert!(!e.is_varianta());
+	assert!(!e.is_variantb());
+	assert!(!e.is_variantc());
+	assert!(!e.is_variantd());
+	assert!(!e.is_variante());
+	assert!(e.is_variantf());
 }
