@@ -509,7 +509,7 @@ pub fn derive_EnumIterator(input: TokenStream) -> TokenStream{
 			}
 		};
 
-		let impl_diter = quote!{
+		/*let impl_diter = quote!{
 			#[automatically_derived]
 			#[allow(unused_attributes)]
 			impl #impl_generics ::std::iter::DoubleEndedIterator for #ident #ty_generics #where_clause{
@@ -522,7 +522,7 @@ pub fn derive_EnumIterator(input: TokenStream) -> TokenStream{
 					})
 				}
 			}
-		};
+		};*/
 
 		let impl_eiter = quote!{
 			#[automatically_derived]
@@ -539,7 +539,7 @@ pub fn derive_EnumIterator(input: TokenStream) -> TokenStream{
 
 		quote!{
 			#impl_iter
-			#impl_diter
+			//#impl_diter
 			#impl_eiter
 		}
 	}
@@ -638,6 +638,40 @@ pub fn derive_EnumVariantName(input: TokenStream) -> TokenStream {
 					match self{
 						#( #match_arms )*
 					}
+				}
+			}
+		}
+	}
+	derive_enum(input, gen_impl)
+}
+
+#[proc_macro_derive(EnumFromVariantName)]
+pub fn derive_EnumFromVariantName(input: TokenStream) -> TokenStream {
+	fn gen_impl(ident: &Ident, item: &MacroInput, data: &Vec<Variant>) -> Tokens {
+		let (impl_generics, ty_generics, where_clause) = item.generics.split_for_impl();
+
+		let match_arms = data.iter().filter_map(|variant| {
+			let variant_ident = &variant.ident;
+			let variant_str = variant.ident.as_ref();
+
+			if let VariantData::Unit = variant.data{
+				Some(quote! { #variant_str => #ident::#variant_ident, })
+			}else{
+				None
+			}
+		});
+
+		quote!{
+			#[automatically_derived]
+			#[allow(unused_attributes)]
+			impl #impl_generics ::std::str::FromStr for #ident #ty_generics #where_clause{
+				type Err = ();
+
+				fn from_str(str: &str) -> Result<Self,Self::Err>{
+					Ok(match str{
+						#( #match_arms )*
+						_ => return Err(())
+					})
 				}
 			}
 		}

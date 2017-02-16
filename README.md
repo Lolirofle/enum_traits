@@ -5,14 +5,19 @@ A library with traits and accompanying procedural macros that adds functionality
 Provides traits and "derives" for enum items in the Rust programming language:
 
 ### Derives ###
-- EnumIndex
-- EnumFromIndex
-- EnumToIndex
-- EnumLen
-- EnumEnds
-- EnumIter
-- EnumIterator
-- EnumVariantName
+- EnumIndex (impl Index)
+- EnumFromIndex (impl FromIndex)
+- EnumToIndex (impl ToIndex)
+- EnumLen (impl Len)
+- EnumEnds (impl Ends)
+- EnumDiscriminant (impl Discriminant)
+- EnumIter (impl Iterable)
+- EnumIterator (impl Iterator)
+- EnumVariantName (impl VariantName)
+- EnumBitPattern (impl BitPattern)
+- EnumUnitVariant (impl UnitVariant)
+- EnumIsVariantFns
+- EnumFromVariantName (impl FromStr)
 
 ### Traits ###
 - Index
@@ -23,10 +28,21 @@ Provides traits and "derives" for enum items in the Rust programming language:
 - Discriminant
 - Iterable
 - VariantName
+- BitPattern
+- UnitVariant
+
+### Usage ###
+
+Cargo.toml:
+```TOML
+[dependencies]
+enum_traits        = {version="*",features=["stable"]}
+enum_traits_macros = {version="*",features=["stable"]}
+```
 
 ### Examples ###
 ```rust
-#![feature(associated_consts,proc_macro)]
+//#![feature(associated_consts)]
 
 #[macro_use]extern crate enum_traits_macros;
 extern crate enum_traits;
@@ -60,7 +76,8 @@ fn f2(){
 	assert_eq!(Enum::VariantB.into_index(),1);
 
 	//From EnumLen
-	assert_eq!(Enum::LEN,3);
+	//assert_eq!(Enum::LEN,3);
+	assert_eq!(Enum::len(),3);
 
 	//From EnumFromIndex
 	assert!(match Enum::from_index(1){

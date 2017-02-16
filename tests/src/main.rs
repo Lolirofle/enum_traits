@@ -8,7 +8,7 @@ extern crate enum_traits;
 
 use enum_traits::*;
 
-#[derive(Copy,Clone,EnumIndex,EnumToIndex,EnumLen,EnumDiscriminant,EnumIsVariantFns,EnumUnitVariant)]
+#[derive(Copy,Clone,Debug,Eq,PartialEq,EnumIndex,EnumToIndex,EnumLen,EnumDiscriminant,EnumIsVariantFns,EnumUnitVariant,EnumFromVariantName)]
 enum Fields<'t,T: 't>{
 	VariantA(&'t T),
 	VariantB(T),
@@ -18,7 +18,7 @@ enum Fields<'t,T: 't>{
 	VariantF,
 }
 
-#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumIterator,EnumIter,EnumDiscriminant)]
+#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumIterator,EnumIter,EnumDiscriminant,EnumFromVariantName)]
 enum NoFields{
 	A,B,C,D,E,F
 }
@@ -356,7 +356,7 @@ fn test_iter(){
 }
 
 #[test]
-fn variant_name() {
+fn test_variant_name() {
 	#[derive(Debug,EnumVariantName)]
 	enum Enum {
 		Dog,
@@ -366,6 +366,27 @@ fn variant_name() {
 	assert_eq!(Enum::Dog.variant_name(), "Dog");
 	assert_eq!(Enum::Cat(0).variant_name(), "Cat");
 	assert_eq!(Enum::Robot{speed: 0.0}.variant_name(), "Robot");
+}
+
+#[test]
+fn test_from_variant_name() {
+	use std::str::FromStr;
+
+	let mut v: Result<Fields<'static,()>,()>;
+	assert_eq!({v=Fields::from_str("VariantA"); v},Err(()));
+	assert_eq!({v=Fields::from_str("VariantB"); v},Err(()));
+	assert_eq!({v=Fields::from_str("VariantC"); v},Err(()));
+	assert_eq!({v=Fields::from_str("VariantD"); v},Err(()));
+	assert_eq!({v=Fields::from_str("VariantE"); v},Err(()));
+	assert_eq!({v=Fields::from_str("VariantF"); v},Ok(Fields::VariantF));
+
+	let mut v: Result<NoFields,()>;
+	assert_eq!({v=NoFields::from_str("A"); v},Ok(NoFields::A));
+	assert_eq!({v=NoFields::from_str("B"); v},Ok(NoFields::B));
+	assert_eq!({v=NoFields::from_str("C"); v},Ok(NoFields::C));
+	assert_eq!({v=NoFields::from_str("D"); v},Ok(NoFields::D));
+	assert_eq!({v=NoFields::from_str("E"); v},Ok(NoFields::E));
+	assert_eq!({v=NoFields::from_str("F"); v},Ok(NoFields::F));
 }
 
 #[test]
