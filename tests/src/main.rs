@@ -8,7 +8,7 @@ extern crate enum_traits;
 
 use enum_traits::*;
 
-#[derive(Copy,Clone,EnumIndex,EnumToIndex,EnumLen,EnumDiscriminant)]
+#[derive(Copy,Clone,EnumIndex,EnumToIndex,EnumLen,EnumDiscriminant,EnumUnitVariant)]
 enum Fields<'t,T: 't>{
 	VariantA(&'t T),
 	VariantB(T),
@@ -808,4 +808,26 @@ fn test_bitpatterns(){
 	assert_eq!(Enum_u16_1::A061.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0b00100000,0,0,0,0,0,0,0]);
 	assert_eq!(Enum_u16_1::A062.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0b01000000,0,0,0,0,0,0,0]);
 	assert_eq!(Enum_u16_1::A063.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0b10000000,0,0,0,0,0,0,0]);
+}
+
+#[test]
+fn test_unitvariant(){
+	let i = 0u8;
+	let mut e = Fields::VariantA(&i);
+	assert_eq!(FieldsUnitVariants::VariantA,e.unit_variant());
+
+	e = Fields::VariantB(0);
+	assert_eq!(FieldsUnitVariants::VariantB,e.unit_variant());
+
+	e = Fields::VariantC(0,1,2,3);
+	assert_eq!(FieldsUnitVariants::VariantC,e.unit_variant());
+
+	e = Fields::VariantD{d: 0};
+	assert_eq!(FieldsUnitVariants::VariantD,e.unit_variant());
+
+	e = Fields::VariantE{a: 0,b: 1,c: 2,d: 3,e: 4};
+	assert_eq!(FieldsUnitVariants::VariantE,e.unit_variant());
+
+	e = Fields::VariantF;
+	assert_eq!(FieldsUnitVariants::VariantF,e.unit_variant());
 }

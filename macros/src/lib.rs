@@ -697,3 +697,63 @@ pub fn derive_EnumBitPattern(input: TokenStream) -> TokenStream{
 	}
 	derive_enum(input,gen_impl)
 }
+
+#[proc_macro_derive(EnumUnitVariant)]
+pub fn derive_EnumUnitVariant(input: TokenStream) -> TokenStream{
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+		let ref visibility = item.vis;
+
+		let unit_enum_ident = Ident::from({
+			const SUFFIX: &'static str = "UnitVariants";
+			let mut str = String::with_capacity(ident.as_ref().len() + SUFFIX.len());
+			str.push_str(ident.as_ref());
+			str.push_str(SUFFIX);
+			str
+		});
+
+		let match_arms = data.iter().map(|variant|{
+			let variant_ident = &variant.ident;
+
+			match variant.data {
+				VariantData::Unit => {
+					quote! { &#ident::#variant_ident     => #unit_enum_ident::#variant_ident, }
+				}
+				VariantData::Tuple(_) => {
+					quote! { &#ident::#variant_ident(..) => #unit_enum_ident::#variant_ident, }
+				}
+				VariantData::Struct(_) => {
+					quote! { &#ident::#variant_ident{..} => #unit_enum_ident::#variant_ident, }
+				}
+			}
+		});
+
+		let unit_variants = data.iter().map(|variant|{
+			let variant_ident = &variant.ident;
+			quote! { #variant_ident, }
+		});
+
+		quote!{
+			#[automatically_derived]
+			#[allow(unused_attributes)]
+			#[derive(Copy,Clone,Debug,PartialEq,Eq,Hash)]
+			#visibility enum #unit_enum_ident{
+				#( #unit_variants )*
+			}
+
+			#[automatically_derived]
+			#[allow(unused_attributes)]
+			impl #impl_generics ::enum_traits::UnitVariant for #ident #ty_generics #where_clause{
+				type UnitEnum = #unit_enum_ident;
+
+				#[inline]
+				fn unit_variant(&self) -> Self::UnitEnum{
+					match self{
+						#( #match_arms )*
+					}
+				}
+			}
+		}
+	}
+	derive_enum(input,gen_impl)
+}

@@ -108,10 +108,10 @@ pub trait BitPattern{
 	fn bit_pattern_rev(self) -> Self::ByteArray;
 }
 
-///Derive this trait for an enum automatically using `#[derive(EnumKind)]`
-pub trait Kind{
-	type Kind;
+///Derive this trait for an enum automatically using `#[derive(EnumUnitVariant)]`
+pub trait UnitVariant{
+	type UnitEnum;
 
-	///Kind of the currently instantiated variant
-	fn kind(&self) -> Self::Kind;
+	///The unit variant of the currently instantiated variant
+	fn unit_variant(&self) -> Self::UnitEnum;
 }
