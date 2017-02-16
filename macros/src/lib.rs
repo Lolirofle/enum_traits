@@ -8,6 +8,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 
 use std::{cmp,iter};
+use std::ascii::AsciiExt;
 use std::iter::FromIterator;
 use syn::{Attribute,Body,Expr,ExprKind,Ident,Lit,IntTy,MacroInput,Variant,VariantData};
 use quote::Tokens;
@@ -752,6 +753,56 @@ pub fn derive_EnumUnitVariant(input: TokenStream) -> TokenStream{
 						#( #match_arms )*
 					}
 				}
+			}
+		}
+	}
+	derive_enum(input,gen_impl)
+}
+
+#[proc_macro_derive(EnumIsVariantFns)]
+pub fn derive_EnumIsVariantFns(input: TokenStream) -> TokenStream{
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+
+
+		let fns = data.iter().map(|variant|{
+			let fn_ident = Ident::from({
+				const PREFIX: &'static str = "is_";
+				let mut str = String::with_capacity(variant.ident.as_ref().len() + PREFIX.len());
+				str.push_str(PREFIX);
+				str.push_str(variant.ident.as_ref().to_ascii_lowercase().as_ref());
+				str
+			});
+
+			let pattern = {
+				let variant_ident = &variant.ident;
+				match variant.data{
+					VariantData::Unit => {
+						quote! { #ident::#variant_ident }
+					}
+					VariantData::Tuple(_) => {
+						quote! { #ident::#variant_ident(..) }
+					}
+					VariantData::Struct(_) => {
+						quote! { #ident::#variant_ident{..} }
+					}
+				}
+			};
+
+			quote! {
+				#[inline(always)]
+				#[allow(dead_code)]
+				pub fn #fn_ident(&self) -> bool{
+					if let &#pattern = self{true}else{false}
+				}
+			}
+		});
+
+		quote!{
+			#[automatically_derived]
+			#[allow(unused_attributes)]
+			impl #impl_generics #ident #ty_generics #where_clause{
+				#( #fns )*
 			}
 		}
 	}
