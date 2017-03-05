@@ -248,7 +248,7 @@ pub fn derive_EnumIndex(input: TokenStream) -> TokenStream{
 }
 
 #[proc_macro_derive(EnumIter)]
-pub fn derive_EnumIter(input: TokenStream) -> TokenStream{
+pub fn derive_EnumIter(input: TokenStream) -> TokenStream{//TODO: Consider rewriting output (EnumIter may not need Option, but then empty enums are not represented. Are they necessary to include?)
 	fn variant_unit_ident(variant: &Variant) -> &Ident{
 		::variant_unit_ident(variant,"EnumIter")
 	}
@@ -646,7 +646,7 @@ pub fn derive_EnumVariantName(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_derive(EnumFromVariantName)]
-pub fn derive_EnumFromVariantName(input: TokenStream) -> TokenStream {
+pub fn derive_EnumFromVariantName(input: TokenStream) -> TokenStream {//TODO: Consider not using FromStr, instead an own trait
 	fn gen_impl(ident: &Ident, item: &MacroInput, data: &Vec<Variant>) -> Tokens {
 		let (impl_generics, ty_generics, where_clause) = item.generics.split_for_impl();
 
@@ -733,14 +733,14 @@ pub fn derive_EnumBitPattern(input: TokenStream) -> TokenStream{
 	derive_enum(input,gen_impl)
 }
 
-#[proc_macro_derive(EnumUnitVariant)]
-pub fn derive_EnumUnitVariant(input: TokenStream) -> TokenStream{
+#[proc_macro_derive(EnumTag)]
+pub fn derive_EnumTag(input: TokenStream) -> TokenStream{
 	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 		let ref visibility = item.vis;
 
 		let unit_enum_ident = Ident::from({
-			const SUFFIX: &'static str = "UnitVariants";
+			const SUFFIX: &'static str = "Tag";
 			let mut str = String::with_capacity(ident.as_ref().len() + SUFFIX.len());
 			str.push_str(ident.as_ref());
 			str.push_str(SUFFIX);
@@ -778,11 +778,11 @@ pub fn derive_EnumUnitVariant(input: TokenStream) -> TokenStream{
 
 			#[automatically_derived]
 			#[allow(unused_attributes)]
-			impl #impl_generics ::enum_traits::UnitVariant for #ident #ty_generics #where_clause{
-				type UnitEnum = #unit_enum_ident;
+			impl #impl_generics ::enum_traits::Tag for #ident #ty_generics #where_clause{
+				type Enum = #unit_enum_ident;
 
 				#[inline]
-				fn unit_variant(&self) -> Self::UnitEnum{
+				fn tag(&self) -> Self::Enum{
 					match self{
 						#( #match_arms )*
 					}
