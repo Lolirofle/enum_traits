@@ -12,6 +12,7 @@
 /// If a `repr` attribute does not exist, a calculated minimum integer type based on the number of variant fields is used instead.
 ///
 /// # Example with derive
+///
 /// ```rust,ignore
 /// #[macro_use]extern crate enum_traits_macros;
 ///
@@ -20,6 +21,7 @@
 /// ```
 ///
 /// # Example with manual impl
+///
 /// ```rust
 /// use enum_traits::*;
 ///
@@ -39,6 +41,7 @@ pub trait Index{
 /// Derive this trait for an enum automatically using `#[derive(EnumFromIndex)]`
 ///
 /// # Example with derive
+///
 /// ```rust,ignore
 /// #[macro_use]extern crate enum_traits_macros;
 ///
@@ -47,6 +50,7 @@ pub trait Index{
 /// ```
 ///
 /// # Example with manual impl
+///
 /// ```rust
 /// use enum_traits::*;
 ///
@@ -93,6 +97,7 @@ pub trait FromIndex: Index + Sized{
 /// Derive this trait for an enum automatically using `#[derive(EnumToIndex)]`
 ///
 /// # Example with derive
+///
 /// ```rust,ignore
 /// #[macro_use]extern crate enum_traits_macros;
 ///
@@ -108,6 +113,7 @@ pub trait FromIndex: Index + Sized{
 /// ```
 ///
 /// # Example with manual impl
+///
 /// ```rust
 /// use enum_traits::*;
 ///
@@ -159,6 +165,7 @@ pub trait ToIndex: Index{
 /// Derive this trait for an enum automatically using `#[derive(EnumLen)]`
 ///
 /// # Example with derive
+///
 /// ```rust,ignorerust,ignore
 /// #[macro_use]extern crate enum_traits_macros;
 ///
@@ -184,6 +191,7 @@ pub trait Len{
 /// Derive this trait for an enum automatically using `#[derive(EnumEnds)]`
 ///
 /// # Example with derive
+///
 /// ```rust,ignore
 /// #[macro_use]extern crate enum_traits_macros;
 ///
@@ -192,6 +200,7 @@ pub trait Len{
 /// ```
 ///
 /// # Example with manual impl
+///
 /// ```rust
 /// use enum_traits::*;
 ///
@@ -214,6 +223,7 @@ pub trait Ends: Sized{
 /// When this trait is derived, non-unit variants will be mapped to `None` in `from_discriminant`, and non-explicitly-specified discriminants will also be mapped to `None`.
 ///
 /// # Example with derive
+///
 /// ```rust,ignore
 /// #[macro_use]extern crate enum_traits_macros;
 ///
@@ -230,6 +240,7 @@ pub trait Ends: Sized{
 /// ```
 ///
 /// # Example with manual impl
+///
 /// ```rust
 /// use enum_traits::*;
 ///
@@ -287,6 +298,7 @@ pub trait Discriminant: Sized{
 /// This struct will then implement `Iterator` and `Iter` will be assigned to it when implementing `Iterable` for `Self`.
 ///
 /// # Example with derive
+///
 /// ```rust,ignore
 /// #[macro_use]extern crate enum_traits_macros;
 ///
@@ -295,6 +307,7 @@ pub trait Discriminant: Sized{
 /// ```
 ///
 /// # Example with manual impl
+///
 /// ```rust
 /// use enum_traits::*;
 /// enum Enum{A,B,C,D,E,F}
@@ -353,6 +366,7 @@ pub trait Iterable where
 /// Derive this trait for an enum automatically using `#[derive(EnumVariantName)]`
 ///
 /// # Example with derive
+///
 /// ```rust,ignore
 /// #[macro_use]extern crate enum_traits_macros;
 ///
@@ -368,6 +382,7 @@ pub trait Iterable where
 /// ```
 ///
 /// # Example with manual impl
+///
 /// ```rust
 /// use enum_traits::*;
 ///
@@ -401,6 +416,7 @@ pub trait VariantName{
 /// Derive this trait for an enum automatically using `#[derive(EnumBitPattern)]`
 ///
 /// # Example with derive
+///
 /// ```rust,ignore
 /// #[macro_use]extern crate enum_traits_macros;
 ///
@@ -409,6 +425,7 @@ pub trait VariantName{
 /// ```
 ///
 /// # Example with manual impl
+///
 /// ```rust
 /// use enum_traits::*;
 ///
@@ -464,6 +481,7 @@ pub trait BitPattern{
 /// This enum will then will be assigned to the `Iter` associated type when implementing `Tag` for `Self`.
 ///
 /// # Example with derive
+///
 /// ```rust,ignore
 /// #[macro_use]extern crate enum_traits_macros;
 ///
@@ -479,6 +497,7 @@ pub trait BitPattern{
 /// ```
 ///
 /// # Example with manual impl
+///
 /// ```rust
 /// use enum_traits::*;
 ///
