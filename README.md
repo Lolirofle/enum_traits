@@ -118,4 +118,4 @@ fn f2(){
 ```
 
 See the tests for more examples.
-See the [docs](https://docs.rs/crate/enum_traits/), the tests or the source code for more information.
+See the [docs for the library](https://docs.rs/crate/enum_traits/), [docs for the derives](https://docs.rs/crate/enum_traits_macros/), the tests or the source code for more information.
