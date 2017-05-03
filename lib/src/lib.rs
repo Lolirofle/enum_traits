@@ -2,7 +2,7 @@
 //! Primarily used by `enum_traits_macros` when automatically deriving types.
 //! The crate `enum_traits_macros` is required for the derives.
 
-#![cfg_attr(not(feature = "stable"),feature(associated_consts))]
+#![cfg_attr(feature = "nightly",feature(associated_consts))]
 
 /// Represents the type used for indexing the variants of the enum item.
 ///`Type` should be an primitive integer type and have more values or an equal number of values compared to the number of variants in the enum item.
@@ -172,7 +172,7 @@ pub trait ToIndex: Index{
 /// #[derive(EnumLen)]
 /// enum Enum{A,B,C,D,E,F}
 /// ```
-#[cfg(not(feature = "stable"))]
+#[cfg(feature = "nightly")]
 pub trait Len{
 	/// Number of variants in an enum
 	const LEN: usize;
@@ -180,7 +180,7 @@ pub trait Len{
 	#[inline(always)]
 	fn len() -> usize{<Self as Len>::LEN}
 }
-#[cfg(feature = "stable")]
+#[cfg(not(feature = "nightly"))]
 pub trait Len{
 	/// Number of variants in an enum
 	fn len() -> usize;

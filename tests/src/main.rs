@@ -707,7 +707,7 @@ mod readmemd{
 
 		//From EnumLen
 		//assert_eq!(Enum::LEN,3);
-		assert_eq!(Enum::len(),3);
+		assert_eq!(<Enum as Len>::len(),3);
 
 		//From EnumFromIndex
 		assert!(match Enum::from_index(1){
