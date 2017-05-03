@@ -20,4 +20,5 @@ syn = {version="0.11" , features=["full"]}
 enum_traits = {path="../lib"}
 
 [features]
-stable = []
+nightly = []
+std = []

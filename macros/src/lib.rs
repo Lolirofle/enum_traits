@@ -96,25 +96,25 @@ fn minimum_type_containing_enum(item: &MacroInput,data: &Vec<Variant>) -> syn::I
 /// # fn main(){
 /// {
 /// 	#[derive(EnumLen)]enum T{}
-/// 	assert_eq!(0,T::LEN);
+/// 	assert_eq!(0,T::len());
 /// }{
 /// 	#[derive(EnumLen)]enum T{A}
-/// 	assert_eq!(1,T::LEN);
+/// 	assert_eq!(1,T::len());
 /// }{
 /// 	#[derive(EnumLen)]enum T{A,B,C}
-/// 	assert_eq!(3,T::LEN);
+/// 	assert_eq!(3,T::len());
 /// }{
 /// 	#[derive(EnumLen)]enum T{A,B,C,D,E,F,G}
-/// 	assert_eq!(7,T::LEN);
+/// 	assert_eq!(7,T::len());
 /// }{
 /// 	#[derive(EnumLen)]enum T{A,B,C,D,E,F,G,H}
-/// 	assert_eq!(8,T::LEN);
+/// 	assert_eq!(8,T::len());
 /// }{
 /// 	#[derive(EnumLen)]enum T{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,X,Y,Z}
-/// 	assert_eq!(25,T::LEN);
+/// 	assert_eq!(25,T::len());
 /// }{
 /// 	#[derive(EnumLen)]enum T{A,B(),C{},D(u8),E{e: u8},F(u8,u16),G{g1: u8,g2: u16},H}
-/// 	assert_eq!(8,T::LEN);
+/// 	assert_eq!(8,T::len());
 /// }
 /// # }
 /// ```
@@ -124,7 +124,7 @@ pub fn derive_EnumLen(input: TokenStream) -> TokenStream{ //TODO: Consider allow
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 		let len = data.len();
 
-		#[cfg(feature = "stable")]
+		#[cfg(not(feature = "nightly"))]
 		quote!{
 			#[automatically_derived]
 			#[allow(unused_attributes)]
@@ -133,7 +133,7 @@ pub fn derive_EnumLen(input: TokenStream) -> TokenStream{ //TODO: Consider allow
 			}
 		}
 
-		#[cfg(not(feature = "stable"))]
+		#[cfg(feature = "nightly")]
 		quote!{
 			#[automatically_derived]
 			#[allow(unused_attributes)]
