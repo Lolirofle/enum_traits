@@ -36,8 +36,15 @@ Provides traits and "derives" for enum items in the Rust programming language:
 Cargo.toml:
 ```TOML
 [dependencies]
-enum_traits        = {version="*",features=["stable"]}
-enum_traits_macros = {version="*",features=["stable"]}
+enum_traits        = "*"
+enum_traits_macros = "*"
+```
+
+With no_std:
+```TOML
+[dependencies]
+enum_traits        = {version="*",features=["no_std"]}
+enum_traits_macros = {version="*",features=["no_std"]}
 ```
 
 ### Examples ###
