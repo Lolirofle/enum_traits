@@ -11,4 +11,4 @@ license = "MIT"
 
 [features]
 nightly = []
-std = []
+no_std = []

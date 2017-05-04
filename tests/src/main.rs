@@ -1,9 +1,12 @@
 //cargo rustc -- -Z unstable-options --pretty=expanded --test
 //cargo expand-macros
 
-#![feature(associated_consts)]
+#![cfg_attr(feature = "no_std" ,no_std)]
+
+#![cfg_attr(feature = "nightly" ,feature(associated_consts))]
 #![allow(unreachable_code)]
 
+#[cfg(not(feature = "no_std"))]extern crate core;
 #[macro_use]extern crate enum_traits_macros;
 extern crate enum_traits;
 
@@ -14,7 +17,8 @@ use enum_traits::*;
 mod fields{
 	use enum_traits::*;
 
-	#[derive(Debug,Eq,PartialEq,EnumIndex,              EnumToIndex,EnumLen,EnumDiscriminant,EnumIsVariantFns,EnumTag,                               EnumVariantName,EnumFromVariantName)]
+	#[cfg_attr(feature = "no_std_compile"      ,derive(Debug,Eq,PartialEq,EnumIndex,              EnumToIndex,EnumLen,EnumDiscriminant,                 EnumTag,                               EnumVariantName,EnumFromVariantName))]
+	#[cfg_attr(not(feature = "no_std_compile") ,derive(Debug,Eq,PartialEq,EnumIndex,              EnumToIndex,EnumLen,EnumDiscriminant,EnumIsVariantFns,EnumTag,                               EnumVariantName,EnumFromVariantName))]
 	enum Fields<'t,T: 't>{
 		VariantA(&'t T),
 		VariantB(T),
@@ -76,6 +80,7 @@ mod fields{
 		assert_eq!(None,Fields::<'static,()>::from_discriminant(9));
 	}
 
+	#[cfg(not(feature = "no_std_compile"))]
 	#[test]
 	fn test_isvariantfns(){
 		let i = 0u8;
@@ -178,7 +183,8 @@ mod fields{
 mod nofields{
 	use enum_traits::*;
 
-	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumDiscriminant,EnumIsVariantFns,EnumTag,EnumEnds,EnumIterator,EnumIter,EnumVariantName,EnumFromVariantName,EnumBitPattern)]
+	#[cfg_attr(feature = "no_std_compile"      ,derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumDiscriminant,                 EnumTag,EnumEnds,EnumIterator,EnumIter,EnumVariantName,EnumFromVariantName,EnumBitPattern))]
+	#[cfg_attr(not(feature = "no_std_compile") ,derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumDiscriminant,EnumIsVariantFns,EnumTag,EnumEnds,EnumIterator,EnumIter,EnumVariantName,EnumFromVariantName,EnumBitPattern))]
 	enum NoFields{
 		A,B,C,D,E,F
 	}
@@ -242,7 +248,7 @@ mod nofields{
 
 	#[test]
 	fn test_from_variant_name(){
-		use std::str::FromStr;
+		use core::str::FromStr;
 
 		let mut v: Result<NoFields,()>;
 		assert_eq!({v=NoFields::from_str("A"); v},Ok(NoFields::A));
@@ -777,7 +783,7 @@ fn test_ends(){
 #[allow(dead_code)]
 #[test]
 fn test_iterator(){
-	use std::iter::Iterator;
+	use core::iter::Iterator;
 
 	{
 		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator)]enum T{A}
@@ -854,7 +860,7 @@ fn test_iterator(){
 #[allow(dead_code)]
 #[test]
 fn test_iter(){
-	use std::iter::Iterator;
+	use core::iter::Iterator;
 	use enum_traits::Iterable;
 
 	{

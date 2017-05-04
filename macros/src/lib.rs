@@ -1,5 +1,9 @@
 #![allow(non_snake_case)]
 
+#![cfg_attr(feature = "no_std_compile" ,no_std)]
+#![cfg_attr(feature = "no_std_compile" ,feature(collections))]
+
+#[cfg(feature = "no_std_compile")]extern crate collections;
 extern crate syn;
 #[macro_use]
 extern crate quote;
@@ -7,9 +11,13 @@ extern crate quote;
 extern crate proc_macro;
 use proc_macro::TokenStream;
 
-use std::{cmp,iter};
-use std::ascii::AsciiExt;
-use std::iter::FromIterator;
+#[cfg(not(feature = "no_std_compile"))]use  std::{cmp,iter};
+#[cfg(not(feature = "no_std_compile"))]use  std::ascii::AsciiExt;
+#[cfg(not(feature = "no_std_compile"))]use  std::iter::FromIterator;
+#[cfg(feature = "no_std_compile")     ]use core::{cmp,iter};
+#[cfg(feature = "no_std_compile")     ]use core::iter::FromIterator;
+#[cfg(feature = "no_std_compile")     ]use collections::string::{String,ToString};
+#[cfg(feature = "no_std_compile")     ]use collections::vec::Vec;
 use syn::{Attribute,Body,Expr,ExprKind,Ident,Lit,IntTy,MacroInput,Variant,VariantData};
 use quote::Tokens;
 
@@ -46,21 +54,23 @@ fn variant_unit_ident<'v>(variant: &'v Variant,derive_name: &'static str) -> &'v
 	VariantData::Unit => {
 		&variant.ident
 	}
-	_ => panic!(format!("`derive({})` may only be applied to enum items with no fields",derive_name))
+	_ => panic!("`derive({})` may only be applied to enum items with no fields",derive_name)
 }}
 
 fn derive_enum<F>(input: TokenStream,gen_impl: F) -> TokenStream
-	where F: FnOnce(&Ident,&MacroInput,&Vec<Variant>) -> Tokens
+	where F: FnOnce(&Ident,&MacroInput,&Vec<Variant>,Ident) -> Tokens
 {
 	let input = input.to_string();
 	let ast = syn::parse_macro_input(&input).unwrap();
+	#[cfg(not(feature = "no_std"))]let std = Ident::new("std");
+	#[cfg(feature = "no_std")     ]let std = Ident::new("core");
 
 	let quote_tokens = match ast.body{
-		Body::Enum(ref data) => gen_impl(&ast.ident,&ast,data),
+		Body::Enum(ref data) => gen_impl(&ast.ident,&ast,data,std),
 		_ => panic!("`derive(Enum*)` may only be applied to enum items")
 	}.to_string();
 
-	format!("{}",quote_tokens.to_string()).parse().unwrap()
+	quote_tokens.parse().unwrap()
 }
 
 #[allow(dead_code)]
@@ -120,7 +130,7 @@ fn minimum_type_containing_enum(item: &MacroInput,data: &Vec<Variant>) -> syn::I
 /// ```
 #[proc_macro_derive(EnumLen)]
 pub fn derive_EnumLen(input: TokenStream) -> TokenStream{ //TODO: Consider allowing structs. Number of variants of struct is always 1
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, _: Ident) -> Tokens{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 		let len = data.len();
 
@@ -194,7 +204,7 @@ pub fn derive_EnumLen(input: TokenStream) -> TokenStream{ //TODO: Consider allow
 /// ```
 #[proc_macro_derive(EnumEnds)]
 pub fn derive_EnumEnds(input: TokenStream) -> TokenStream{
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, _: Ident) -> Tokens{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 		let variant_first_ident = &data.first().expect("`derive(EnumEnds)` may only be applied to non-empty enums").ident;
 		let variant_last_ident  = &data.last().expect("`derive(EnumEnds)` may only be applied to non-empty enums").ident;
@@ -327,7 +337,7 @@ pub fn derive_EnumEnds(input: TokenStream) -> TokenStream{
 /// ```
 #[proc_macro_derive(EnumToIndex)]
 pub fn derive_EnumToIndex(input: TokenStream) -> TokenStream{
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, _: Ident) -> Tokens{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 
 		let match_arms = data.iter().enumerate().map(|(i,variant)|{
@@ -394,7 +404,7 @@ pub fn derive_EnumFromIndex(input: TokenStream) -> TokenStream{
 		::variant_unit_ident(variant,"EnumFromIndex")
 	}
 
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, std: Ident) -> Tokens{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 
 		fn match_arm_transform(ident: &Ident,(i,variant_ident): (usize,&Ident)) -> Tokens{
@@ -420,7 +430,7 @@ pub fn derive_EnumFromIndex(input: TokenStream) -> TokenStream{
 				unsafe fn from_index_unchecked(index: <Self as Index>::Type) -> Self{
 					match index{
 						#( #match_arms2 )*
-						_ => ::std::mem::uninitialized()
+						_ => ::#std::mem::uninitialized()
 					}
 				}
 			}
@@ -435,7 +445,7 @@ pub fn derive_EnumFromIndex(input: TokenStream) -> TokenStream{
 /// - The derived item is an enum
 #[proc_macro_derive(EnumIndex)]
 pub fn derive_EnumIndex(input: TokenStream) -> TokenStream{
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, _: Ident) -> Tokens{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 
 		//Determine which type to use (attribute or number of variants)
@@ -464,19 +474,19 @@ pub fn derive_EnumIter(input: TokenStream) -> TokenStream{//TODO: Consider rewri
 		::variant_unit_ident(variant,"EnumIter")
 	}
 
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, std: Ident) -> Tokens{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 		let visibility = &item.vis;
 
 		let len = data.len();
 		let last = data.last();
 
-		let prev_match_arms = {
+		/*let prev_match_arms = {
 				let iter = data.iter().rev().map(variant_unit_ident);
 				iter.zip(data.iter().rev().map(variant_unit_ident).skip(1))
 			}.map(|(variant_ident1,variant_ident2)|{
 				quote! { &Some(#ident::#variant_ident1) => {self.0 = Some(#ident::#variant_ident2); #ident::#variant_ident2}, }
-			});
+			});*/
 
 		let next_match_arms = {
 				let iter = data.iter().map(variant_unit_ident);
@@ -498,10 +508,10 @@ pub fn derive_EnumIter(input: TokenStream) -> TokenStream{//TODO: Consider rewri
 		});
 
 		let variant_first_ident = &data.first().expect("`derive(EnumIter)` may only be applied to non-empty enums").ident;
-		let variant_last_ident  = &data.last().expect("`derive(EnumIter)` may only be applied to non-empty enums").ident;
+		//let variant_last_ident  = &data.last().expect("`derive(EnumIter)` may only be applied to non-empty enums").ident;
 
 		let struct_ident = {
-			let mut str = ident.as_ref().to_owned();
+			let mut str = ident.as_ref().to_string();
 			str.push_str("Iter");
 			Ident::from(str)
 		};
@@ -513,7 +523,7 @@ pub fn derive_EnumIter(input: TokenStream) -> TokenStream{//TODO: Consider rewri
 		let impl_default = quote!{
 			#[automatically_derived]
 			#[allow(unused_attributes)]
-			impl #impl_generics ::std::default::Default for #struct_ident #ty_generics #where_clause{
+			impl #impl_generics ::#std::default::Default for #struct_ident #ty_generics #where_clause{
 				#[inline(always)]
 				fn default() -> Self{#struct_ident (None)}
 			}
@@ -534,7 +544,7 @@ pub fn derive_EnumIter(input: TokenStream) -> TokenStream{//TODO: Consider rewri
 			let fn_size_hint = quote!{
 				#[inline(always)]
 				fn size_hint(&self) -> (usize,Option<usize>){
-					use ::std::iter::ExactSizeIterator;
+					use ::#std::iter::ExactSizeIterator;
 					(self.len(),Some(self.len()))
 				}
 			};
@@ -565,7 +575,7 @@ pub fn derive_EnumIter(input: TokenStream) -> TokenStream{//TODO: Consider rewri
 			quote!{
 				#[automatically_derived]
 				#[allow(unused_attributes)]
-				impl #impl_generics ::std::iter::Iterator for #struct_ident #ty_generics #where_clause{
+				impl #impl_generics ::#std::iter::Iterator for #struct_ident #ty_generics #where_clause{
 					type Item = #ident;
 
 					#fn_next
@@ -577,10 +587,10 @@ pub fn derive_EnumIter(input: TokenStream) -> TokenStream{//TODO: Consider rewri
 		};
 
 		//TODO: May be an incorrect use of DoubleEndedIterator. Use Step instead
-		let impl_diter = quote!{
+		/*let impl_diter = quote!{
 			#[automatically_derived]
 			#[allow(unused_attributes)]
-			impl #impl_generics ::std::iter::DoubleEndedIterator for #struct_ident #ty_generics #where_clause{
+			impl #impl_generics ::#std::iter::Iterator for ::#std::iter::Rev<#struct_ident> #ty_generics #where_clause{
 				#[inline]
 				fn next_back(&mut self) -> Option<Self::Item>{
 					Some(match &self.0{
@@ -590,12 +600,12 @@ pub fn derive_EnumIter(input: TokenStream) -> TokenStream{//TODO: Consider rewri
 					})
 				}
 			}
-		};
+		};*/
 
 		let impl_exactiter = quote!{
 			#[automatically_derived]
 			#[allow(unused_attributes)]
-			impl #impl_generics ::std::iter::ExactSizeIterator for #struct_ident #ty_generics #where_clause{
+			impl #impl_generics ::#std::iter::ExactSizeIterator for #struct_ident #ty_generics #where_clause{
 				#[inline]
 				fn len(&self) -> usize{
 					self.0.as_ref().map_or(#len,|variant|{
@@ -621,7 +631,7 @@ pub fn derive_EnumIter(input: TokenStream) -> TokenStream{//TODO: Consider rewri
 			#impl_intoiter
 			#impl_default
 			#impl_iter
-			#impl_diter
+			//#impl_diter
 			#impl_exactiter
 		}
 	}
@@ -639,18 +649,18 @@ pub fn derive_EnumIterator(input: TokenStream) -> TokenStream{
 		::variant_unit_ident(variant,"EnumIterator")
 	}
 
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, std: Ident) -> Tokens{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 
 		let len = data.len();
 		let last = data.last();
 
-		let prev_match_arms = {
+		/*let prev_match_arms = {
 				let iter = data.iter().rev().map(variant_unit_ident);
 				iter.zip(data.iter().rev().map(variant_unit_ident).skip(1))
 			}.map(|(variant_ident1,variant_ident2)|{
 				quote! { &mut #ident::#variant_ident1 => {*self = #ident::#variant_ident2; #ident::#variant_ident2}, }
-			});
+			});*/
 
 		let next_match_arms = {
 				let iter = data.iter().map(variant_unit_ident);
@@ -686,7 +696,7 @@ pub fn derive_EnumIterator(input: TokenStream) -> TokenStream{
 			let fn_size_hint = quote!{
 				#[inline(always)]
 				fn size_hint(&self) -> (usize,Option<usize>){
-					use ::std::iter::ExactSizeIterator;
+					use ::#std::iter::ExactSizeIterator;
 					(self.len(),Some(self.len()))
 				}
 			};
@@ -715,7 +725,7 @@ pub fn derive_EnumIterator(input: TokenStream) -> TokenStream{
 			quote!{
 				#[automatically_derived]
 				#[allow(unused_attributes)]
-				impl #impl_generics ::std::iter::Iterator for #ident #ty_generics #where_clause{
+				impl #impl_generics ::#std::iter::Iterator for #ident #ty_generics #where_clause{
 					type Item = Self;
 					#fn_next
 					#fn_count
@@ -728,7 +738,7 @@ pub fn derive_EnumIterator(input: TokenStream) -> TokenStream{
 		/*let impl_diter = quote!{
 			#[automatically_derived]
 			#[allow(unused_attributes)]
-			impl #impl_generics ::std::iter::DoubleEndedIterator for #ident #ty_generics #where_clause{
+			impl #impl_generics ::#std::iter::DoubleEndedIterator for #ident #ty_generics #where_clause{
 				#[inline]
 				#[allow(unreachable_code)]
 				fn next_back(&mut self) -> Option<Self::Item>{
@@ -743,7 +753,7 @@ pub fn derive_EnumIterator(input: TokenStream) -> TokenStream{
 		let impl_eiter = quote!{
 			#[automatically_derived]
 			#[allow(unused_attributes)]
-			impl #impl_generics ::std::iter::ExactSizeIterator for #ident #ty_generics #where_clause{
+			impl #impl_generics ::#std::iter::ExactSizeIterator for #ident #ty_generics #where_clause{
 				#[inline]
 				fn len(&self) -> usize{
 					#len - 1 - match self{
@@ -769,7 +779,7 @@ pub fn derive_EnumIterator(input: TokenStream) -> TokenStream{
 /// - The enum variants is all unit variants
 #[proc_macro_derive(EnumDiscriminant)]
 pub fn derive_EnumDiscriminant(input: TokenStream) -> TokenStream{
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, std: Ident) -> Tokens{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 
 		fn variant_to_match_arm(ident: &Ident,variant: &Variant,only_unit_variants: bool) -> Option<Tokens>{
@@ -819,7 +829,7 @@ pub fn derive_EnumDiscriminant(input: TokenStream) -> TokenStream{
 				unsafe fn from_discriminant_unchecked(discriminant: <Self as Discriminant>::Type) -> Self{
 					match discriminant{
 						#( #match_arms2 )*
-						_ => ::std::mem::uninitialized()
+						_ => ::#std::mem::uninitialized()
 					}
 				}
 			}
@@ -854,7 +864,7 @@ pub fn derive_EnumDiscriminant(input: TokenStream) -> TokenStream{
 /// ```
 #[proc_macro_derive(EnumVariantName)]
 pub fn derive_EnumVariantName(input: TokenStream) -> TokenStream {
-	fn gen_impl(ident: &Ident, item: &MacroInput, data: &Vec<Variant>) -> Tokens {
+	fn gen_impl(ident: &Ident, item: &MacroInput, data: &Vec<Variant>, _: Ident) -> Tokens {
 		let (impl_generics, ty_generics, where_clause) = item.generics.split_for_impl();
 
 		let match_arms = data.iter().map(|variant| {
@@ -892,7 +902,7 @@ pub fn derive_EnumVariantName(input: TokenStream) -> TokenStream {
 
 #[proc_macro_derive(EnumFromVariantName)]
 pub fn derive_EnumFromVariantName(input: TokenStream) -> TokenStream {//TODO: Consider not using FromStr, instead an own trait
-	fn gen_impl(ident: &Ident, item: &MacroInput, data: &Vec<Variant>) -> Tokens {
+	fn gen_impl(ident: &Ident, item: &MacroInput, data: &Vec<Variant>, std: Ident) -> Tokens {
 		let (impl_generics, ty_generics, where_clause) = item.generics.split_for_impl();
 
 		let match_arms = data.iter().filter_map(|variant| {
@@ -909,7 +919,7 @@ pub fn derive_EnumFromVariantName(input: TokenStream) -> TokenStream {//TODO: Co
 		quote!{
 			#[automatically_derived]
 			#[allow(unused_attributes)]
-			impl #impl_generics ::std::str::FromStr for #ident #ty_generics #where_clause{
+			impl #impl_generics ::#std::str::FromStr for #ident #ty_generics #where_clause{
 				type Err = ();
 
 				fn from_str(str: &str) -> Result<Self,Self::Err>{
@@ -934,7 +944,7 @@ pub fn derive_EnumBitPattern(input: TokenStream) -> TokenStream{
 		::variant_unit_ident(variant,"EnumBitPattern")
 	}
 
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, _: Ident) -> Tokens{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 
 		let n = (data.len() as f64 / 8.0).ceil() as usize;
@@ -1008,7 +1018,7 @@ pub fn derive_EnumBitPattern(input: TokenStream) -> TokenStream{
 /// ```
 #[proc_macro_derive(EnumTag)]
 pub fn derive_EnumTag(input: TokenStream) -> TokenStream{
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, _: Ident) -> Tokens{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 		let ref visibility = item.vis;
 
@@ -1097,9 +1107,10 @@ pub fn derive_EnumTag(input: TokenStream) -> TokenStream{
 /// assert!(!Enum::Cat(0).is_robot());
 /// # }
 /// ```
+#[cfg(not(feature = "no_std_compile"))]
 #[proc_macro_derive(EnumIsVariantFns)]
 pub fn derive_EnumIsVariantFns(input: TokenStream) -> TokenStream{
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>) -> Tokens{
+	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, _: Ident) -> Tokens{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 
 
