@@ -63,7 +63,7 @@ mod fields{
 
 	#[test]
 	fn test_len(){
-		assert_eq!(6,Fields::<'static,u32>::LEN);
+		assert_eq!(6,Fields::<'static,u32>::len());
 	}
 
 	#[test]
@@ -223,7 +223,7 @@ mod nofields{
 
 	#[test]
 	fn test_len(){
-		assert_eq!(6,NoFields::LEN);
+		assert_eq!(6,<NoFields as Len>::len());
 	}
 
 	#[test]
@@ -297,8 +297,8 @@ mod discriminants{
 	#[allow(dead_code)]
 	#[test]
 	fn test_len(){
-		assert_eq!(6,Discriminants::LEN);
-		assert_eq!(6,SomeDiscriminants::LEN);
+		assert_eq!(6,<Discriminants as Len>::len());
+		assert_eq!(6,<SomeDiscriminants as Len>::len());
 	}
 }
 
@@ -695,7 +695,7 @@ mod readmemd{
 		}
 
 		assert_eq!(Enum::VariantB("OK").into_index(),1);
-		assert_eq!(Enum::<'static,&'static str>::LEN,6);
+		assert_eq!(Enum::<'static,&'static str>::len(),6);
 	}
 
 	#[test]
@@ -712,7 +712,7 @@ mod readmemd{
 		assert_eq!(Enum::VariantB.into_index(),1);
 
 		//From EnumLen
-		//assert_eq!(Enum::LEN,3);
+		//assert_eq!(Enum::len(),3);
 		assert_eq!(<Enum as Len>::len(),3);
 
 		//From EnumFromIndex
