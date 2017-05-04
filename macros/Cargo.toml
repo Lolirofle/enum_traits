@@ -21,4 +21,5 @@ enum_traits = {path="../lib"}
 
 [features]
 nightly = []
-std = []
+no_std = []
+no_std_compile = []

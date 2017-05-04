@@ -4,5 +4,12 @@ version = "0.0.0"
 authors = ["Lolirofle <lolipopple@hotmail.com>"]
 
 [dependencies]
-enum_traits = {version="*",path="../lib",features=["nightly"]}
-enum_traits_macros = {version="*",path="../macros",features=["nightly"]}
+enum_traits = {version="*",path="../lib"}
+enum_traits_macros = {version="*",path="../macros"}
+
+[features]
+nightly        = ["enum_traits/nightly","enum_traits_macros/nightly"]
+no_std         = ["enum_traits/no_std","enum_traits_macros/no_std"]
+no_std_compile = ["enum_traits_macros/no_std_compile"]
+
+default = ["nightly"]
