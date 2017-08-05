@@ -378,12 +378,12 @@ pub fn derive_EnumToIndex(input: TokenStream) -> TokenStream{
 			#[automatically_derived]
 			#[allow(unused_attributes)]
 			impl #impl_generics ::enum_traits::ToIndex for #ident #ty_generics #where_clause{
-				fn into_index(self) -> <Self as Index>::Type{
+				fn into_index(self) -> <Self as ::enum_traits::Index>::Type{
 					match self{
 						#( #match_arms_into )*
 					}
 				}
-				fn index(&self) -> <Self as Index>::Type{
+				fn index(&self) -> <Self as ::enum_traits::Index>::Type{
 					match self{
 						#( #match_arms )*
 					}
@@ -419,7 +419,7 @@ pub fn derive_EnumFromIndex(input: TokenStream) -> TokenStream{
 			#[allow(unused_attributes)]
 			impl #impl_generics ::enum_traits::FromIndex for #ident #ty_generics #where_clause{
 				#[inline]
-				fn from_index(index: <Self as Index>::Type) -> Option<Self>{
+				fn from_index(index: <Self as ::enum_traits::Index>::Type) -> Option<Self>{
 					Some(match index{
 						#( #match_arms1 )*
 						_ => return None
@@ -427,7 +427,7 @@ pub fn derive_EnumFromIndex(input: TokenStream) -> TokenStream{
 				}
 
 				#[inline]
-				unsafe fn from_index_unchecked(index: <Self as Index>::Type) -> Self{
+				unsafe fn from_index_unchecked(index: <Self as ::enum_traits::Index>::Type) -> Self{
 					match index{
 						#( #match_arms2 )*
 						_ => ::#std::mem::uninitialized()
@@ -922,7 +922,7 @@ pub fn derive_EnumFromVariantName(input: TokenStream) -> TokenStream {//TODO: Co
 			impl #impl_generics ::#std::str::FromStr for #ident #ty_generics #where_clause{
 				type Err = ();
 
-				fn from_str(str: &str) -> Result<Self,Self::Err>{
+				fn from_str(str: &str) -> ::#std::result::Result<Self,Self::Err>{
 					Ok(match str{
 						#( #match_arms )*
 						_ => return Err(())
