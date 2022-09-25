@@ -3,10 +3,9 @@
 //! The crate `enum_traits_macros` is required for the derives.
 
 #![cfg_attr(feature = "no_std" ,no_std)]
-#![cfg_attr(feature = "nightly",feature(associated_consts))]
 
-#[cfg(not(feature = "no_std"))]use  std::{borrow};
-#[cfg(feature = "no_std")     ]use core::{borrow};
+#[cfg(not(feature = "no_std"))]use  std::borrow;
+#[cfg(feature = "no_std")     ]use core::borrow;
 
 /// Represents the type used for indexing the variants of the enum item.
 ///`Type` should be an primitive integer type and have more values or an equal number of values compared to the number of variants in the enum item.

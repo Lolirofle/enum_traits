@@ -3,7 +3,7 @@
 
 #![cfg_attr(feature = "no_std" ,no_std)]
 
-#![cfg_attr(feature = "nightly" ,feature(associated_consts))]
+//#![cfg_attr(feature = "nightly" ,feature(associated_consts))]
 #![allow(unreachable_code)]
 
 #[cfg(not(feature = "no_std"))]extern crate core;
@@ -183,8 +183,8 @@ mod fields{
 mod nofields{
 	use enum_traits::*;
 
-	#[cfg_attr(feature = "no_std_compile"      ,derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumDiscriminant,                 EnumTag,EnumEnds,EnumIterator,EnumIter,EnumVariantName,EnumFromVariantName,EnumBitPattern))]
-	#[cfg_attr(not(feature = "no_std_compile") ,derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumDiscriminant,EnumIsVariantFns,EnumTag,EnumEnds,EnumIterator,EnumIter,EnumVariantName,EnumFromVariantName,EnumBitPattern))]
+	#[cfg_attr(feature = "no_std_compile"      ,derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumDiscriminant,                 EnumTag,EnumEnds,EnumIterator,EnumIter,EnumVariantName,EnumFromVariantName))]
+	#[cfg_attr(not(feature = "no_std_compile") ,derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumDiscriminant,EnumIsVariantFns,EnumTag,EnumEnds,EnumIterator,EnumIter,EnumVariantName,EnumFromVariantName))]
 	enum NoFields{
 		A,B,C,D,E,F
 	}
@@ -305,17 +305,17 @@ mod discriminants{
 mod large{
 	use enum_traits::*;
 
-	#[derive(EnumIndex,EnumBitPattern)]
+	#[derive(EnumIndex)]
 	#[allow(dead_code,non_camel_case_types)]
 	enum Enum_u8_1{}//TODO: Test more derives with this
 
-	#[derive(EnumIndex,EnumBitPattern)]
+	#[derive(EnumIndex)]
 	#[allow(dead_code,non_camel_case_types)]
 	enum Enum_u8_2{
 		A000,
 	}
 
-	#[derive(EnumIndex,EnumBitPattern)]
+	#[derive(EnumIndex)]
 	#[allow(dead_code,non_camel_case_types)]
 	enum Enum_u8_3{
 		A000,A001,A002,A003,A004,A005,A006,A007,A008,A009,
@@ -346,14 +346,14 @@ mod large{
 		A250,A251,A252,A253,A254,A255
 	}
 
-	#[derive(EnumIndex,EnumBitPattern)]
+	#[derive(EnumIndex)]
 	#[allow(dead_code,non_camel_case_types)]
 	#[repr(u8)]
 	enum Enum_u8_4{
 		A000,
 	}
 
-	#[derive(EnumIndex,EnumBitPattern)]
+	#[derive(EnumIndex)]
 	#[allow(dead_code,non_camel_case_types)]
 	enum Enum_u16_1{
 		A000,A001,A002,A003,A004,A005,A006,A007,A008,A009,
@@ -398,283 +398,14 @@ mod large{
 	#[test]
 	fn test_index(){
 		//Type checking
-		let n: <Enum_u8_1 as Index>::Type = 0; n == 0u8;
-		let n: <Enum_u8_2 as Index>::Type = 0; n == 0u8;
-		let n: <Enum_u8_3 as Index>::Type = 0; n == 0u8;
-		let n: <Enum_u8_4 as Index>::Type = 0; n == 0u8;
+		let n: <Enum_u8_1 as Index>::Type = 0; let _ = n == 0u8;
+		let n: <Enum_u8_2 as Index>::Type = 0; let _ = n == 0u8;
+		let n: <Enum_u8_3 as Index>::Type = 0; let _ = n == 0u8;
+		let n: <Enum_u8_4 as Index>::Type = 0; let _ = n == 0u8;
 
-		let n: <Enum_u16_1 as Index>::Type = 0; n == 0u16;
-		let n: <Enum_u16_2 as Index>::Type = 0; n == 0u8;
-		let n: <Enum_u16_3 as Index>::Type = 0; n == 0u16;
-	}
-
-	#[test]
-	fn test_bitpatterns(){
-		let _: <Enum_u8_1  as BitPattern>::ByteArray = [0; 0];
-		let _: <Enum_u8_2  as BitPattern>::ByteArray = [0; 1];
-		let _: <Enum_u16_1 as BitPattern>::ByteArray = [0; 33];
-
-		assert_eq!(Enum_u16_1::A000.bit_pattern_rev()[0..16] , [0b10000000,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A001.bit_pattern_rev()[0..16] , [0b01000000,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A002.bit_pattern_rev()[0..16] , [0b00100000,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A003.bit_pattern_rev()[0..16] , [0b00010000,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A004.bit_pattern_rev()[0..16] , [0b00001000,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A005.bit_pattern_rev()[0..16] , [0b00000100,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A006.bit_pattern_rev()[0..16] , [0b00000010,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A007.bit_pattern_rev()[0..16] , [0b00000001,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A008.bit_pattern_rev()[0..16] , [0,0b10000000,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A009.bit_pattern_rev()[0..16] , [0,0b01000000,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A010.bit_pattern_rev()[0..16] , [0,0b00100000,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A011.bit_pattern_rev()[0..16] , [0,0b00010000,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A012.bit_pattern_rev()[0..16] , [0,0b00001000,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A013.bit_pattern_rev()[0..16] , [0,0b00000100,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A014.bit_pattern_rev()[0..16] , [0,0b00000010,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A015.bit_pattern_rev()[0..16] , [0,0b00000001,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A016.bit_pattern_rev()[0..16] , [0,0,0b10000000,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A017.bit_pattern_rev()[0..16] , [0,0,0b01000000,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A018.bit_pattern_rev()[0..16] , [0,0,0b00100000,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A019.bit_pattern_rev()[0..16] , [0,0,0b00010000,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A020.bit_pattern_rev()[0..16] , [0,0,0b00001000,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A021.bit_pattern_rev()[0..16] , [0,0,0b00000100,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A022.bit_pattern_rev()[0..16] , [0,0,0b00000010,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A023.bit_pattern_rev()[0..16] , [0,0,0b00000001,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A024.bit_pattern_rev()[0..16] , [0,0,0,0b10000000,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A025.bit_pattern_rev()[0..16] , [0,0,0,0b01000000,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A026.bit_pattern_rev()[0..16] , [0,0,0,0b00100000,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A027.bit_pattern_rev()[0..16] , [0,0,0,0b00010000,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A028.bit_pattern_rev()[0..16] , [0,0,0,0b00001000,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A029.bit_pattern_rev()[0..16] , [0,0,0,0b00000100,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A030.bit_pattern_rev()[0..16] , [0,0,0,0b00000010,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A031.bit_pattern_rev()[0..16] , [0,0,0,0b00000001,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A032.bit_pattern_rev()[0..16] , [0,0,0,0,0b10000000,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A033.bit_pattern_rev()[0..16] , [0,0,0,0,0b01000000,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A034.bit_pattern_rev()[0..16] , [0,0,0,0,0b00100000,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A035.bit_pattern_rev()[0..16] , [0,0,0,0,0b00010000,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A036.bit_pattern_rev()[0..16] , [0,0,0,0,0b00001000,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A037.bit_pattern_rev()[0..16] , [0,0,0,0,0b00000100,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A038.bit_pattern_rev()[0..16] , [0,0,0,0,0b00000010,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A039.bit_pattern_rev()[0..16] , [0,0,0,0,0b00000001,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A040.bit_pattern_rev()[0..16] , [0,0,0,0,0,0b10000000,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A041.bit_pattern_rev()[0..16] , [0,0,0,0,0,0b01000000,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A042.bit_pattern_rev()[0..16] , [0,0,0,0,0,0b00100000,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A043.bit_pattern_rev()[0..16] , [0,0,0,0,0,0b00010000,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A044.bit_pattern_rev()[0..16] , [0,0,0,0,0,0b00001000,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A045.bit_pattern_rev()[0..16] , [0,0,0,0,0,0b00000100,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A046.bit_pattern_rev()[0..16] , [0,0,0,0,0,0b00000010,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A047.bit_pattern_rev()[0..16] , [0,0,0,0,0,0b00000001,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A048.bit_pattern_rev()[0..16] , [0,0,0,0,0,0,0b10000000,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A049.bit_pattern_rev()[0..16] , [0,0,0,0,0,0,0b01000000,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A050.bit_pattern_rev()[0..16] , [0,0,0,0,0,0,0b00100000,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A051.bit_pattern_rev()[0..16] , [0,0,0,0,0,0,0b00010000,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A052.bit_pattern_rev()[0..16] , [0,0,0,0,0,0,0b00001000,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A053.bit_pattern_rev()[0..16] , [0,0,0,0,0,0,0b00000100,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A054.bit_pattern_rev()[0..16] , [0,0,0,0,0,0,0b00000010,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A055.bit_pattern_rev()[0..16] , [0,0,0,0,0,0,0b00000001,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A056.bit_pattern_rev()[0..16] , [0,0,0,0,0,0,0,0b10000000 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A057.bit_pattern_rev()[0..16] , [0,0,0,0,0,0,0,0b01000000 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A058.bit_pattern_rev()[0..16] , [0,0,0,0,0,0,0,0b00100000 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A059.bit_pattern_rev()[0..16] , [0,0,0,0,0,0,0,0b00010000 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A060.bit_pattern_rev()[0..16] , [0,0,0,0,0,0,0,0b00001000 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A061.bit_pattern_rev()[0..16] , [0,0,0,0,0,0,0,0b00000100 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A062.bit_pattern_rev()[0..16] , [0,0,0,0,0,0,0,0b00000010 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A063.bit_pattern_rev()[0..16] , [0,0,0,0,0,0,0,0b00000001 , 0,0,0,0,0,0,0,0]);
-
-		assert_eq!(Enum_u16_1::A000.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A001.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A002.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A003.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A004.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A005.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A006.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A007.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A008.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A009.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A010.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A011.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A012.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A013.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A014.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A015.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A016.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A017.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A018.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A019.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A020.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A021.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A022.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A023.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A024.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A025.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A026.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A027.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A028.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A029.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A030.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A031.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A032.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A033.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A034.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A035.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A036.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A037.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A038.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A039.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A040.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A041.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A042.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A043.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A044.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A045.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A046.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A047.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A048.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A049.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A050.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A051.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A052.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A053.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A054.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A055.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A056.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A057.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A058.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A059.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A060.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A061.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A062.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-		assert_eq!(Enum_u16_1::A063.bit_pattern_rev()[16..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0 , 0]);
-
-
-
-		assert_eq!(Enum_u16_1::A000.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A001.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A002.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A003.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A004.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A005.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A006.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A007.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A008.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A009.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A010.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A011.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A012.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A013.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A014.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A015.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A016.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A017.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A018.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A019.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A020.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A021.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A022.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A023.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A024.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A025.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A026.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A027.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A028.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A029.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A030.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A031.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A032.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A033.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A034.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A035.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A036.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A037.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A038.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A039.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A040.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A041.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A042.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A043.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A044.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A045.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A046.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A047.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A048.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A049.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A050.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A051.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A052.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A053.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A054.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A055.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A056.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A057.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A058.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A059.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A060.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A061.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A062.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A063.bit_pattern()[0..17] , [0 , 0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0]);
-
-		assert_eq!(Enum_u16_1::A000.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0b00000001]);
-		assert_eq!(Enum_u16_1::A001.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0b00000010]);
-		assert_eq!(Enum_u16_1::A002.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0b00000100]);
-		assert_eq!(Enum_u16_1::A003.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0b00001000]);
-		assert_eq!(Enum_u16_1::A004.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0b00010000]);
-		assert_eq!(Enum_u16_1::A005.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0b00100000]);
-		assert_eq!(Enum_u16_1::A006.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0b01000000]);
-		assert_eq!(Enum_u16_1::A007.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0,0b10000000]);
-		assert_eq!(Enum_u16_1::A008.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0b00000001,0]);
-		assert_eq!(Enum_u16_1::A009.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0b00000010,0]);
-		assert_eq!(Enum_u16_1::A010.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0b00000100,0]);
-		assert_eq!(Enum_u16_1::A011.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0b00001000,0]);
-		assert_eq!(Enum_u16_1::A012.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0b00010000,0]);
-		assert_eq!(Enum_u16_1::A013.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0b00100000,0]);
-		assert_eq!(Enum_u16_1::A014.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0b01000000,0]);
-		assert_eq!(Enum_u16_1::A015.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0,0b10000000,0]);
-		assert_eq!(Enum_u16_1::A016.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0b00000001,0,0]);
-		assert_eq!(Enum_u16_1::A017.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0b00000010,0,0]);
-		assert_eq!(Enum_u16_1::A018.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0b00000100,0,0]);
-		assert_eq!(Enum_u16_1::A019.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0b00001000,0,0]);
-		assert_eq!(Enum_u16_1::A020.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0b00010000,0,0]);
-		assert_eq!(Enum_u16_1::A021.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0b00100000,0,0]);
-		assert_eq!(Enum_u16_1::A022.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0b01000000,0,0]);
-		assert_eq!(Enum_u16_1::A023.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0,0b10000000,0,0]);
-		assert_eq!(Enum_u16_1::A024.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0b00000001,0,0,0]);
-		assert_eq!(Enum_u16_1::A025.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0b00000010,0,0,0]);
-		assert_eq!(Enum_u16_1::A026.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0b00000100,0,0,0]);
-		assert_eq!(Enum_u16_1::A027.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0b00001000,0,0,0]);
-		assert_eq!(Enum_u16_1::A028.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0b00010000,0,0,0]);
-		assert_eq!(Enum_u16_1::A029.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0b00100000,0,0,0]);
-		assert_eq!(Enum_u16_1::A030.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0b01000000,0,0,0]);
-		assert_eq!(Enum_u16_1::A031.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0,0b10000000,0,0,0]);
-		assert_eq!(Enum_u16_1::A032.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0b00000001,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A033.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0b00000010,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A034.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0b00000100,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A035.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0b00001000,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A036.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0b00010000,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A037.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0b00100000,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A038.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0b01000000,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A039.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0,0b10000000,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A040.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0b00000001,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A041.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0b00000010,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A042.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0b00000100,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A043.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0b00001000,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A044.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0b00010000,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A045.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0b00100000,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A046.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0b01000000,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A047.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0,0b10000000,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A048.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0b00000001,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A049.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0b00000010,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A050.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0b00000100,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A051.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0b00001000,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A052.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0b00010000,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A053.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0b00100000,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A054.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0b01000000,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A055.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0,0b10000000,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A056.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0b00000001,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A057.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0b00000010,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A058.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0b00000100,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A059.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0b00001000,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A060.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0b00010000,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A061.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0b00100000,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A062.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0b01000000,0,0,0,0,0,0,0]);
-		assert_eq!(Enum_u16_1::A063.bit_pattern()[17..33] , [0,0,0,0,0,0,0,0 , 0b10000000,0,0,0,0,0,0,0]);
+		let n: <Enum_u16_1 as Index>::Type = 0; let _ = n == 0u16;
+		let n: <Enum_u16_2 as Index>::Type = 0; let _ = n == 0u8;
+		let n: <Enum_u16_3 as Index>::Type = 0; let _ = n == 0u16;
 	}
 }
 

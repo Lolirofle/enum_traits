@@ -1,91 +1,104 @@
 #![allow(non_snake_case)]
 
 #![cfg_attr(feature = "no_std_compile" ,no_std)]
-#![cfg_attr(feature = "no_std_compile" ,feature(collections))]
+#![cfg_attr(feature = "no_std_compile" ,feature(alloc))]
 
-#[cfg(feature = "no_std_compile")]extern crate collections;
+#[cfg(feature = "no_std_compile")]extern crate alloc;
 extern crate syn;
 #[macro_use]
 extern crate quote;
 
 extern crate proc_macro;
-use proc_macro::TokenStream;
+extern crate proc_macro2;
+use proc_macro2::{Literal,Span,TokenStream};
 
 #[cfg(not(feature = "no_std_compile"))]use  std::{cmp,iter};
-#[cfg(not(feature = "no_std_compile"))]use  std::ascii::AsciiExt;
 #[cfg(not(feature = "no_std_compile"))]use  std::iter::FromIterator;
 #[cfg(feature = "no_std_compile")     ]use core::{cmp,iter};
 #[cfg(feature = "no_std_compile")     ]use core::iter::FromIterator;
-#[cfg(feature = "no_std_compile")     ]use collections::string::{String,ToString};
-#[cfg(feature = "no_std_compile")     ]use collections::vec::Vec;
-use syn::{Attribute,Body,Expr,ExprKind,Ident,Lit,IntTy,MacroInput,Variant,VariantData};
-use quote::Tokens;
+#[cfg(feature = "no_std_compile")     ]use alloc::string::{String,ToString};
+#[cfg(feature = "no_std_compile")     ]use alloc::vec::Vec;
+use syn::{Attribute,Expr,ExprLit,Fields,Ident,ItemEnum,Lit,PathSegment,Variant};
+
+#[cfg(not(feature = "no_std"))]const STD: &'static str = "std";
+#[cfg(feature = "no_std")     ]const STD: &'static str = "core";
 
 fn minimum_type_from_value(value: usize) -> Ident{
 	if value <= u8::max_value() as usize{
-		Ident::from("u8")
+		Ident::new("u8",Span::call_site())
 	}else if value <= u16::max_value() as usize{
-		Ident::from("u16")
+		Ident::new("u16",Span::call_site())
 	}else if value <= u32::max_value() as usize{
-		Ident::from("u32")
+		Ident::new("u32",Span::call_site())
 	}else if value <= u64::max_value() as usize{
-		Ident::from("u64")
+		Ident::new("u64",Span::call_site())
 	}else{
-		Ident::from("usize")
+		Ident::new("usize",Span::call_site())
 	}
 }
 
+/**
+ * Extracts the type from `repr(u*)` or `repr(i*)` attributes if it exists.
+ */
 fn type_from_repr_attr<'i,I>(attrs: I) -> Option<Ident>
 	where I: Iterator<Item = &'i Attribute>
 {
-	use syn::{MetaItem,NestedMetaItem};
+	use syn::{Meta,MetaList,NestedMeta};
 
-	for attr in attrs{match attr.value{
-		MetaItem::List(ref ident,ref content) if ident=="repr" => match &content[0]{
-			&NestedMetaItem::MetaItem(MetaItem::Word(ref ty)) if ty!="C" => return Some(ty.clone()),
-			_ => continue,
+	for attr in attrs{match attr.parse_meta(){
+		Ok(Meta::List(MetaList{path,nested,..})) if path.is_ident("repr") => {
+			for meta in nested{
+				if let NestedMeta::Meta(Meta::Path(repr)) = meta{
+					if let Some(repr) = repr.get_ident(){
+						let repr = repr.to_string();
+						if repr.as_str() == "usize" || repr.as_str() == "isize" || {
+							let mut repr_chars = repr.chars();
+							repr_chars.next().map_or(false , |c| c == 'u' || c == 'i') //Starts with an 'u' or 'i'.
+							&& repr_chars.next().map_or(false , |c| c.is_digit(10)) //Exists a digit after.
+							&& repr_chars.all(|c| c.is_digit(10)) //All after are digits too.
+						}{
+							return Some(Ident::new(repr.as_ref(),Span::call_site()));
+						}
+					}
+				}
+				continue;
+			}
 		},
-		_ => continue,
+		_ => {continue;},
 	}}
 	None
 }
 
-fn variant_unit_ident<'v>(variant: &'v Variant,derive_name: &'static str) -> &'v Ident{match variant.data{
-	VariantData::Unit => {
-		&variant.ident
+fn variant_unit_ident<'v>(variant: &'v Variant,derive_name: &'static str) -> &'v Ident{
+	match variant.fields{
+		Fields::Unit => {
+			&variant.ident
+		}
+		_ => panic!("`derive({})` may only be applied to enum items with no fields",derive_name)
 	}
-	_ => panic!("`derive({})` may only be applied to enum items with no fields",derive_name)
-}}
-
-fn derive_enum<F>(input: TokenStream,gen_impl: F) -> TokenStream
-	where F: FnOnce(&Ident,&MacroInput,&Vec<Variant>,Ident) -> Tokens
-{
-	let input = input.to_string();
-	let ast = syn::parse_macro_input(&input).unwrap();
-	#[cfg(not(feature = "no_std"))]let std = Ident::new("std");
-	#[cfg(feature = "no_std")     ]let std = Ident::new("core");
-
-	let quote_tokens = match ast.body{
-		Body::Enum(ref data) => gen_impl(&ast.ident,&ast,data,std),
-		_ => panic!("`derive(Enum*)` may only be applied to enum items")
-	}.to_string();
-
-	quote_tokens.parse().unwrap()
 }
 
-#[allow(dead_code)]
-fn minimum_type_containing_enum(item: &MacroInput,data: &Vec<Variant>) -> syn::Ident{//TODO: Maybe useful to export?
+#[inline(always)]
+fn derive_enum<F>(input: proc_macro::TokenStream,gen_impl: F) -> proc_macro::TokenStream
+	where F: FnOnce(ItemEnum,PathSegment) -> TokenStream
+{
+	let input = proc_macro2::TokenStream::from(input);
+	let item = syn::parse2::<ItemEnum>(input).expect("`derive(Enum*)` may only be applied to enum items");
+	proc_macro::TokenStream::from(gen_impl(item,PathSegment::from(Ident::new(STD,Span::call_site()))))
+}
+
+fn minimum_type_containing_enum(item: &ItemEnum) -> syn::Ident{//TODO: Maybe useful to export?
 	//First, check if there's a repr attribute
 	type_from_repr_attr(item.attrs.iter())
 	.unwrap_or_else(||
 		//Second, use the maximum value of an explicit discriminant or the length of the enum (depending on which is the greatest)
-		minimum_type_from_value(match data.iter().filter_map(|variant| match variant.discriminant{
-				Some(syn::ConstExpr::Lit(syn::Lit::Int(discrimimant,_))) => Some(discrimimant),
+		minimum_type_from_value(match item.variants.iter().filter_map(|variant| match variant.discriminant{
+				Some((_,Expr::Lit(ExprLit{lit: Lit::Int(ref discrimimant) , ..}))) => Some(discrimimant.base10_parse::<usize>().expect("Discriminant cannot be made into an usize")),
 				_ => None
 			}).max(){
-				Some(max) => cmp::max(cmp::max(data.len(),1)-1 , max as usize),
+				Some(max) => cmp::max(cmp::max(item.variants.len(),1)-1 , max),
 				//Third, use the length of the enum
-				_ => cmp::max(data.len(),1)-1
+				_ => cmp::max(item.variants.len(),1)-1
 			}
 		)
 	)
@@ -129,21 +142,12 @@ fn minimum_type_containing_enum(item: &MacroInput,data: &Vec<Variant>) -> syn::I
 /// # }
 /// ```
 #[proc_macro_derive(EnumLen)]
-pub fn derive_EnumLen(input: TokenStream) -> TokenStream{ //TODO: Consider allowing structs. Number of variants of struct is always 1
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, _: Ident) -> Tokens{
+pub fn derive_EnumLen(input: proc_macro::TokenStream) -> proc_macro::TokenStream{ //TODO: Consider allowing structs. Number of variants of struct is always 1
+	fn gen_impl(item: ItemEnum,_std: PathSegment) -> TokenStream{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
-		let len = data.len();
+		let ident = item.ident;
+		let len = item.variants.len();
 
-		#[cfg(not(feature = "nightly"))]
-		quote!{
-			#[automatically_derived]
-			#[allow(unused_attributes)]
-			impl #impl_generics ::enum_traits::Len for #ident #ty_generics #where_clause{
-				fn len() -> usize{#len}
-			}
-		}
-
-		#[cfg(feature = "nightly")]
 		quote!{
 			#[automatically_derived]
 			#[allow(unused_attributes)]
@@ -203,11 +207,12 @@ pub fn derive_EnumLen(input: TokenStream) -> TokenStream{ //TODO: Consider allow
 /// # }
 /// ```
 #[proc_macro_derive(EnumEnds)]
-pub fn derive_EnumEnds(input: TokenStream) -> TokenStream{
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, _: Ident) -> Tokens{
+pub fn derive_EnumEnds(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
+	fn gen_impl(item: ItemEnum,_std: PathSegment) -> TokenStream{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
-		let variant_first_ident = &data.first().expect("`derive(EnumEnds)` may only be applied to non-empty enums").ident;
-		let variant_last_ident  = &data.last().expect("`derive(EnumEnds)` may only be applied to non-empty enums").ident;
+		let ident = item.ident;
+		let variant_first_ident = &item.variants.first().expect("`derive(EnumEnds)` may only be applied to non-empty enums").ident;
+		let variant_last_ident  = &item.variants.last().expect("`derive(EnumEnds)` may only be applied to non-empty enums").ident;
 
 		quote!{
 			#[automatically_derived]
@@ -336,39 +341,40 @@ pub fn derive_EnumEnds(input: TokenStream) -> TokenStream{
 /// # }
 /// ```
 #[proc_macro_derive(EnumToIndex)]
-pub fn derive_EnumToIndex(input: TokenStream) -> TokenStream{
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, _: Ident) -> Tokens{
+pub fn derive_EnumToIndex(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
+	fn gen_impl(item: ItemEnum,_std: PathSegment) -> TokenStream{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+		let ident = item.ident;
 
-		let match_arms = data.iter().enumerate().map(|(i,variant)|{
+		let match_arms = item.variants.iter().enumerate().map(|(i,variant)|{
 			let variant_ident = &variant.ident;
-			let i = Lit::Int(i as u64,IntTy::Unsuffixed);
+			let i = Lit::Int(Literal::usize_unsuffixed(i).into());
 
-			match variant.data{
-				VariantData::Unit => {
+			match variant.fields{
+				Fields::Unit => {
 					quote! { &#ident::#variant_ident => #i, }
 				}
-				VariantData::Tuple(_) => {
+				Fields::Unnamed(_) => {
 					quote! { &#ident::#variant_ident(..) => #i, }
 				}
-				VariantData::Struct(_) => {
+				Fields::Named(_) => {
 					quote! { &#ident::#variant_ident{..} => #i, }
 				}
 			}
 		});
 
-		let match_arms_into = data.iter().enumerate().map(|(i,variant)|{
+		let match_arms_into = item.variants.iter().enumerate().map(|(i,variant)|{
 			let variant_ident = &variant.ident;
-			let i = Lit::Int(i as u64,IntTy::Unsuffixed);
+			let i = Lit::Int(Literal::usize_unsuffixed(i).into());
 
-			match variant.data{
-				VariantData::Unit => {
+			match variant.fields{
+				Fields::Unit => {
 					quote! { #ident::#variant_ident => #i, }
 				}
-				VariantData::Tuple(_) => {
+				Fields::Unnamed(_) => {
 					quote! { #ident::#variant_ident(..) => #i, }
 				}
-				VariantData::Struct(_) => {
+				Fields::Named(_) => {
 					quote! { #ident::#variant_ident{..} => #i, }
 				}
 			}
@@ -399,20 +405,21 @@ pub fn derive_EnumToIndex(input: TokenStream) -> TokenStream{
 /// # Requirements
 /// - The derived item is an enum
 #[proc_macro_derive(EnumFromIndex)]
-pub fn derive_EnumFromIndex(input: TokenStream) -> TokenStream{
+pub fn derive_EnumFromIndex(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
 	fn variant_unit_ident(variant: &Variant) -> &Ident{
 		::variant_unit_ident(variant,"EnumFromIndex")
 	}
 
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, std: Ident) -> Tokens{
+	fn gen_impl(item: ItemEnum,_std: PathSegment) -> TokenStream{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+		let ident = &item.ident;
 
-		fn match_arm_transform(ident: &Ident,(i,variant_ident): (usize,&Ident)) -> Tokens{
-			let i = Lit::Int(i as u64,IntTy::Unsuffixed);
+		fn match_arm_transform(ident: &Ident,(i,variant_ident): (usize,&Ident)) -> TokenStream{
+			let i = Lit::Int(Literal::usize_unsuffixed(i).into());
 			quote! { #i => #ident::#variant_ident, }
 		}
-		let match_arms1 = data.iter().map(variant_unit_ident).enumerate().map(|arg| match_arm_transform(ident,arg));
-		let match_arms2 = data.iter().map(variant_unit_ident).enumerate().map(|arg| match_arm_transform(ident,arg));
+		let match_arms1 = item.variants.iter().map(variant_unit_ident).enumerate().map(|arg| match_arm_transform(ident,arg));
+		let match_arms2 = item.variants.iter().map(variant_unit_ident).enumerate().map(|arg| match_arm_transform(ident,arg));
 
 		quote!{
 			#[automatically_derived]
@@ -430,7 +437,7 @@ pub fn derive_EnumFromIndex(input: TokenStream) -> TokenStream{
 				unsafe fn from_index_unchecked(index: <Self as Index>::Type) -> Self{
 					match index{
 						#( #match_arms2 )*
-						_ => ::#std::mem::uninitialized()
+						_ => unreachable!()
 					}
 				}
 			}
@@ -444,13 +451,14 @@ pub fn derive_EnumFromIndex(input: TokenStream) -> TokenStream{
 /// # Requirements
 /// - The derived item is an enum
 #[proc_macro_derive(EnumIndex)]
-pub fn derive_EnumIndex(input: TokenStream) -> TokenStream{
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, _: Ident) -> Tokens{
+pub fn derive_EnumIndex(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
+	fn gen_impl(item: ItemEnum,_std: PathSegment) -> TokenStream{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+		let ident = &item.ident;
 
 		//Determine which type to use (attribute or number of variants)
 		let ty = type_from_repr_attr(item.attrs.iter())
-			.unwrap_or_else(|| minimum_type_from_value(cmp::max(data.len(),1)-1));
+			.unwrap_or_else(|| minimum_type_from_value(cmp::max(item.variants.len(),1)-1));
 
 		quote!{
 			#[automatically_derived]
@@ -469,51 +477,52 @@ pub fn derive_EnumIndex(input: TokenStream) -> TokenStream{
 /// - The derived item is an enum
 /// - The enum variants is all unit variants
 #[proc_macro_derive(EnumIter)]
-pub fn derive_EnumIter(input: TokenStream) -> TokenStream{//TODO: Consider rewriting output (EnumIter may not need Option, but then empty enums are not represented. Are they necessary to include?)
+pub fn derive_EnumIter(input: proc_macro::TokenStream) -> proc_macro::TokenStream{//TODO: Consider rewriting output (EnumIter may not need Option, but then empty enums are not represented. Are they necessary to include?)
 	fn variant_unit_ident(variant: &Variant) -> &Ident{
 		::variant_unit_ident(variant,"EnumIter")
 	}
 
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, std: Ident) -> Tokens{
+	fn gen_impl(item: ItemEnum,std: PathSegment) -> TokenStream{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+		let ident = item.ident;
 		let visibility = &item.vis;
 
-		let len = data.len();
-		let last = data.last();
+		let len = item.variants.len();
+		let last = item.variants.last();
 
 		/*let prev_match_arms = {
-				let iter = data.iter().rev().map(variant_unit_ident);
-				iter.zip(data.iter().rev().map(variant_unit_ident).skip(1))
+				let iter = item.variants.iter().rev().map(variant_unit_ident);
+				iter.zip(item.variants.iter().rev().map(variant_unit_ident).skip(1))
 			}.map(|(variant_ident1,variant_ident2)|{
 				quote! { &Some(#ident::#variant_ident1) => {self.0 = Some(#ident::#variant_ident2); #ident::#variant_ident2}, }
 			});*/
 
 		let next_match_arms = {
-				let iter = data.iter().map(variant_unit_ident);
-				iter.zip(data.iter().map(variant_unit_ident).skip(1))
+				let iter = item.variants.iter().map(variant_unit_ident);
+				iter.zip(item.variants.iter().map(variant_unit_ident).skip(1))
 			}.map(|(variant_ident1,variant_ident2)|{
 				quote! { &Some(#ident::#variant_ident1) => {self.0 = Some(#ident::#variant_ident2); #ident::#variant_ident2}, }
 			});
 
-		let len_match_arms = data.iter().enumerate().map(|(i,variant)|{
-			let i = Lit::Int(i as u64,IntTy::Unsuffixed);
+		let len_match_arms = item.variants.iter().enumerate().map(|(i,variant)|{
+			let i = Lit::Int(Literal::usize_unsuffixed(i).into());
 			let variant_ident: &Ident = variant_unit_ident(variant);
 			quote! { &#ident::#variant_ident => #i, }
 		});
 
-		let count_match_arms = data.iter().enumerate().map(|(i,variant)|{
-			let i = Lit::Int(i as u64,IntTy::Unsuffixed);
+		let count_match_arms = item.variants.iter().enumerate().map(|(i,variant)|{
+			let i = Lit::Int(Literal::usize_unsuffixed(i).into());
 			let variant_ident: &Ident = variant_unit_ident(variant);
 			quote! { #ident::#variant_ident => #i, }
 		});
 
-		let variant_first_ident = &data.first().expect("`derive(EnumIter)` may only be applied to non-empty enums").ident;
-		//let variant_last_ident  = &data.last().expect("`derive(EnumIter)` may only be applied to non-empty enums").ident;
+		let variant_first_ident = &item.variants.first().expect("`derive(EnumIter)` may only be applied to non-empty enums").ident;
+		//let variant_last_ident  = &item.variants.last().expect("`derive(EnumIter)` may only be applied to non-empty enums").ident;
 
 		let struct_ident = {
-			let mut str = ident.as_ref().to_string();
+			let mut str = ident.to_string().to_string();
 			str.push_str("Iter");
-			Ident::from(str)
+			Ident::new(str.as_ref(),Span::call_site())
 		};
 
 		let struct_iter = quote!{
@@ -644,39 +653,40 @@ pub fn derive_EnumIter(input: TokenStream) -> TokenStream{//TODO: Consider rewri
 /// - The derived item is an enum
 /// - The enum variants is all unit variants
 #[proc_macro_derive(EnumIterator)]
-pub fn derive_EnumIterator(input: TokenStream) -> TokenStream{
+pub fn derive_EnumIterator(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
 	fn variant_unit_ident(variant: &Variant) -> &Ident{
 		::variant_unit_ident(variant,"EnumIterator")
 	}
 
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, std: Ident) -> Tokens{
+	fn gen_impl(item: ItemEnum,std: PathSegment) -> TokenStream{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+		let ident = item.ident;
 
-		let len = data.len();
-		let last = data.last();
+		let len = item.variants.len();
+		let last = item.variants.last();
 
 		/*let prev_match_arms = {
-				let iter = data.iter().rev().map(variant_unit_ident);
-				iter.zip(data.iter().rev().map(variant_unit_ident).skip(1))
+				let iter = item.variants.iter().rev().map(variant_unit_ident);
+				iter.zip(item.variants.iter().rev().map(variant_unit_ident).skip(1))
 			}.map(|(variant_ident1,variant_ident2)|{
 				quote! { &mut #ident::#variant_ident1 => {*self = #ident::#variant_ident2; #ident::#variant_ident2}, }
 			});*/
 
 		let next_match_arms = {
-				let iter = data.iter().map(variant_unit_ident);
-				iter.zip(data.iter().map(variant_unit_ident).skip(1))
+				let iter = item.variants.iter().map(variant_unit_ident);
+				iter.zip(item.variants.iter().map(variant_unit_ident).skip(1))
 			}.map(|(variant_ident1,variant_ident2)|{
 				quote! { &mut #ident::#variant_ident1 => {*self = #ident::#variant_ident2; #ident::#variant_ident2}, }
 			});
 
-		let len_match_arms = data.iter().enumerate().map(|(i,variant)|{
-			let i = Lit::Int(i as u64,IntTy::Unsuffixed);
+		let len_match_arms = item.variants.iter().enumerate().map(|(i,variant)|{
+			let i = Lit::Int(Literal::usize_unsuffixed(i).into());
 			let variant_ident: &Ident = variant_unit_ident(variant);
 			quote! { &#ident::#variant_ident => #i, }
 		});
 
-		let count_match_arms = data.iter().enumerate().map(|(i,variant)|{
-			let i = Lit::Int(i as u64,IntTy::Unsuffixed);
+		let count_match_arms = item.variants.iter().enumerate().map(|(i,variant)|{
+			let i = Lit::Int(Literal::usize_unsuffixed(i).into());
 			let variant_ident: &Ident = variant_unit_ident(variant);
 			quote! { #ident::#variant_ident => #i, }
 		});
@@ -776,40 +786,41 @@ pub fn derive_EnumIterator(input: TokenStream) -> TokenStream{
 ///
 /// # Requirements
 /// - The derived item is an enum
-/// - The enum variants is all unit variants
+/// - The enum variants are all unit variants
 #[proc_macro_derive(EnumDiscriminant)]
-pub fn derive_EnumDiscriminant(input: TokenStream) -> TokenStream{
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, std: Ident) -> Tokens{
+pub fn derive_EnumDiscriminant(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
+	fn gen_impl(item: ItemEnum,std: PathSegment) -> TokenStream{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+		let ident = &item.ident;
 
-		fn variant_to_match_arm(ident: &Ident,variant: &Variant,only_unit_variants: bool) -> Option<Tokens>{
+		fn variant_to_match_arm(ident: &Ident,variant: &Variant,only_unit_variants: bool) -> Option<TokenStream>{
 			let variant_ident = &variant.ident;
 
 			//If an explicit discriminant exists
-			variant.discriminant.as_ref().map(|ref variant_discriminant|{
-				match variant.data{
-					VariantData::Unit => {
+			variant.discriminant.as_ref().map(|(_,ref variant_discriminant)|{
+				match variant.fields{
+					Fields::Unit => {
 						quote! { #variant_discriminant => #ident::#variant_ident, }
 					}
-					VariantData::Tuple(_)  |
-					VariantData::Struct(_) => {
+					Fields::Unnamed(_)  |
+					Fields::Named(_) => {
 						//Tuple and struct variants cannot have explicit discriminants
 						unreachable!()
 					}
 				}
 			}).or_else(||{
-				match variant.data{
-					VariantData::Unit if only_unit_variants => Some({
+				match variant.fields{
+					Fields::Unit if only_unit_variants => Some({
 						quote! { n if n==#ident::#variant_ident as Self::Type => #ident::#variant_ident, }
 					}),
 					_ => None
 				}
 			})
-		};
-		let only_unit_variants = data.iter().all(|variant| match variant.data{VariantData::Unit => true , _ => false});
-		let match_arms1 = data.iter().filter_map(|variant| variant_to_match_arm(ident,variant,only_unit_variants));
-		let match_arms2 = data.iter().filter_map(|variant| variant_to_match_arm(ident,variant,only_unit_variants));
-		let ty = type_from_repr_attr(item.attrs.iter()).unwrap_or(Ident::from("usize"));
+		}
+		let only_unit_variants = item.variants.iter().all(|variant| match variant.fields{Fields::Unit => true , _ => false});
+		let match_arms1 = item.variants.iter().filter_map(|variant| variant_to_match_arm(ident,variant,only_unit_variants));
+		let match_arms2 = item.variants.iter().filter_map(|variant| variant_to_match_arm(ident,variant,only_unit_variants));
+		let ty = type_from_repr_attr(item.attrs.iter()).unwrap_or(Ident::new("usize",Span::call_site()));
 
 		quote!{
 			#[automatically_derived]
@@ -863,22 +874,23 @@ pub fn derive_EnumDiscriminant(input: TokenStream) -> TokenStream{
 /// # }
 /// ```
 #[proc_macro_derive(EnumVariantName)]
-pub fn derive_EnumVariantName(input: TokenStream) -> TokenStream {
-	fn gen_impl(ident: &Ident, item: &MacroInput, data: &Vec<Variant>, _: Ident) -> Tokens {
+pub fn derive_EnumVariantName(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+	fn gen_impl(item: ItemEnum,_std: PathSegment) -> TokenStream {
 		let (impl_generics, ty_generics, where_clause) = item.generics.split_for_impl();
+		let ident = item.ident;
 
-		let match_arms = data.iter().map(|variant| {
+		let match_arms = item.variants.iter().map(|variant| {
 			let variant_ident = &variant.ident;
-			let variant_str = variant.ident.as_ref();
+			let variant_str = variant.ident.to_string();
 
-			match variant.data {
-				VariantData::Unit => {
+			match variant.fields {
+				Fields::Unit => {
 					quote! { &#ident::#variant_ident => #variant_str, }
 				}
-				VariantData::Tuple(_) => {
+				Fields::Unnamed(_) => {
 					quote! { &#ident::#variant_ident(..) => #variant_str, }
 				}
-				VariantData::Struct(_) => {
+				Fields::Named(_) => {
 					quote! { &#ident::#variant_ident{..} => #variant_str, }
 				}
 			}
@@ -901,15 +913,16 @@ pub fn derive_EnumVariantName(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_derive(EnumFromVariantName)]
-pub fn derive_EnumFromVariantName(input: TokenStream) -> TokenStream {//TODO: Consider not using FromStr, instead an own trait
-	fn gen_impl(ident: &Ident, item: &MacroInput, data: &Vec<Variant>, std: Ident) -> Tokens {
+pub fn derive_EnumFromVariantName(input: proc_macro::TokenStream) -> proc_macro::TokenStream {//TODO: Consider not using FromStr, instead an own trait
+	fn gen_impl(item: ItemEnum,std: PathSegment) -> TokenStream {
 		let (impl_generics, ty_generics, where_clause) = item.generics.split_for_impl();
+		let ident = item.ident;
 
-		let match_arms = data.iter().filter_map(|variant| {
+		let match_arms = item.variants.iter().filter_map(|variant| {
 			let variant_ident = &variant.ident;
-			let variant_str = variant.ident.as_ref();
+			let variant_str = variant.ident.to_string();
 
-			if let VariantData::Unit = variant.data{
+			if let Fields::Unit = variant.fields{
 				Some(quote! { #variant_str => #ident::#variant_ident, })
 			}else{
 				None
@@ -934,38 +947,40 @@ pub fn derive_EnumFromVariantName(input: TokenStream) -> TokenStream {//TODO: Co
 	derive_enum(input, gen_impl)
 }
 
+/*
 /// Implements `enum_traits::BitPattern`.
 ///
 /// # Requirements
 /// - The derived item is an enum
 #[proc_macro_derive(EnumBitPattern)]
-pub fn derive_EnumBitPattern(input: TokenStream) -> TokenStream{
+pub fn derive_EnumBitPattern(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
 	fn variant_unit_ident(variant: &Variant) -> &Ident{
 		::variant_unit_ident(variant,"EnumBitPattern")
 	}
 
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, _: Ident) -> Tokens{
+	fn gen_impl(item: ItemEnum,std: PathSegment) -> TokenStream{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+		let ident = item.ident;
 
-		let n = (data.len() as f64 / 8.0).ceil() as usize;
-		fn match_arm_transform(ident: &Ident,(i,variant_ident): (usize,&Ident),n: usize) -> Tokens{
-			let lit = Expr::from(ExprKind::Array({
-				let mut l = Vec::from_iter(iter::repeat(Expr::from(ExprKind::Lit(Lit::Int(0,IntTy::Unsuffixed)))).take(n));
-				l[n-i/8-1] = Expr::from(ExprKind::Lit(Lit::Int((0b00000001u8.rotate_left((i as u32)%8) as u64),IntTy::Unsuffixed)));
-				l
-			}));
-			quote! { #ident::#variant_ident => #lit, }
+		let n = (item.variants.len() as f64 / 8.0).ceil() as usize;
+		fn match_arm_transform(ident: &Ident,(i,variant_ident): (usize,&Ident),n: usize) -> TokenStream{
+			let lit = Punctuated::from_iter({ //TODO: Do not convert from iter to vec and then to iter again
+				let mut l = Vec::from_iter(iter::repeat(Expr::from(Lit::Int(LitInt::new(0 as u64,Span::call_site())))).take(n));
+				l[n-i/8-1] = Expr::from(Lit::Int(LitInt::new((0b00000001u8.rotate_left((i as u32)%8) as u64),Span::call_site())));
+				l.into_iter()
+			});
+			quote! { #ident::#variant_ident => [ #lit ], }
 		}
-		fn match_arm_transform_rev(ident: &Ident,(i,variant_ident): (usize,&Ident),n: usize) -> Tokens{
-			let lit = Expr::from(ExprKind::Array({
-				let mut l = Vec::from_iter(iter::repeat(Expr::from(ExprKind::Lit(Lit::Int(0,IntTy::Unsuffixed)))).take(n));
-				l[i/8] = Expr::from(ExprKind::Lit(Lit::Int((0b10000000u8.rotate_right((i as u32)%8) as u64),IntTy::Unsuffixed)));
-				l
-			}));
-			quote! { #ident::#variant_ident => #lit, }
+		fn match_arm_transform_rev(ident: &Ident,(i,variant_ident): (usize,&Ident),n: usize) -> TokenStream{
+			let lit = Punctuated::from_iter({
+				let mut l = Vec::from_iter(iter::repeat(Expr::from(Lit::Int(LitInt::new(0 as u64,Span::call_site())))).take(n));
+				l[i/8] = Expr::from(Lit::Int(LitInt::new((0b10000000u8.rotate_right((i as u32)%8) as u64),Span::call_site())));
+				l.into_iter()
+			});
+			quote! { #ident::#variant_ident => [ #lit ], }
 		}
-		let match_arms     = data.iter().map(variant_unit_ident).enumerate().map(|arg| match_arm_transform(ident,arg,n));
-		let match_arms_rev = data.iter().map(variant_unit_ident).enumerate().map(|arg| match_arm_transform_rev(ident,arg,n));
+		let match_arms     = item.variants.iter().map(variant_unit_ident).enumerate().map(|arg| match_arm_transform(ident,arg,n));
+		let match_arms_rev = item.variants.iter().map(variant_unit_ident).enumerate().map(|arg| match_arm_transform_rev(ident,arg,n));
 
 		quote!{
 			#[automatically_derived]
@@ -991,6 +1006,7 @@ pub fn derive_EnumBitPattern(input: TokenStream) -> TokenStream{
 	}
 	derive_enum(input,gen_impl)
 }
+*/
 
 /// Creates an enum with unit variants from the derived enum, and implements `enum_traits::Tag`.
 ///
@@ -1017,36 +1033,31 @@ pub fn derive_EnumBitPattern(input: TokenStream) -> TokenStream{
 /// # }
 /// ```
 #[proc_macro_derive(EnumTag)]
-pub fn derive_EnumTag(input: TokenStream) -> TokenStream{
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, _: Ident) -> Tokens{
+pub fn derive_EnumTag(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
+	fn gen_impl(item: ItemEnum,_std: PathSegment) -> TokenStream{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+		let ident = item.ident;
 		let ref visibility = item.vis;
 
-		let unit_enum_ident = Ident::from({
-			const SUFFIX: &'static str = "Tag";
-			let mut str = String::with_capacity(ident.as_ref().len() + SUFFIX.len());
-			str.push_str(ident.as_ref());
-			str.push_str(SUFFIX);
-			str
-		});
+		let unit_enum_ident = Ident::new(format!("{}Tag",ident.to_string()).as_ref(),Span::call_site());
 
-		let match_arms = data.iter().map(|variant|{
+		let match_arms = item.variants.iter().map(|variant|{
 			let variant_ident = &variant.ident;
 
-			match variant.data {
-				VariantData::Unit => {
+			match variant.fields {
+				Fields::Unit => {
 					quote! { &#ident::#variant_ident     => #unit_enum_ident::#variant_ident, }
 				}
-				VariantData::Tuple(_) => {
+				Fields::Unnamed(_) => {
 					quote! { &#ident::#variant_ident(..) => #unit_enum_ident::#variant_ident, }
 				}
-				VariantData::Struct(_) => {
+				Fields::Named(_) => {
 					quote! { &#ident::#variant_ident{..} => #unit_enum_ident::#variant_ident, }
 				}
 			}
 		});
 
-		let unit_variants = data.iter().map(|variant|{
+		let unit_variants = item.variants.iter().map(|variant|{
 			let variant_ident = &variant.ident;
 			quote! { #variant_ident, }
 		});
@@ -1109,30 +1120,24 @@ pub fn derive_EnumTag(input: TokenStream) -> TokenStream{
 /// ```
 #[cfg(not(feature = "no_std_compile"))]
 #[proc_macro_derive(EnumIsVariantFns)]
-pub fn derive_EnumIsVariantFns(input: TokenStream) -> TokenStream{
-	fn gen_impl(ident: &Ident,item: &MacroInput,data: &Vec<Variant>, _: Ident) -> Tokens{
+pub fn derive_EnumIsVariantFns(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
+	fn gen_impl(item: ItemEnum,_std: PathSegment) -> TokenStream{
 		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+		let ident = item.ident;
 
-
-		let fns = data.iter().map(|variant|{
-			let fn_ident = Ident::from({
-				const PREFIX: &'static str = "is_";
-				let mut str = String::with_capacity(variant.ident.as_ref().len() + PREFIX.len());
-				str.push_str(PREFIX);
-				str.push_str(variant.ident.as_ref().to_ascii_lowercase().as_ref());
-				str
-			});
+		let fns = item.variants.iter().map(|variant|{
+			let fn_ident = Ident::new(format!("is_{}",variant.ident.to_string().to_ascii_lowercase()).as_ref(),Span::call_site());
 
 			let pattern = {
 				let variant_ident = &variant.ident;
-				match variant.data{
-					VariantData::Unit => {
+				match variant.fields{
+					Fields::Unit => {
 						quote! { #ident::#variant_ident }
 					}
-					VariantData::Tuple(_) => {
+					Fields::Unnamed(_) => {
 						quote! { #ident::#variant_ident(..) }
 					}
-					VariantData::Struct(_) => {
+					Fields::Named(_) => {
 						quote! { #ident::#variant_ident{..} }
 					}
 				}
