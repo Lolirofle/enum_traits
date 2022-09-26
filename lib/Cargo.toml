@@ -10,5 +10,4 @@ keywords = ["enum","trait","derive","deriving","macro"]
 license = "MIT"
 
 [features]
-nightly = []
 no_std = []

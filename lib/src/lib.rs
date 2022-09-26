@@ -12,7 +12,7 @@
 ///
 /// Derive this trait for an enum automatically using `#[derive(EnumIndex)]`
 /// When derived, `Type` becomes the type specified in the `repr` attribute for the enum item.
-/// If a `repr` attribute does not exist, a calculated minimum integer type based on the number of variant fields is used instead.
+/// If a `repr` attribute does not exist, the smalest integer type based on the number of variant fields is used instead.
 ///
 /// # Example with derive
 ///
@@ -175,18 +175,9 @@ pub trait ToIndex: Index{
 /// #[derive(EnumLen)]
 /// enum Enum{A,B,C,D,E,F}
 /// ```
-#[cfg(feature = "nightly")]
 pub trait Len{
 	/// Number of variants in an enum
 	const LEN: usize;
-
-	#[inline(always)]
-	fn len() -> usize{<Self as Len>::LEN}
-}
-#[cfg(not(feature = "nightly"))]
-pub trait Len{
-	/// Number of variants in an enum
-	fn len() -> usize;
 }
 
 /// Constructors for an enum type from its endpoints based on the variants' defined order
@@ -220,80 +211,6 @@ pub trait Ends: Sized{
 
 	/// The last variant in the defined order of an enum
 	fn last() -> Self;
-}
-
-/// Derive this trait for an enum automatically using `#[derive(EnumDiscriminant)]`
-/// When this trait is derived, non-unit variants will be mapped to `None` in `from_discriminant`, and non-explicitly-specified discriminants will also be mapped to `None`.
-///
-/// # Example with derive
-///
-/// ```rust,ignore
-/// #[macro_use]extern crate enum_traits_macros;
-///
-/// #[derive(EnumDiscriminant)]
-/// enum Enum{
-/// 	A = 1,
-/// 	B = 2,
-/// 	C = 4,
-/// 	D = 8,
-/// 	E = 16,
-/// 	F = 33,
-/// 	G,
-/// }
-/// ```
-///
-/// # Example with manual impl
-///
-/// ```rust
-/// use enum_traits::*;
-///
-/// enum Enum{
-/// 	A = 1,
-/// 	B = 2,
-/// 	C = 4,
-/// 	D = 8,
-/// 	E = 16,
-/// 	F = 33,
-/// 	G,
-/// }
-///
-/// impl Discriminant for Enum{
-/// 	type Type = usize;
-///
-/// 	fn from_discriminant(discriminant: <Self as Discriminant>::Type) -> Option<Self>{
-/// 		Some(match discriminant {
-/// 			 1  => Enum::A,
-/// 			 2  => Enum::B,
-/// 			 4  => Enum::C,
-/// 			 8  => Enum::D,
-/// 			 16 => Enum::E,
-/// 			 33 => Enum::F,
-/// 			 _ => return None,
-/// 		 })
-/// 	}
-///
-/// 	unsafe fn from_discriminant_unchecked(discriminant: <Self as Discriminant>::Type) -> Self{
-/// 		match discriminant{
-/// 			1  => Enum::A,
-/// 			2  => Enum::B,
-/// 			4  => Enum::C,
-/// 			8  => Enum::D,
-/// 			16 => Enum::E,
-/// 			33 => Enum::F,
-/// 			_ => ::std::mem::uninitialized(),
-/// 		}
-/// 	}
-/// }
-/// ```
-pub trait Discriminant: Sized{
-	/// The type of the discriminant
-	type Type;
-
-	/// Tries to construct an enum from the discriminant of the variants/enum items
-	fn from_discriminant(discriminant: <Self as Discriminant>::Type) -> Option<Self>;
-
-	/// Constructs an enum from the discriminant of the variants/enum items
-	unsafe fn from_discriminant_unchecked(discriminant: <Self as Discriminant>::Type) -> Self;
 }
 
 /// Derive this trait for an enum automatically using `#[derive(EnumIter)]`
@@ -414,69 +331,6 @@ pub trait Iterable where
 pub trait VariantName{
 	/// The name of the currently instantiated variant
 	fn variant_name(&self) -> &'static str;
-}
-
-/// Derive this trait for an enum automatically using `#[derive(EnumBitPattern)]`
-///
-/// # Example with derive
-///
-/// ```rust,ignore
-/// #[macro_use]extern crate enum_traits_macros;
-///
-/// #[derive(EnumBitPattern)]
-/// enum Enum{A,B(u8),C{c: u16},D,E(u32),F{f: u64},G,H(i8),I{i: i16}}
-/// ```
-///
-/// # Example with manual impl
-///
-/// ```rust
-/// use enum_traits::*;
-///
-/// enum Enum{A,B(u8),C{c: u16},D,E(u32),F{f: u64},G,H(i8),I{i: i16}}
-///
-/// impl BitPattern for Enum{
-/// 	type ByteArray = [u8; 2];
-///
-/// 	fn bit_pattern(self) -> Self::ByteArray{
-/// 		match self{
-/// 			Enum::A     => [0b00000000 , 0b00000001],
-/// 			Enum::B(..) => [0b00000000 , 0b00000010],
-/// 			Enum::C{..} => [0b00000000 , 0b00000100],
-/// 			Enum::D     => [0b00000000 , 0b00001000],
-/// 			Enum::E(..) => [0b00000000 , 0b00010000],
-/// 			Enum::F{..} => [0b00000000 , 0b00100000],
-/// 			Enum::G     => [0b00000000 , 0b01000000],
-/// 			Enum::H(..) => [0b00000000 , 0b10000000],
-/// 			Enum::I{..} => [0b00000001 , 0b00000000],
-/// 		}
-/// 	}
-/// 	fn bit_pattern_rev(self) -> Self::ByteArray{
-/// 		match self{
-/// 			Enum::A     => [0b10000000 , 0b00000000],
-/// 			Enum::B(..) => [0b01000000 , 0b00000000],
-/// 			Enum::C{..} => [0b00100000 , 0b00000000],
-/// 			Enum::D     => [0b00010000 , 0b00000000],
-/// 			Enum::E(..) => [0b00001000 , 0b00000000],
-/// 			Enum::F{..} => [0b00000100 , 0b00000000],
-/// 			Enum::G     => [0b00000010 , 0b00000000],
-/// 			Enum::H(..) => [0b00000001 , 0b00000000],
-/// 			Enum::I{..} => [0b00000000 , 0b10000000],
-/// 		}
-/// 	}
-/// }
-/// ```
-pub trait BitPattern{
-	type ByteArray;//TODO: : ::core::array::FixedSizeArray<u8> or : borrow::Borrow<[u8]>+borrow::BorrowMut<[u8]>+conv::AsRef<[u8]>+conv::AsMut<[u8]>;
-
-	/// Bit pattern of the currently instantiated variant in the defined order of an enum
-	/// Most significant bit first (e.g. 1000 is 8, 0100 is 4, 0010 is 2, 0001 is 1)
-	/// The byte order of the array follows the bit order
-	fn bit_pattern(self) -> Self::ByteArray;
-
-	/// Bit pattern of the currently instantiated variant in the defined order of an enum
-	/// Least significant bit first (e.g. 1000 is 1, 0100 is 2, 0010 is 4, 0001 is 8)
-	/// The byte order of the array follows the bit order
-	fn bit_pattern_rev(self) -> Self::ByteArray;
 }
 
 /// Derive this trait for an enum automatically using `#[derive(EnumTag)]`

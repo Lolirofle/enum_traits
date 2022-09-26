@@ -5,20 +5,20 @@
 
 #[cfg(feature = "no_std_compile")]extern crate alloc;
 extern crate syn;
-#[macro_use]
-extern crate quote;
-
+#[macro_use]extern crate quote;
 extern crate proc_macro;
 extern crate proc_macro2;
-use proc_macro2::{Literal,Span,TokenStream};
 
-#[cfg(not(feature = "no_std_compile"))]use  std::{cmp,iter};
-#[cfg(not(feature = "no_std_compile"))]use  std::iter::FromIterator;
-#[cfg(feature = "no_std_compile")     ]use core::{cmp,iter};
+use proc_macro2::{Literal,Span,TokenStream};
+#[cfg(not(feature = "no_std_compile"))]use std::cmp;
+#[cfg(not(feature = "no_std_compile"))]use std::iter::FromIterator;
+#[cfg(feature = "no_std_compile")     ]use core::cmp;
 #[cfg(feature = "no_std_compile")     ]use core::iter::FromIterator;
 #[cfg(feature = "no_std_compile")     ]use alloc::string::{String,ToString};
 #[cfg(feature = "no_std_compile")     ]use alloc::vec::Vec;
-use syn::{Attribute,Expr,ExprLit,Fields,Ident,ItemEnum,Lit,PathSegment,Variant};
+use quote::ToTokens;
+use syn::{Attribute,Expr,ExprLit,ExprPath,Fields,FieldsNamed,FieldsUnnamed,FieldValue,Ident,Index,ItemEnum,Lit,Member,Path,PathArguments,PathSegment,Type,Variant};
+use syn::punctuated::Punctuated;
 
 #[cfg(not(feature = "no_std"))]const STD: &'static str = "std";
 #[cfg(feature = "no_std")     ]const STD: &'static str = "core";
@@ -76,6 +76,46 @@ fn variant_unit_ident<'v>(variant: &'v Variant,derive_name: &'static str) -> &'v
 		}
 		_ => panic!("`derive({})` may only be applied to enum items with no fields",derive_name)
 	}
+}
+
+fn ident_to_path(ident: Ident) -> Path{Path{
+	leading_colon: None,
+	segments: {
+		let mut p = Punctuated::new();
+		p.push(PathSegment{
+			ident,
+			arguments: PathArguments::None
+		});
+		p},
+}}
+
+fn ident_to_expr(ident: Ident) -> Expr{ExprPath{
+	attrs: Vec::new(),
+	qself: None,
+	path: ident_to_path(ident),
+}.into()}
+
+/**
+ * Tries to follow the Rust naming conventions [https://doc.rust-lang.org/1.0.0/style/style/naming/README.html].
+ */
+fn camelcase_to_snakecase<'s>(s: &'s str) -> String{
+	let mut out = String::with_capacity(s.len() * 2);
+	let mut cs = s.chars();
+	let mut prev_is_separation = true;
+	if let Some(c) = cs.next(){
+		out.extend(c.to_lowercase());
+		for c in cs{
+			if c.is_uppercase(){
+				if !prev_is_separation{out.push('_');}
+				out.extend(c.to_lowercase());
+				prev_is_separation = true;
+			}else{
+				out.push(c);
+				prev_is_separation = c.is_ascii_punctuation() || c.is_ascii_whitespace();
+			}
+		}
+	}
+	out
 }
 
 #[inline(always)]
@@ -475,7 +515,7 @@ pub fn derive_EnumIndex(input: proc_macro::TokenStream) -> proc_macro::TokenStre
 ///
 /// # Requirements
 /// - The derived item is an enum
-/// - The enum variants is all unit variants
+/// - The enum variants are all unit variants
 #[proc_macro_derive(EnumIter)]
 pub fn derive_EnumIter(input: proc_macro::TokenStream) -> proc_macro::TokenStream{//TODO: Consider rewriting output (EnumIter may not need Option, but then empty enums are not represented. Are they necessary to include?)
 	fn variant_unit_ident(variant: &Variant) -> &Ident{
@@ -651,7 +691,7 @@ pub fn derive_EnumIter(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
 ///
 /// # Requirements
 /// - The derived item is an enum
-/// - The enum variants is all unit variants
+/// - The enum variants are all unit variants
 #[proc_macro_derive(EnumIterator)]
 pub fn derive_EnumIterator(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
 	fn variant_unit_ident(variant: &Variant) -> &Ident{
@@ -782,73 +822,6 @@ pub fn derive_EnumIterator(input: proc_macro::TokenStream) -> proc_macro::TokenS
 	derive_enum(input,gen_impl)
 }
 
-/// Implements `enum_traits::Discriminant`.
-///
-/// # Requirements
-/// - The derived item is an enum
-/// - The enum variants are all unit variants
-#[proc_macro_derive(EnumDiscriminant)]
-pub fn derive_EnumDiscriminant(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
-	fn gen_impl(item: ItemEnum,std: PathSegment) -> TokenStream{
-		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
-		let ident = &item.ident;
-
-		fn variant_to_match_arm(ident: &Ident,variant: &Variant,only_unit_variants: bool) -> Option<TokenStream>{
-			let variant_ident = &variant.ident;
-
-			//If an explicit discriminant exists
-			variant.discriminant.as_ref().map(|(_,ref variant_discriminant)|{
-				match variant.fields{
-					Fields::Unit => {
-						quote! { #variant_discriminant => #ident::#variant_ident, }
-					}
-					Fields::Unnamed(_)  |
-					Fields::Named(_) => {
-						//Tuple and struct variants cannot have explicit discriminants
-						unreachable!()
-					}
-				}
-			}).or_else(||{
-				match variant.fields{
-					Fields::Unit if only_unit_variants => Some({
-						quote! { n if n==#ident::#variant_ident as Self::Type => #ident::#variant_ident, }
-					}),
-					_ => None
-				}
-			})
-		}
-		let only_unit_variants = item.variants.iter().all(|variant| match variant.fields{Fields::Unit => true , _ => false});
-		let match_arms1 = item.variants.iter().filter_map(|variant| variant_to_match_arm(ident,variant,only_unit_variants));
-		let match_arms2 = item.variants.iter().filter_map(|variant| variant_to_match_arm(ident,variant,only_unit_variants));
-		let ty = type_from_repr_attr(item.attrs.iter()).unwrap_or(Ident::new("usize",Span::call_site()));
-
-		quote!{
-			#[automatically_derived]
-			#[allow(unused_attributes)]
-			impl #impl_generics ::enum_traits::Discriminant for #ident #ty_generics #where_clause{
-				type Type = #ty;
-
-				#[inline]
-				fn from_discriminant(discriminant: <Self as Discriminant>::Type) -> Option<Self>{
-					Some(match discriminant{
-						#( #match_arms1 )*
-						_ => return None
-					})
-				}
-
-				#[inline]
-				unsafe fn from_discriminant_unchecked(discriminant: <Self as Discriminant>::Type) -> Self{
-					match discriminant{
-						#( #match_arms2 )*
-						_ => ::#std::mem::uninitialized()
-					}
-				}
-			}
-		}
-	}
-	derive_enum(input,gen_impl)
-}
-
 /// Implements `enum_traits::EnumVariantName`, giving the name of the variants of an enum as a string.
 ///
 /// # Requirements
@@ -947,67 +920,6 @@ pub fn derive_EnumFromVariantName(input: proc_macro::TokenStream) -> proc_macro:
 	derive_enum(input, gen_impl)
 }
 
-/*
-/// Implements `enum_traits::BitPattern`.
-///
-/// # Requirements
-/// - The derived item is an enum
-#[proc_macro_derive(EnumBitPattern)]
-pub fn derive_EnumBitPattern(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
-	fn variant_unit_ident(variant: &Variant) -> &Ident{
-		::variant_unit_ident(variant,"EnumBitPattern")
-	}
-
-	fn gen_impl(item: ItemEnum,std: PathSegment) -> TokenStream{
-		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
-		let ident = item.ident;
-
-		let n = (item.variants.len() as f64 / 8.0).ceil() as usize;
-		fn match_arm_transform(ident: &Ident,(i,variant_ident): (usize,&Ident),n: usize) -> TokenStream{
-			let lit = Punctuated::from_iter({ //TODO: Do not convert from iter to vec and then to iter again
-				let mut l = Vec::from_iter(iter::repeat(Expr::from(Lit::Int(LitInt::new(0 as u64,Span::call_site())))).take(n));
-				l[n-i/8-1] = Expr::from(Lit::Int(LitInt::new((0b00000001u8.rotate_left((i as u32)%8) as u64),Span::call_site())));
-				l.into_iter()
-			});
-			quote! { #ident::#variant_ident => [ #lit ], }
-		}
-		fn match_arm_transform_rev(ident: &Ident,(i,variant_ident): (usize,&Ident),n: usize) -> TokenStream{
-			let lit = Punctuated::from_iter({
-				let mut l = Vec::from_iter(iter::repeat(Expr::from(Lit::Int(LitInt::new(0 as u64,Span::call_site())))).take(n));
-				l[i/8] = Expr::from(Lit::Int(LitInt::new((0b10000000u8.rotate_right((i as u32)%8) as u64),Span::call_site())));
-				l.into_iter()
-			});
-			quote! { #ident::#variant_ident => [ #lit ], }
-		}
-		let match_arms     = item.variants.iter().map(variant_unit_ident).enumerate().map(|arg| match_arm_transform(ident,arg,n));
-		let match_arms_rev = item.variants.iter().map(variant_unit_ident).enumerate().map(|arg| match_arm_transform_rev(ident,arg,n));
-
-		quote!{
-			#[automatically_derived]
-			#[allow(unused_attributes)]
-			impl #impl_generics ::enum_traits::BitPattern for #ident #ty_generics #where_clause{
-				type ByteArray = [u8; #n];
-
-				#[inline]
-				fn bit_pattern(self) -> Self::ByteArray{
-					match self{
-						#( #match_arms )*
-					}
-				}
-
-				#[inline]
-				fn bit_pattern_rev(self) -> Self::ByteArray{
-					match self{
-						#( #match_arms_rev )*
-					}
-				}
-			}
-		}
-	}
-	derive_enum(input,gen_impl)
-}
-*/
-
 /// Creates an enum with unit variants from the derived enum, and implements `enum_traits::Tag`.
 ///
 /// # Requirements
@@ -1039,7 +951,7 @@ pub fn derive_EnumTag(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 		let ident = item.ident;
 		let ref visibility = item.vis;
 
-		let unit_enum_ident = Ident::new(format!("{}Tag",ident.to_string()).as_ref(),Span::call_site());
+		let unit_enum_ident = format_ident!("{}Tag",ident);
 
 		let match_arms = item.variants.iter().map(|variant|{
 			let variant_ident = &variant.ident;
@@ -1126,20 +1038,15 @@ pub fn derive_EnumIsVariantFns(input: proc_macro::TokenStream) -> proc_macro::To
 		let ident = item.ident;
 
 		let fns = item.variants.iter().map(|variant|{
-			let fn_ident = Ident::new(format!("is_{}",variant.ident.to_string().to_ascii_lowercase()).as_ref(),Span::call_site());
+			let fn_ident = format_ident!("is_{}",camelcase_to_snakecase(variant.ident.to_string().as_ref()));
+			//TODO: Custom name using an attribute?
 
 			let pattern = {
 				let variant_ident = &variant.ident;
 				match variant.fields{
-					Fields::Unit => {
-						quote! { #ident::#variant_ident }
-					}
-					Fields::Unnamed(_) => {
-						quote! { #ident::#variant_ident(..) }
-					}
-					Fields::Named(_) => {
-						quote! { #ident::#variant_ident{..} }
-					}
+					Fields::Unit => quote! { #ident::#variant_ident },
+					Fields::Unnamed(_) => quote! { #ident::#variant_ident(..) },
+					Fields::Named(_) => quote! { #ident::#variant_ident{..} },
 				}
 			};
 
@@ -1159,6 +1066,156 @@ pub fn derive_EnumIsVariantFns(input: proc_macro::TokenStream) -> proc_macro::To
 				#( #fns )*
 			}
 		}
+	}
+	derive_enum(input,gen_impl)
+}
+
+/// Implements `From` for all variants in the enum by using the type of the variant.
+/// If more than one field exist in a variant, a tuple is used to represent the variant (Both `enum Enum{A{x: i8}}` and `enum Enum{A(i8)}` generates `From<i8>`).
+/// If no fields exist in a variant, an empty tuple is used to represent the variant (`enum Enum{A}` generates `From<()>`).
+/// Note that both tuple variants and record variants become tuples.
+///
+/// # Requirements
+/// - The derived item is an enum
+/// - There are no variants in which their types are identical when all type parameters are applied.
+///
+/// # Example
+///
+///  ```rust
+/// #[derive(EnumFromVariants)]
+/// enum Enum{
+///     A,
+///     B(u8),
+///     C(u8,u16,u32,u64),
+///     D{d: i8},
+///     E{a: i8 , b: i16 , c: i32},
+///     F{a: i8 , b: i32 , c: i16},
+/// }
+///  ```
+///
+/// # Expanded derivation
+///
+///  ```rust
+/// impl From<()> for Enum{
+///     #[inline(always)] fn from((): ()) -> Self{
+///         Enum::A
+///     }
+/// }
+///
+/// impl From<u8> for Enum{
+///     #[inline(always)] fn from(x0: u8) -> Self{
+///         Enum::B(x0)
+///     }
+/// }
+///
+/// impl From<(u8,u16,u32,u64)> for Enum{
+///     #[inline(always)] fn from((x0,x1,x2,x3): (u8,u16,u32,u64)) -> Self{
+///         Enum::C(x0,x1,x2,x3)
+///     }
+/// }
+///
+/// impl From<i8> for Enum{
+///     #[inline(always)] fn from(x0: i8) -> Self{
+///         Enum::D{d: x0}
+///     }
+/// }
+///
+/// impl From<(i8,i16,i32)> for Enum{
+///     #[inline(always)] fn from((x0,x1,x2): (i8,i16,i32)) -> Self{
+///         Enum::E{a: x0 , b: x1 , c: x2}
+///     }
+/// }
+///
+/// impl From<(i8,i32,i16)> for Enum{
+///     #[inline(always)] fn from((x0,x1,x2): (i8,i32,i16)) -> Self{
+///         Enum::F{a: x0 , b: x1 , c: x2}
+///     }
+/// }
+/// ```
+#[proc_macro_derive(EnumFromVariants)]
+pub fn derive_EnumFromVariants(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
+	fn fields_to_ty_pat_expr(item_ident: &Ident,variant: &Variant) -> (TokenStream,TokenStream,TokenStream){(
+		//Type
+		match variant.fields{
+			Fields::Unit => quote! { () },
+			Fields::Unnamed(FieldsUnnamed{unnamed: ref fields,..}) |
+			Fields::Named(FieldsNamed{named: ref fields,..}) => {
+				match fields.len(){
+					1 => {
+						let ty = &fields.first().unwrap().ty;
+						quote! { #ty }
+					},
+					_ => {
+						let tys = fields.iter().map(|field| &field.ty);
+						quote! { (#(#tys),*) }
+					},
+				}
+			}
+		},
+
+		//Pattern
+		match variant.fields{
+			Fields::Unit => quote! { () },
+			Fields::Unnamed(FieldsUnnamed{unnamed: ref fields,..}) |
+			Fields::Named(FieldsNamed{named: ref fields,..}) => {
+				match fields.len(){
+					1 => quote! { x0 },
+					_ => {
+						let vars = fields.iter()
+							.enumerate()
+							.map(|(i,_field)| format_ident!("x{}",i));
+						quote! { ( #(#vars),* ) }
+					},
+				}
+			}
+		},
+
+		//Expression
+		{
+			let variant_ident = &variant.ident;
+			match variant.fields{
+				Fields::Unit => quote! { #item_ident::#variant_ident },
+				Fields::Unnamed(FieldsUnnamed{unnamed: ref fields,..}) => {
+					let args = fields.iter()
+						.enumerate()
+						.map(|(i,_field)| format_ident!("x{}",i));
+					quote! { #item_ident::#variant_ident( #(#args),* ) }
+				},
+				Fields::Named(FieldsNamed{named: ref fields,..}) => {
+					let args = fields.iter()
+						.enumerate()
+						.map(|(i,_field)| format_ident!("x{}",i));
+					let field_names = fields.iter()
+						.enumerate()
+						.map(|(i,field)| match field.ident{
+							Some(ref ident) => Member::Named(ident.clone()),
+							None => Member::Unnamed(Index::from(i)),
+						});
+					quote! { #item_ident::#variant_ident{ #(#field_names : #args),* } }
+				},
+			}
+		},
+	)}
+
+	fn gen_impl(item: ItemEnum,std: PathSegment) -> TokenStream{
+		let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+		let ident = item.ident;
+
+		let impls = item.variants.iter().filter_map(|variant|{
+			let (ty,pattern,expr) = fields_to_ty_pat_expr(&ident,&variant);
+			Some(quote!{
+				#[automatically_derived]
+				#[allow(unused_attributes)]
+				impl #impl_generics ::#std::convert::From<#ty> for #ident #ty_generics #where_clause{
+					#[inline(always)]
+					fn from(#pattern: #ty) -> Self{
+						#expr
+					}
+				}
+			})
+		});
+
+		quote!{#( #impls )*}
 	}
 	derive_enum(input,gen_impl)
 }

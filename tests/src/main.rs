@@ -3,7 +3,6 @@
 
 #![cfg_attr(feature = "no_std" ,no_std)]
 
-//#![cfg_attr(feature = "nightly" ,feature(associated_consts))]
 #![allow(unreachable_code)]
 
 #[cfg(not(feature = "no_std"))]extern crate core;
@@ -17,14 +16,14 @@ use enum_traits::*;
 mod fields{
 	use enum_traits::*;
 
-	#[cfg_attr(feature = "no_std_compile"      ,derive(Debug,Eq,PartialEq,EnumIndex,              EnumToIndex,EnumLen,EnumDiscriminant,                 EnumTag,                               EnumVariantName,EnumFromVariantName))]
-	#[cfg_attr(not(feature = "no_std_compile") ,derive(Debug,Eq,PartialEq,EnumIndex,              EnumToIndex,EnumLen,EnumDiscriminant,EnumIsVariantFns,EnumTag,                               EnumVariantName,EnumFromVariantName))]
+	#[cfg_attr(feature = "no_std_compile"      ,derive(Debug,Eq,PartialEq,EnumIndex,              EnumToIndex,EnumLen,                 EnumTag,                               EnumVariantName,EnumFromVariantName))]
+	#[cfg_attr(not(feature = "no_std_compile") ,derive(Debug,Eq,PartialEq,EnumIndex,              EnumToIndex,EnumLen,EnumIsVariantFns,EnumTag,                               EnumVariantName,EnumFromVariantName))]
 	enum Fields<'t,T: 't>{
 		VariantA(&'t T),
 		VariantB(T),
 		VariantC(T,T,T,T),
-		VariantD{d: i32},
-		VariantE{a: i32,b: i32,c: i32,d: i32,e: i32},
+		VariantD{d: (T,i32)},
+		VariantE{a: i32,b: i32,c: i32,d: i32,e: (T,i32)},
 		VariantF,
 	}
 
@@ -45,11 +44,11 @@ mod fields{
 		assert_eq!(2,e.index());
 		assert_eq!(2,e.into_index());
 
-		e = Fields::VariantD{d: 0};
+		e = Fields::VariantD{d: (0,0)};
 		assert_eq!(3,e.index());
 		assert_eq!(3,e.into_index());
 
-		e = Fields::VariantE{a: 0,b: 1,c: 2,d: 3,e: 4};
+		e = Fields::VariantE{a: 0,b: 1,c: 2,d: 3,e: (4,4)};
 		assert_eq!(4,e.index());
 		assert_eq!(4,e.into_index());
 
@@ -63,21 +62,7 @@ mod fields{
 
 	#[test]
 	fn test_len(){
-		assert_eq!(6,Fields::<'static,u32>::len());
-	}
-
-	#[test]
-	fn test_discriminants(){
-		assert_eq!(None,Fields::<'static,()>::from_discriminant(0));
-		assert_eq!(None,Fields::<'static,()>::from_discriminant(1));
-		assert_eq!(None,Fields::<'static,()>::from_discriminant(2));
-		assert_eq!(None,Fields::<'static,()>::from_discriminant(3));
-		assert_eq!(None,Fields::<'static,()>::from_discriminant(4));
-		assert_eq!(None,Fields::<'static,()>::from_discriminant(5));
-		assert_eq!(None,Fields::<'static,()>::from_discriminant(6));
-		assert_eq!(None,Fields::<'static,()>::from_discriminant(7));
-		assert_eq!(None,Fields::<'static,()>::from_discriminant(8));
-		assert_eq!(None,Fields::<'static,()>::from_discriminant(9));
+		assert_eq!(6,Fields::<'static,u32>::LEN);
 	}
 
 	#[cfg(not(feature = "no_std_compile"))]
@@ -85,52 +70,52 @@ mod fields{
 	fn test_isvariantfns(){
 		let i = 0u8;
 		let mut e = Fields::VariantA(&i);
-		assert!(e.is_varianta());
-		assert!(!e.is_variantb());
-		assert!(!e.is_variantc());
-		assert!(!e.is_variantd());
-		assert!(!e.is_variante());
-		assert!(!e.is_variantf());
+		assert!(e.is_variant_a());
+		assert!(!e.is_variant_b());
+		assert!(!e.is_variant_c());
+		assert!(!e.is_variant_d());
+		assert!(!e.is_variant_e());
+		assert!(!e.is_variant_f());
 
 		e = Fields::VariantB(0);
-		assert!(!e.is_varianta());
-		assert!(e.is_variantb());
-		assert!(!e.is_variantc());
-		assert!(!e.is_variantd());
-		assert!(!e.is_variante());
-		assert!(!e.is_variantf());
+		assert!(!e.is_variant_a());
+		assert!(e.is_variant_b());
+		assert!(!e.is_variant_c());
+		assert!(!e.is_variant_d());
+		assert!(!e.is_variant_e());
+		assert!(!e.is_variant_f());
 
 		e = Fields::VariantC(0,1,2,3);
-		assert!(!e.is_varianta());
-		assert!(!e.is_variantb());
-		assert!(e.is_variantc());
-		assert!(!e.is_variantd());
-		assert!(!e.is_variante());
-		assert!(!e.is_variantf());
+		assert!(!e.is_variant_a());
+		assert!(!e.is_variant_b());
+		assert!(e.is_variant_c());
+		assert!(!e.is_variant_d());
+		assert!(!e.is_variant_e());
+		assert!(!e.is_variant_f());
 
-		e = Fields::VariantD{d: 0};
-		assert!(!e.is_varianta());
-		assert!(!e.is_variantb());
-		assert!(!e.is_variantc());
-		assert!(e.is_variantd());
-		assert!(!e.is_variante());
-		assert!(!e.is_variantf());
+		e = Fields::VariantD{d: (0,0)};
+		assert!(!e.is_variant_a());
+		assert!(!e.is_variant_b());
+		assert!(!e.is_variant_c());
+		assert!(e.is_variant_d());
+		assert!(!e.is_variant_e());
+		assert!(!e.is_variant_f());
 
-		e = Fields::VariantE{a: 0,b: 1,c: 2,d: 3,e: 4};
-		assert!(!e.is_varianta());
-		assert!(!e.is_variantb());
-		assert!(!e.is_variantc());
-		assert!(!e.is_variantd());
-		assert!(e.is_variante());
-		assert!(!e.is_variantf());
+		e = Fields::VariantE{a: 0,b: 1,c: 2,d: 3,e: (4,4)};
+		assert!(!e.is_variant_a());
+		assert!(!e.is_variant_b());
+		assert!(!e.is_variant_c());
+		assert!(!e.is_variant_d());
+		assert!(e.is_variant_e());
+		assert!(!e.is_variant_f());
 
 		e = Fields::VariantF;
-		assert!(!e.is_varianta());
-		assert!(!e.is_variantb());
-		assert!(!e.is_variantc());
-		assert!(!e.is_variantd());
-		assert!(!e.is_variante());
-		assert!(e.is_variantf());
+		assert!(!e.is_variant_a());
+		assert!(!e.is_variant_b());
+		assert!(!e.is_variant_c());
+		assert!(!e.is_variant_d());
+		assert!(!e.is_variant_e());
+		assert!(e.is_variant_f());
 	}
 
 	#[test]
@@ -145,10 +130,10 @@ mod fields{
 		e = Fields::VariantC(0,1,2,3);
 		assert_eq!(FieldsTag::VariantC,e.tag());
 
-		e = Fields::VariantD{d: 0};
+		e = Fields::VariantD{d: (0,0)};
 		assert_eq!(FieldsTag::VariantD,e.tag());
 
-		e = Fields::VariantE{a: 0,b: 1,c: 2,d: 3,e: 4};
+		e = Fields::VariantE{a: 0,b: 1,c: 2,d: 3,e: (4,4)};
 		assert_eq!(FieldsTag::VariantE,e.tag());
 
 		e = Fields::VariantF;
@@ -169,10 +154,10 @@ mod fields{
 		e = Fields::VariantC(0,1,2,3);
 		assert_eq!("VariantC",e.variant_name());
 
-		e = Fields::VariantD{d: 0};
+		e = Fields::VariantD{d: (0,0)};
 		assert_eq!("VariantD",e.variant_name());
 
-		e = Fields::VariantE{a: 0,b: 1,c: 2,d: 3,e: 4};
+		e = Fields::VariantE{a: 0,b: 1,c: 2,d: 3,e: (4,4)};
 		assert_eq!("VariantE",e.variant_name());
 
 		e = Fields::VariantF;
@@ -183,8 +168,8 @@ mod fields{
 mod nofields{
 	use enum_traits::*;
 
-	#[cfg_attr(feature = "no_std_compile"      ,derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumDiscriminant,                 EnumTag,EnumEnds,EnumIterator,EnumIter,EnumVariantName,EnumFromVariantName))]
-	#[cfg_attr(not(feature = "no_std_compile") ,derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumDiscriminant,EnumIsVariantFns,EnumTag,EnumEnds,EnumIterator,EnumIter,EnumVariantName,EnumFromVariantName))]
+	#[cfg_attr(feature = "no_std_compile"      ,derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,                 EnumTag,EnumEnds,EnumIterator,EnumIter,EnumVariantName,EnumFromVariantName))]
+	#[cfg_attr(not(feature = "no_std_compile") ,derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumIsVariantFns,EnumTag,EnumEnds,EnumIterator,EnumIter,EnumVariantName,EnumFromVariantName))]
 	enum NoFields{
 		A,B,C,D,E,F
 	}
@@ -223,17 +208,7 @@ mod nofields{
 
 	#[test]
 	fn test_len(){
-		assert_eq!(6,<NoFields as Len>::len());
-	}
-
-	#[test]
-	fn test_discriminants(){
-		assert_eq!(Some(NoFields::A),NoFields::from_discriminant(NoFields::A as usize));
-		assert_eq!(Some(NoFields::B),NoFields::from_discriminant(NoFields::B as usize));
-		assert_eq!(Some(NoFields::C),NoFields::from_discriminant(NoFields::C as usize));
-		assert_eq!(Some(NoFields::D),NoFields::from_discriminant(NoFields::D as usize));
-		assert_eq!(Some(NoFields::E),NoFields::from_discriminant(NoFields::E as usize));
-		assert_eq!(Some(NoFields::F),NoFields::from_discriminant(NoFields::F as usize));
+		assert_eq!(6,<NoFields as Len>::LEN);
 	}
 
 	#[test]
@@ -263,42 +238,22 @@ mod nofields{
 mod discriminants{
 	use enum_traits::*;
 
-	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumIterator,EnumIter,EnumDiscriminant)]
+	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumIterator,EnumIter)]
 	enum Discriminants{
 		A=1,B=2,C=4,D=8,E=16,F=33
 	}
 
-	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumIterator,EnumIter,EnumDiscriminant)]
+	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumIterator,EnumIter)]
 	#[repr(u32)]
 	enum SomeDiscriminants{
 		A=1,B,C=4,D,E=16,F
 	}
 
-	#[test]
-	fn test_discriminants(){
-		assert_eq!(None                  ,Discriminants::from_discriminant(0));
-		assert_eq!(Some(Discriminants::A),Discriminants::from_discriminant(1));
-		assert_eq!(Some(Discriminants::B),Discriminants::from_discriminant(2));
-		assert_eq!(None                  ,Discriminants::from_discriminant(3));
-		assert_eq!(Some(Discriminants::C),Discriminants::from_discriminant(4));
-		assert_eq!(Some(Discriminants::D),Discriminants::from_discriminant(8));
-		assert_eq!(Some(Discriminants::E),Discriminants::from_discriminant(16));
-		assert_eq!(None                  ,Discriminants::from_discriminant(32));
-		assert_eq!(Some(Discriminants::F),Discriminants::from_discriminant(33));
-
-		assert_eq!(Some(SomeDiscriminants::A),SomeDiscriminants::from_discriminant(SomeDiscriminants::A as u32));
-		assert_eq!(Some(SomeDiscriminants::B),SomeDiscriminants::from_discriminant(SomeDiscriminants::B as u32));
-		assert_eq!(Some(SomeDiscriminants::C),SomeDiscriminants::from_discriminant(SomeDiscriminants::C as u32));
-		assert_eq!(Some(SomeDiscriminants::D),SomeDiscriminants::from_discriminant(SomeDiscriminants::D as u32));
-		assert_eq!(Some(SomeDiscriminants::E),SomeDiscriminants::from_discriminant(SomeDiscriminants::E as u32));
-		assert_eq!(Some(SomeDiscriminants::F),SomeDiscriminants::from_discriminant(SomeDiscriminants::F as u32));
-	}
-
 	#[allow(dead_code)]
 	#[test]
 	fn test_len(){
-		assert_eq!(6,<Discriminants as Len>::len());
-		assert_eq!(6,<SomeDiscriminants as Len>::len());
+		assert_eq!(6,<Discriminants as Len>::LEN);
+		assert_eq!(6,<SomeDiscriminants as Len>::LEN);
 	}
 }
 
@@ -426,13 +381,13 @@ mod readmemd{
 		}
 
 		assert_eq!(Enum::VariantB("OK").into_index(),1);
-		assert_eq!(Enum::<'static,&'static str>::len(),6);
+		assert_eq!(Enum::<'static,&'static str>::LEN,6);
 	}
 
 	#[test]
 	#[allow(dead_code)]
 	fn f2(){
-		#[derive(Debug,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumIter,EnumIterator,EnumDiscriminant,EnumEnds)]
+		#[derive(Debug,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumIter,EnumIterator,EnumEnds)]
 		enum Enum{
 			VariantA = 10,
 			VariantB = 20,
@@ -443,17 +398,11 @@ mod readmemd{
 		assert_eq!(Enum::VariantB.into_index(),1);
 
 		//From EnumLen
-		//assert_eq!(Enum::len(),3);
-		assert_eq!(<Enum as Len>::len(),3);
+		//assert_eq!(Enum::LEN,3);
+		assert_eq!(<Enum as Len>::LEN,3);
 
 		//From EnumFromIndex
 		assert!(match Enum::from_index(1){
-			Some(Enum::VariantB) => true,
-			_ => false
-		});
-
-		//From EnumDiscriminant
-		assert!(match Enum::from_discriminant(20){
 			Some(Enum::VariantB) => true,
 			_ => false
 		});
