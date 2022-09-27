@@ -1,13 +1,28 @@
 [package]
 name = "enum_traits"
-version = "1.0.0"
+version = "3.0.0"
 authors = ["Lolirofle <1522957+Lolirofle@users.noreply.github.com>"]
-description = "Traits for builtin enum items that are primarily used by `enum_traits_macros` when automatically deriving types"
+description = "Companion traits for `enum_traits_macros`"
 documentation = "https://docs.rs/enum_traits"
 repository = "https://github.com/Lolirofle/enum_traits.git"
-#readme = "README.md"
-keywords = ["enum","trait","derive","deriving","macro"]
+readme = "../README.md"
+keywords = ["enum","trait","derive","proc-macros","macro"]
+categories = ["development-tools::procedural-macro-helpers"]
 license = "MIT"
+edition = "2021"
+
+[lib]
+name = "enum_traits"
+
+[dependencies]
+enum_traits_macros = {path = "../macros" , optional = true}
+
+[dev-dependencies]
+enum_traits_macros = {path = "../macros"}
 
 [features]
-no_std = []
+default = []
+derive = ["enum_traits_macros"]
+
+[package.metadata.docs.rs]
+features = ["derive"]

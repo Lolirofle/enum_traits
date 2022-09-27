@@ -1,15 +1,18 @@
 [package]
 name = "enum_traits_macros"
-version = "3.0.1"
+version = "3.0.0"
 authors = ["Lolirofle <1522957+Lolirofle@users.noreply.github.com>"]
-description = "Procedural macros that adds functionality to enums by deriving traits from the crate `enum_traits`"
+description = "Procedural macros adding functionality to enums. Derives traits from the crate `enum_traits`"
 documentation = "https://docs.rs/enum_traits"
 repository = "https://github.com/Lolirofle/enum_traits.git"
-#readme = "README.md"
-keywords = ["enum","trait","derive","deriving","macro"]
+readme = "../README.md"
+keywords = ["enum","trait","derive","proc-macros","macro"]
+categories = ["development-tools::procedural-macro-helpers"]
 license = "MIT"
+edition = "2021"
 
 [lib]
+name = "enum_traits_macros"
 proc-macro = true
 
 [dependencies]
@@ -19,7 +22,3 @@ proc-macro2 = "1.0"
 
 [dev-dependencies]
 enum_traits = {path="../lib"}
-
-[features]
-no_std = []
-no_std_compile = []

@@ -1,58 +1,76 @@
-//! Simple traits for builtin enum items.
-//! Primarily used by `enum_traits_macros` when automatically deriving types.
-//! The crate `enum_traits_macros` is required for the derives.
+//! Traits for enum items.
+//!
+//! Used by the crate [`enum_traits_macros`] to automatically derive enums.
+//!
+//! # Import
+//!
+//! Add one of the following snippets to `Cargo.toml`:
+//! ```toml
+//! [dependencies]
+//! enum_traits = <VERSION>
+//! enum_traits_macros = <VERSION>
+//! ```
+//! or
+//! ```toml
+//! [dependencies]
+//! enum_traits = { version = <VERSION>, features = ["derive"] }
+//! ```
 
-#![cfg_attr(feature = "no_std" ,no_std)]
+#![no_std]
 
-#[cfg(not(feature = "no_std"))]use  std::borrow;
-#[cfg(feature = "no_std")     ]use core::borrow;
+use core::borrow;
 
-/// Represents the type used for indexing the variants of the enum item.
-///`Type` should be an primitive integer type and have more values or an equal number of values compared to the number of variants in the enum item.
+#[cfg(feature = "derive")]
+pub use enum_traits_macros::*;
+
+/// Represents the type used for indexing the variants of an enum item type.
 ///
-/// Derive this trait for an enum automatically using `#[derive(EnumIndex)]`
-/// When derived, `Type` becomes the type specified in the `repr` attribute for the enum item.
-/// If a `repr` attribute does not exist, the smalest integer type based on the number of variant fields is used instead.
+/// This is primarily used by [`FromIndex`] and [`ToIndex`].
 ///
-/// # Example with derive
+/// Derive this trait for an enum automatically using [`#[derive(EnumIndex)]`][EnumIndex].
 ///
-/// ```rust,ignore
-/// #[macro_use]extern crate enum_traits_macros;
+/// # Requirements
+///
+/// - [`Type`][`Index::Type`] should be a primitive unsigned integer type.
+/// - The number of variants of `Self` should be lesser than or equal the number of values of [`Type`][`Index::Type`].
+///
+/// # Example using derive
+///
+/// ```rust
+/// use enum_traits_macros::*;
 ///
 /// #[derive(EnumIndex)]
 /// enum Enum{A,B,C,D,E,F}
 /// ```
 ///
-/// # Example with manual impl
+/// # Expanded example
 ///
 /// ```rust
-/// use enum_traits::*;
-///
 /// enum Enum{A,B,C,D,E,F}
 ///
-/// impl Index for Enum{
+/// impl enum_traits::Index for Enum{
 /// 	type Type = u8;
 /// }
 /// ```
 pub trait Index{
-	/// Type used as an index for the enum
+	/// Type used as an index for the variants of `Self`.
 	type Type;
 }
 
-/// Constructors for an enum type from indices based on the variants' defined order
+/// A constructor from an index based on an order on the variants of an enum type.
 ///
-/// Derive this trait for an enum automatically using `#[derive(EnumFromIndex)]`
+/// Derive this trait for an enum automatically using [`#[derive(EnumFromIndex)]`][EnumFromIndex].
 ///
-/// # Example with derive
+/// # Example using derive
 ///
-/// ```rust,ignore
-/// #[macro_use]extern crate enum_traits_macros;
+/// ```rust
+/// use enum_traits_macros::*;
 ///
-/// #[derive(EnumFromIndex)]
+/// #[derive(EnumFromIndex,EnumIndex)]
 /// enum Enum{A,B,C,D,E,F}
 /// ```
 ///
-/// # Example with manual impl
+/// # Expanded example
 ///
 /// ```rust
 /// use enum_traits::*;
@@ -82,29 +100,29 @@ pub trait Index{
 /// 			3 => Enum::D,
 /// 			4 => Enum::E,
 /// 			5 => Enum::F,
-/// 			_ => ::std::mem::uninitialized(),
+/// 			_ => unreachable!(),
 /// 		}
 /// 	}
 /// }
 /// ```
 pub trait FromIndex: Index + Sized{
-	/// Tries to construct `Self` from an index based on the variants' defined order
+	/// Tries to construct `Self` from an index based on the variants' defined order.
 	fn from_index(index: <Self as Index>::Type) -> Option<Self>;
 
-	/// Constructs `Self` from an index based on the variants' defined order
+	/// Constructs `Self` from an index based on the variants' defined order.
 	unsafe fn from_index_unchecked(index: <Self as Index>::Type) -> Self;
 }
 
-/// Indices for an enum type based on the variants' defined order
+/// Indices based on an order on the variants of an enum type.
 ///
-/// Derive this trait for an enum automatically using `#[derive(EnumToIndex)]`
+/// Derive this trait for an enum automatically using [`#[derive(EnumToIndex)]`][EnumToIndex]
 ///
-/// # Example with derive
+/// # Example using derive
 ///
-/// ```rust,ignore
-/// #[macro_use]extern crate enum_traits_macros;
+/// ```rust
+/// use enum_traits_macros::*;
 ///
-/// #[derive(EnumToIndex)]
+/// #[derive(EnumIndex,EnumToIndex)]
 /// enum Enum{
 /// 	A,
 /// 	B(u8),
@@ -115,7 +133,7 @@ pub trait FromIndex: Index + Sized{
 /// }
 /// ```
 ///
-/// # Example with manual impl
+/// # Expanded example
 ///
 /// ```rust
 /// use enum_traits::*;
@@ -163,37 +181,49 @@ pub trait ToIndex: Index{
 	fn index(&self) -> <Self as Index>::Type;
 }
 
-/// Number of variants in an enum type
+/// Number of variants in an enum type.
 ///
-/// Derive this trait for an enum automatically using `#[derive(EnumLen)]`
+/// Derive this trait for an enum automatically using [`#[derive(EnumLen)]`][EnumLen].
 ///
-/// # Example with derive
+/// # Example using derive
 ///
-/// ```rust,ignorerust,ignore
-/// #[macro_use]extern crate enum_traits_macros;
+/// ```rust
+/// use enum_traits_macros::*;
 ///
 /// #[derive(EnumLen)]
 /// enum Enum{A,B,C,D,E,F}
 /// ```
+///
+/// # Expanded example
+///
+/// ```rust
+/// use enum_traits::*;
+///
+/// enum Enum{A,B,C,D,E,F}
+///
+/// impl Len for Enum{
+/// 	const LEN: usize = 6;
+/// }
+/// ```
 pub trait Len{
-	/// Number of variants in an enum
+	/// Number of variants in an item.
 	const LEN: usize;
 }
 
-/// Constructors for an enum type from its endpoints based on the variants' defined order
+/// Constructors for the endpoints of an enum based on an order on the variants.
 ///
-/// Derive this trait for an enum automatically using `#[derive(EnumEnds)]`
+/// Derive this trait for an enum automatically using [`#[derive(EnumEnds)]`][EnumEnds].
 ///
-/// # Example with derive
+/// # Example using derive
 ///
-/// ```rust,ignore
-/// #[macro_use]extern crate enum_traits_macros;
+/// ```rust
+/// use enum_traits_macros::*;
 ///
 /// #[derive(EnumEnds)]
 /// enum Enum{A,B,C,D,E,F}
 /// ```
 ///
-/// # Example with manual impl
+/// # Expanded example
 ///
 /// ```rust
 /// use enum_traits::*;
@@ -206,27 +236,27 @@ pub trait Len{
 /// }
 /// ```
 pub trait Ends: Sized{
-	/// The first variant in the defined order of an enum
+	/// The first variant in the defined order of an enum.
 	fn first() -> Self;
 
-	/// The last variant in the defined order of an enum
+	/// The last variant in the defined order of an enum.
 	fn last() -> Self;
 }
 
-/// Derive this trait for an enum automatically using `#[derive(EnumIter)]`
-/// When derived, a struct named ((name of Self) + "Iter") will be created with the same visibility as `Self`.
-/// This struct will then implement `Iterator` and `Iter` will be assigned to it when implementing `Iterable` for `Self`.
+/// An enum item type that have a corresponding iterator iterating over all variants.
 ///
-/// # Example with derive
+/// Derive this trait for an enum automatically using [`#[derive(EnumIter)]`][EnumIter].
 ///
-/// ```rust,ignore
-/// #[macro_use]extern crate enum_traits_macros;
+/// # Example using derive
+///
+/// ```rust
+/// use enum_traits_macros::*;
 ///
 /// #[derive(EnumIter)]
 /// enum Enum{A,B,C,D,E,F}
 /// ```
 ///
-/// # Example with manual impl
+/// # Expanded example
 ///
 /// ```rust
 /// use enum_traits::*;
@@ -283,12 +313,14 @@ pub trait Iterable where
 	fn variants() -> Self::Iter;
 }
 
-/// Derive this trait for an enum automatically using `#[derive(EnumVariantName)]`
+/// A function converting from a variant to its defined name.
 ///
-/// # Example with derive
+/// Derive this trait for an enum automatically using [`#[derive(EnumVariantName)]`][EnumVariantName].
 ///
-/// ```rust,ignore
-/// #[macro_use]extern crate enum_traits_macros;
+/// # Example using derive
+///
+/// ```rust
+/// use enum_traits_macros::*;
 ///
 /// #[derive(EnumVariantName)]
 /// enum Enum{
@@ -301,7 +333,7 @@ pub trait Iterable where
 /// }
 /// ```
 ///
-/// # Example with manual impl
+/// # Expanded example
 ///
 /// ```rust
 /// use enum_traits::*;
@@ -333,14 +365,14 @@ pub trait VariantName{
 	fn variant_name(&self) -> &'static str;
 }
 
-/// Derive this trait for an enum automatically using `#[derive(EnumTag)]`
-/// When derived, an enum named ((name of Self) + "Tag") will be created with the same visibility as `Self`.
-/// This enum will then will be assigned to the `Iter` associated type when implementing `Tag` for `Self`.
+/// An enum item type that have a corresponding enum consisting of only unit variants describing the discriminants.
 ///
-/// # Example with derive
+/// Derive this trait for an enum automatically using [`#[derive(EnumTag)]`][EnumTag].
 ///
-/// ```rust,ignore
-/// #[macro_use]extern crate enum_traits_macros;
+/// # Example using derive
+///
+/// ```rust
+/// use enum_traits_macros::*;
 ///
 /// #[derive(EnumTag)]
 /// enum Enum{
@@ -353,7 +385,7 @@ pub trait VariantName{
 /// }
 /// ```
 ///
-/// # Example with manual impl
+/// # Expanded example
 ///
 /// ```rust
 /// use enum_traits::*;
@@ -370,9 +402,20 @@ pub trait VariantName{
 /// enum EnumTag{A,B,C,D,E,F}
 ///
 /// impl Tag for Enum{
-/// 	type Enum = EnumTag;
+/// 	type Tag = EnumTag;
 ///
-/// 	fn tag(&self) -> Self::Enum{
+/// 	fn into_tag(self) -> Self::Tag{
+/// 		match self {
+/// 			Enum::A     => EnumTag::A,
+/// 			Enum::B(..) => EnumTag::B,
+/// 			Enum::C{..} => EnumTag::C,
+/// 			Enum::D     => EnumTag::D,
+/// 			Enum::E(..) => EnumTag::E,
+/// 			Enum::F{..} => EnumTag::F,
+/// 		}
+/// 	}
+///
+/// 	fn tag(&self) -> Self::Tag{
 /// 		match self {
 /// 			&Enum::A     => EnumTag::A,
 /// 			&Enum::B(..) => EnumTag::B,
@@ -385,8 +428,11 @@ pub trait VariantName{
 /// }
 /// ```
 pub trait Tag{
-	type Enum;
+	type Tag;
 
 	/// The tag (unit variant) of the currently instantiated variant
-	fn tag(&self) -> Self::Enum;
+	fn tag(&self) -> Self::Tag;
+
+	/// The tag (unit variant) of the currently instantiated variant
+	fn into_tag(self) -> Self::Tag;
 }

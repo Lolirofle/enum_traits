@@ -1,0 +1,6 @@
+[workspace]
+members = [
+	"lib",
+	"macros",
+	"tests",
+]

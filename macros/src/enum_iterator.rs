@@ -1,0 +1,129 @@
+use crate::util;
+use proc_macro2::{Literal,TokenStream};
+use syn::{Ident,Lit,Variant};
+
+fn variant_unit_ident(variant: &Variant) -> &Ident{
+	util::variant_unit_ident(variant,"EnumIterator")
+}
+
+pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
+	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+	let ident = item.ident;
+
+	let len = item.variants.len();
+	let last = item.variants.last();
+
+	/*let prev_match_arms = {
+			let iter = item.variants.iter().rev().map(variant_unit_ident);
+			iter.zip(item.variants.iter().rev().map(variant_unit_ident).skip(1))
+		}.map(|(variant_ident1,variant_ident2)|{
+			quote! { &mut #ident::#variant_ident1 => {*self = #ident::#variant_ident2; #ident::#variant_ident2}, }
+		});*/
+
+	let next_match_arms = {
+			let iter = item.variants.iter().map(variant_unit_ident);
+			iter.zip(item.variants.iter().map(variant_unit_ident).skip(1))
+		}.map(|(variant_ident1,variant_ident2)|{
+			quote! { &mut #ident::#variant_ident1 => {*self = #ident::#variant_ident2; #ident::#variant_ident2}, }
+		});
+
+	let len_match_arms = item.variants.iter().enumerate().map(|(i,variant)|{
+		let i = Lit::Int(Literal::usize_unsuffixed(i).into());
+		let variant_ident = variant_unit_ident(variant);
+		quote! { &#ident::#variant_ident => #i, }
+	});
+
+	let count_match_arms = item.variants.iter().enumerate().map(|(i,variant)|{
+		let i = Lit::Int(Literal::usize_unsuffixed(i).into());
+		let variant_ident = variant_unit_ident(variant);
+		quote! { #ident::#variant_ident => #i, }
+	});
+
+	let impl_iter = {
+		let fn_next = quote!{
+			#[inline]
+			#[allow(unreachable_code)]
+			fn next(&mut self) -> Option<Self::Item>{
+				Some(match self{
+					#( #next_match_arms )*
+					_ => return None
+				})
+			}
+		};
+
+		let fn_size_hint = quote!{
+			#[inline(always)]
+			fn size_hint(&self) -> (usize,Option<usize>){
+				use ::core::iter::ExactSizeIterator;
+				(self.len(),Some(self.len()))
+			}
+		};
+
+		let fn_count = quote!{
+			#[inline]
+			fn count(self) -> usize{
+				#len - 1 - match self{
+					#( #count_match_arms )*
+				}
+			}
+		};
+
+		let fn_last = if let Some(last_ident) = last.map(variant_unit_ident){quote!{
+			#[inline(always)]
+			fn last(self) -> Option<Self::Item>{
+				Some(#ident::#last_ident)
+			}
+		}}else{quote!{
+			#[inline(always)]
+			fn last(self) -> Option<Self::Item>{
+				None
+			}
+		}};
+
+		quote!{
+			#[automatically_derived]
+			#[allow(unused_attributes)]
+			impl #impl_generics ::core::iter::Iterator for #ident #ty_generics #where_clause{
+				type Item = Self;
+				#fn_next
+				#fn_count
+				#fn_size_hint
+				#fn_last
+			}
+		}
+	};
+
+	/*let impl_diter = quote!{
+		#[automatically_derived]
+		#[allow(unused_attributes)]
+		impl #impl_generics ::core::iter::DoubleEndedIterator for #ident #ty_generics #where_clause{
+			#[inline]
+			#[allow(unreachable_code)]
+			fn next_back(&mut self) -> Option<Self::Item>{
+				Some(match self{
+					#( #prev_match_arms )*
+					_ => return None
+				})
+			}
+		}
+	};*/
+
+	let impl_eiter = quote!{
+		#[automatically_derived]
+		#[allow(unused_attributes)]
+		impl #impl_generics ::core::iter::ExactSizeIterator for #ident #ty_generics #where_clause{
+			#[inline]
+			fn len(&self) -> usize{
+				#len - 1 - match self{
+					#( #len_match_arms )*
+				}
+			}
+		}
+	};
+
+	quote!{
+		#impl_iter
+		//#impl_diter
+		#impl_eiter
+	}
+}

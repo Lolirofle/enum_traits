@@ -1,23 +1,17 @@
-//cargo rustc -- -Z unstable-options --pretty=expanded --test
-//cargo expand-macros
-
-#![cfg_attr(feature = "no_std" ,no_std)]
-
 #![allow(unreachable_code)]
 
-#[cfg(not(feature = "no_std"))]extern crate core;
-#[macro_use]extern crate enum_traits_macros;
-extern crate enum_traits;
+extern crate alloc;
 
 use enum_traits::*;
+use enum_traits_macros::*;
 
 //TODO: Unit tests that should fail
 
 mod fields{
 	use enum_traits::*;
+	use enum_traits_macros::*;
 
-	#[cfg_attr(feature = "no_std_compile"      ,derive(Debug,Eq,PartialEq,EnumIndex,              EnumToIndex,EnumLen,                 EnumTag,                               EnumVariantName,EnumFromVariantName))]
-	#[cfg_attr(not(feature = "no_std_compile") ,derive(Debug,Eq,PartialEq,EnumIndex,              EnumToIndex,EnumLen,EnumIsVariantFns,EnumTag,                               EnumVariantName,EnumFromVariantName))]
+	#[derive(Debug,Eq,PartialEq,EnumIndex,              EnumToIndex,EnumLen,EnumIsVariantFns,EnumTag,                               EnumVariantName,EnumFromVariantName)]
 	enum Fields<'t,T: 't>{
 		VariantA(&'t T),
 		VariantB(T),
@@ -167,9 +161,9 @@ mod fields{
 
 mod nofields{
 	use enum_traits::*;
+	use enum_traits_macros::*;
 
-	#[cfg_attr(feature = "no_std_compile"      ,derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,                 EnumTag,EnumEnds,EnumIterator,EnumIter,EnumVariantName,EnumFromVariantName))]
-	#[cfg_attr(not(feature = "no_std_compile") ,derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumIsVariantFns,EnumTag,EnumEnds,EnumIterator,EnumIter,EnumVariantName,EnumFromVariantName))]
+	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumIsVariantFns,EnumTag,EnumEnds,EnumIterator,EnumIter,EnumVariantName,EnumFromVariantName)]
 	enum NoFields{
 		A,B,C,D,E,F
 	}
@@ -237,6 +231,7 @@ mod nofields{
 
 mod discriminants{
 	use enum_traits::*;
+	use enum_traits_macros::*;
 
 	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumIterator,EnumIter)]
 	enum Discriminants{
@@ -259,6 +254,7 @@ mod discriminants{
 
 mod large{
 	use enum_traits::*;
+	use enum_traits_macros::*;
 
 	#[derive(EnumIndex)]
 	#[allow(dead_code,non_camel_case_types)]
@@ -366,6 +362,7 @@ mod large{
 
 mod readmemd{
 	use enum_traits::*;
+	use enum_traits_macros::*;
 
 	#[test]
 	#[allow(dead_code)]
@@ -434,6 +431,32 @@ mod readmemd{
 }
 
 #[allow(dead_code)]
+mod generic_where{
+	use alloc::boxed::Box;
+	use alloc::vec::Vec;
+	use enum_traits_macros::*;
+
+	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumToIndex,EnumLen,EnumIsVariantFns,EnumTag,EnumVariantName,EnumFromVariantName)]
+	enum Generic<'x,'y: 'x,'z,X,Y: 'y,Z> where
+		'z: 'y,
+		X: 'x,
+		Y: Iterator,
+		<Y as Iterator>::Item: core::fmt::Debug + Clone + Eq,
+		u32: From<<Y as Iterator>::Item>,
+	{
+		A,
+		B(&'x X),
+		C(Box<X>,Vec<Y>),
+		D{y: Vec<Y>,z: &'z Z},
+		E{x: Vec<X>,y: &'y Y,z: Box<Z>},
+		F{i: i32,z: &'z Z},
+		G(u32,i32,u8),
+		H{i: i32,u: u32},
+		I(<Y as Iterator>::Item),
+	}
+}
+
+#[allow(dead_code)]
 #[test]
 fn test_ends(){
 	{
@@ -456,6 +479,10 @@ fn test_ends(){
 		#[derive(Debug,Eq,PartialEq,EnumEnds)]enum T{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,X,Y,Z}
 		assert_eq!(T::A,T::first());
 		assert_eq!(T::Z,T::last());
+	}{
+		#[derive(Debug,Eq,PartialEq,EnumEnds)]enum T{A,B(u64),C{c: i32},D}
+		assert_eq!(T::A,T::first());
+		assert_eq!(T::D,T::last());
 	}
 }
 
@@ -617,3 +644,5 @@ fn test_iter(){
 		assert_eq!(None      ,t.next());
 	}
 }
+
+fn main(){}
