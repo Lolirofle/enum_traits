@@ -1,6 +1,6 @@
 [package]
 name = "enum_traits_macros"
-version = "3.0.0"
+version = "3.1.0"
 authors = ["Lolirofle <1522957+Lolirofle@users.noreply.github.com>"]
 description = "Procedural macros adding functionality to enums. Derives traits from the crate `enum_traits`"
 documentation = "https://docs.rs/enum_traits"
@@ -16,9 +16,13 @@ name = "enum_traits_macros"
 proc-macro = true
 
 [dependencies]
+# hashbrown = "0.12"
 quote = "1.0"
-syn = {version="1.0" , features=["full"]}
+syn = {version="1.0" , features=["full","visit"]}
 proc-macro2 = "1.0"
 
 [dev-dependencies]
 enum_traits = {path="../lib"}
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--document-private-items"]

@@ -72,7 +72,6 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 		let (ty,pattern,expr) = fields_to_ty_pat_expr(&ident,&variant);
 		Some(quote!{
 			#[automatically_derived]
-			#[allow(unused_attributes)]
 			impl #impl_generics ::core::convert::From<#ty> for #ident #ty_generics #where_clause{
 				#[inline(always)]
 				fn from(#pattern: #ty) -> Self{

@@ -19,7 +19,6 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream {
 
 	quote!{
 		#[automatically_derived]
-		#[allow(unused_attributes)]
 		impl #impl_generics ::core::str::FromStr for #ident #ty_generics #where_clause{
 			type Err = ();
 

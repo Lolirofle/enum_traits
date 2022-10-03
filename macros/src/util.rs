@@ -1,6 +1,9 @@
 use proc_macro2::Span;
-use alloc::string::{String,ToString};
-use syn::{Attribute,Fields,Ident,Variant};
+use alloc::string::String;
+use syn::{Fields,Ident,Variant};
+
+pub mod free_vars;
+//pub mod occurs;
 
 pub fn minimum_type_from_value(value: usize) -> Ident{
 	if value <= u8::max_value() as usize{
@@ -16,6 +19,7 @@ pub fn minimum_type_from_value(value: usize) -> Ident{
 	}
 }
 
+/*
 /**
  * Extracts the type from `repr(u*)` or `repr(i*)` attributes if it exists.
  */
@@ -47,19 +51,27 @@ pub fn type_from_repr_attr<'i,I>(attrs: I) -> Option<Ident>
 	}}
 	None
 }
+*/
 
 pub fn variant_unit_ident<'v>(variant: &'v Variant,derive_name: &'static str) -> &'v Ident{
 	match variant.fields{
-		Fields::Unit => {
-			&variant.ident
-		}
-		_ => panic!("`derive({})` may only be applied to enum items with no fields",derive_name)
+		Fields::Unit => &variant.ident,
+		_ => panic!("`derive({})` may only be applied to enum items with only unit variants",derive_name)
 	}
 }
 
-/**
- * Tries to follow the Rust naming conventions [https://doc.rust-lang.org/1.0.0/style/style/naming/README.html].
- */
+/// Simple conversion from a CamelCase string to a snake_case string.
+///
+/// It tries to follow the Rust naming conventions: <https://doc.rust-lang.org/1.0.0/style/style/naming/README.html>.
+///
+/// # Examples
+/// ```rust,ignore
+/// assert_eq!(camelcase_to_snakecase("SnakeCaseStringIsItReadable") , "snake_case_string_is_it_readable");
+/// assert_eq!(camelcase_to_snakecase("ANiceStringAndOKItIsIThink")  , "anice_string_and_okit_is_ithink");
+/// assert_eq!(camelcase_to_snakecase("OptionalBTreeLeaf")           , "optional_btree_leaf");
+/// assert_eq!(camelcase_to_snakecase("ALL_CAPS_AND_NOTHING_MORE")   , "all_caps_and_nothing_more");
+/// assert_eq!(camelcase_to_snakecase("Some kind_of mix Of ALL_hEr") , "some kind_of mix of all_h_er");
+/// ```
 pub fn camelcase_to_snakecase<'s>(s: &'s str) -> String{
 	let mut out = String::with_capacity(s.len() * 2);
 	let mut cs = s.chars();
@@ -81,15 +93,32 @@ pub fn camelcase_to_snakecase<'s>(s: &'s str) -> String{
 }
 
 /*
-pub fn ident_to_path(ident: Ident) -> Path{Path{
+pub fn ident_to_path(ident: Ident) -> syn::Path{syn::Path{
 	leading_colon: None,
 	segments: {
-		let mut p = Punctuated::new();
-		p.push(PathSegment{
+		let mut p = syn::punctuated::Punctuated::new();
+		p.push(syn::PathSegment{
 			ident,
-			arguments: PathArguments::None
+			arguments: syn::PathArguments::None
 		});
 		p},
+}}
+
+#[inline]
+pub fn idents_to_path<Idents: Iterator<Item = Ident>>(leading_colon: bool,idents: Idents) -> syn::Path{
+	path_segments_to_path(
+		leading_colon,
+		idents.map(|ident| syn::PathSegment{
+			ident: ident,
+			arguments: syn::PathArguments::None
+		})
+	)
+}
+
+#[inline]
+pub fn path_segments_to_path<PathSegments: Iterator<Item = syn::PathSegment>>(leading_colon: bool,path_segments: PathSegments) -> syn::Path{syn::Path{
+	leading_colon: if leading_colon {Some(Default::default())} else {None},
+	segments: path_segments.collect(),
 }}
 
 pub fn ident_to_expr(ident: Ident) -> Expr{ExprPath{
@@ -98,13 +127,13 @@ pub fn ident_to_expr(ident: Ident) -> Expr{ExprPath{
 	path: ident_to_path(ident),
 }.into()}
 
-pub fn minimum_type_containing_enum(item: &ItemEnum) -> syn::Ident{//TODO: Maybe useful to export?
+pub fn minimum_type_containing_enum(item: &syn::ItemEnum) -> syn::Ident{//TODO: Maybe useful to export?
 	//First, check if there's a repr attribute
 	type_from_repr_attr(item.attrs.iter())
 	.unwrap_or_else(||
 		//Second, use the maximum value of an explicit discriminant or the length of the enum (depending on which is the greatest)
 		minimum_type_from_value(match item.variants.iter().filter_map(|variant| match variant.discriminant{
-				Some((_,Expr::Lit(ExprLit{lit: Lit::Int(ref discrimimant) , ..}))) => Some(discrimimant.base10_parse::<usize>().expect("Discriminant cannot be made into an usize")),
+				Some((_,syn::Expr::Lit(syn::ExprLit{lit: syn::Lit::Int(ref discrimimant) , ..}))) => Some(discrimimant.base10_parse::<usize>().expect("Discriminant cannot be made into an usize")),
 				_ => None
 			}).max(){
 				Some(max) => cmp::max(cmp::max(item.variants.len(),1)-1 , max),
@@ -113,5 +142,16 @@ pub fn minimum_type_containing_enum(item: &ItemEnum) -> syn::Ident{//TODO: Maybe
 			}
 		)
 	)
+}
+
+#[inline]
+pub fn generics_add_type_param(generics: &mut syn::Generics,param: syn::TypeParam){
+	let pos = generics.params.iter().position(|param| if let syn::GenericParam::Type(_) = param {true} else {false});
+	let param = param.into();
+	if let Some(pos) = pos{
+		generics.params.insert(pos,param);
+	}else{
+		generics.params.push(param);
+	}
 }
 */

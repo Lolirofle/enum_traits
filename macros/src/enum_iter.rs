@@ -51,7 +51,6 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting o
 
 	let impl_default = quote!{
 		#[automatically_derived]
-		#[allow(unused_attributes)]
 		impl #impl_generics ::core::default::Default for #struct_ident #ty_generics #where_clause{
 			#[inline(always)]
 			fn default() -> Self{#struct_ident (None)}
@@ -103,7 +102,6 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting o
 
 		quote!{
 			#[automatically_derived]
-			#[allow(unused_attributes)]
 			impl #impl_generics ::core::iter::Iterator for #struct_ident #ty_generics #where_clause{
 				type Item = #ident;
 
@@ -118,7 +116,6 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting o
 	//TODO: May be an incorrect use of DoubleEndedIterator. Use Step instead
 	/*let impl_diter = quote!{
 		#[automatically_derived]
-		#[allow(unused_attributes)]
 		impl #impl_generics ::core::iter::Iterator for ::core::iter::Rev<#struct_ident> #ty_generics #where_clause{
 			#[inline]
 			fn next_back(&mut self) -> Option<Self::Item>{
@@ -133,7 +130,6 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting o
 
 	let impl_exactiter = quote!{
 		#[automatically_derived]
-		#[allow(unused_attributes)]
 		impl #impl_generics ::core::iter::ExactSizeIterator for #struct_ident #ty_generics #where_clause{
 			#[inline]
 			fn len(&self) -> usize{
@@ -148,7 +144,6 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting o
 
 	let impl_intoiter = quote!{
 		#[automatically_derived]
-		#[allow(unused_attributes)]
 		impl #impl_generics ::enum_traits::Iterable for #ident #ty_generics #where_clause{
 			type Iter = #struct_ident;
 			#[inline(always)]fn variants() -> Self::Iter{#struct_ident(None)}

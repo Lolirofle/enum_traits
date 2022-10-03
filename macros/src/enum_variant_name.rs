@@ -25,7 +25,6 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream {
 
 	quote!{
 		#[automatically_derived]
-		#[allow(unused_attributes)]
 		impl #impl_generics ::enum_traits::VariantName for #ident #ty_generics #where_clause{
 			#[inline]
 			fn variant_name(&self) -> &'static str{

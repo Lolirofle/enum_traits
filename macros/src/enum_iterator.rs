@@ -68,21 +68,23 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 			}
 		};
 
-		let fn_last = if let Some(last_ident) = last.map(variant_unit_ident){quote!{
-			#[inline(always)]
-			fn last(self) -> Option<Self::Item>{
-				Some(#ident::#last_ident)
-			}
-		}}else{quote!{
-			#[inline(always)]
-			fn last(self) -> Option<Self::Item>{
-				None
-			}
-		}};
+		let fn_last = match last.map(variant_unit_ident){
+			Some(last_ident) => quote!{
+				#[inline(always)]
+				fn last(self) -> Option<Self::Item>{
+					Some(#ident::#last_ident)
+				}
+			},
+			None => quote!{
+				#[inline(always)]
+				fn last(self) -> Option<Self::Item>{
+					None
+				}
+			},
+		};
 
 		quote!{
 			#[automatically_derived]
-			#[allow(unused_attributes)]
 			impl #impl_generics ::core::iter::Iterator for #ident #ty_generics #where_clause{
 				type Item = Self;
 				#fn_next
@@ -95,7 +97,6 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 
 	/*let impl_diter = quote!{
 		#[automatically_derived]
-		#[allow(unused_attributes)]
 		impl #impl_generics ::core::iter::DoubleEndedIterator for #ident #ty_generics #where_clause{
 			#[inline]
 			#[allow(unreachable_code)]
@@ -110,7 +111,6 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 
 	let impl_eiter = quote!{
 		#[automatically_derived]
-		#[allow(unused_attributes)]
 		impl #impl_generics ::core::iter::ExactSizeIterator for #ident #ty_generics #where_clause{
 			#[inline]
 			fn len(&self) -> usize{

@@ -41,7 +41,6 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 
 	quote!{
 		#[automatically_derived]
-		#[allow(unused_attributes)]
 		impl #impl_generics ::enum_traits::ToIndex for #ident #ty_generics #where_clause{
 			fn into_index(self) -> <Self as ::enum_traits::Index>::Type{
 				match self{

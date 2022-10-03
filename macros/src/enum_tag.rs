@@ -47,14 +47,12 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 
 	quote!{
 		#[automatically_derived]
-		#[allow(unused_attributes)]
 		#[derive(Copy,Clone,Debug,PartialEq,Eq,Hash)]
 		#visibility enum #unit_enum_ident{
 			#( #unit_variants )*
 		}
 
 		#[automatically_derived]
-		#[allow(unused_attributes)]
 		impl #impl_generics ::enum_traits::Tag for #ident #ty_generics #where_clause{
 			type Tag = #unit_enum_ident;
 

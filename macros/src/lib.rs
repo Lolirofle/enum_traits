@@ -1,6 +1,8 @@
-//! Derives and procedural macros for enum items.
+//! Derives additional functionalities for enum items using procedural macros.
 //!
 //! Also see [`enum_traits`] for some of the traits that this library derives.
+
+#![cfg_attr(test,feature(non_exhaustive_omitted_patterns_lint))]
 
 #![allow(non_snake_case)]
 #![no_std]
@@ -9,9 +11,11 @@ extern crate alloc;
 #[macro_use] extern crate quote;
 
 mod enum_ends;
+mod enum_field_structs;
+mod enum_from_discriminant;
 mod enum_from_index;
+mod enum_from_variant_fields;
 mod enum_from_variant_name;
-mod enum_from_variant_type;
 mod enum_index;
 mod enum_is_variant_fns;
 mod enum_iter;
@@ -20,6 +24,7 @@ mod enum_len;
 mod enum_tag;
 mod enum_to_index;
 mod enum_variant_name;
+mod enum_step;
 mod util;
 
 use proc_macro2::TokenStream;
@@ -41,41 +46,24 @@ fn derive_enum<F>(input: proc_macro::TokenStream,gen_impl: F) -> proc_macro::Tok
 /// # Requirements
 /// - The derived item is an enum.
 ///
-/// # Examples
+/// # Example using derive
+///
+/// ```rust
+/// use enum_traits_macros::*;
+///
+/// #[derive(EnumLen)]
+/// enum Enum{A,B,C,D,E,F}
+/// ```
+///
+/// # Expanded example
 ///
 /// ```rust
 /// use enum_traits::*;
-/// use enum_traits_macros::*;
-/// {
-/// 	#[derive(EnumLen)]enum T{}
-/// 	assert_eq!(0,T::LEN);
-/// }{
-/// 	#[derive(EnumLen)]enum T{A}
-/// 	assert_eq!(1,T::LEN);
-/// }{
-/// 	#[derive(EnumLen)]enum T{A,B,C}
-/// 	assert_eq!(3,T::LEN);
-/// }{
-/// 	#[derive(EnumLen)]enum T{A,B,C,D,E,F,G}
-/// 	assert_eq!(7,T::LEN);
-/// }{
-/// 	#[derive(EnumLen)]enum T{A,B,C,D,E,F,G,H}
-/// 	assert_eq!(8,T::LEN);
-/// }{
-/// 	#[derive(EnumLen)]enum T{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,X,Y,Z}
-/// 	assert_eq!(25,T::LEN);
-/// }{
-/// 	#[derive(EnumLen)]enum T{
-/// 		A,
-/// 		B(),
-/// 		C{},
-/// 		D(u8),
-/// 		E{e: u8},
-/// 		F(u8,u16),
-/// 		G{g1: u8,g2: u16},
-/// 		H
-/// 	}
-/// 	assert_eq!(8,T::LEN);
+///
+/// enum Enum{A,B,C,D,E,F}
+///
+/// impl Len for Enum{
+/// 	const LEN: usize = 6;
 /// }
 /// ```
 #[proc_macro_derive(EnumLen)]
@@ -86,67 +74,30 @@ pub fn derive_EnumLen(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 /// The ends are computed by using the first and the last variant of the enum in the defined order.
 ///
 /// # Requirements
-/// - The derived item is an enum
-/// - The enum has at least one variant
-/// - The enum's first variant is an unit variant
-/// - The enum's last variant is an unit variant
+/// - The derived item is an enum.
+/// - The enum has at least one variant.
+/// - The enum's first variant is an unit variant.
+/// - The enum's last variant is an unit variant.
 ///
-/// # Examples
+/// # Example using derive
+///
+/// ```rust
+/// use enum_traits_macros::*;
+///
+/// #[derive(EnumEnds)]
+/// enum Enum{A,B,C,D,E,F}
+/// ```
+///
+/// # Expanded example
 ///
 /// ```rust
 /// use enum_traits::*;
-/// use enum_traits_macros::*;
-/// {
-/// 	#[derive(Debug,Eq,PartialEq,EnumEnds)]
-/// 	enum T{A}
 ///
-/// 	assert_eq!(T::A , T::first());
-/// 	assert_eq!(T::A , T::last());
-/// }{
-/// 	#[derive(Debug,Eq,PartialEq,EnumEnds)]
-/// 	enum T{A,B}
+/// enum Enum{A,B,C,D,E,F}
 ///
-/// 	assert_eq!(T::A , T::first());
-/// 	assert_eq!(T::B , T::last());
-/// }{
-/// 	#[derive(Debug,Eq,PartialEq,EnumEnds)]
-/// 	enum T{A,B,C}
-///
-/// 	assert_eq!(T::A , T::first());
-/// 	assert_eq!(T::C , T::last());
-/// }{
-/// 	#[derive(Debug,Eq,PartialEq,EnumEnds)]
-/// 	enum T{A,B,C,D,E,F,G}
-///
-/// 	assert_eq!(T::A , T::first());
-/// 	assert_eq!(T::G , T::last());
-/// }{
-/// 	#[derive(Debug,Eq,PartialEq,EnumEnds)]
-/// 	enum T{A,B,C,D,E,F,G,H}
-///
-/// 	assert_eq!(T::A , T::first());
-/// 	assert_eq!(T::H , T::last());
-/// }{
-/// 	#[derive(Debug,Eq,PartialEq,EnumEnds)]
-/// 	enum T{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,X,Y,Z}
-///
-/// 	assert_eq!(T::A , T::first());
-/// 	assert_eq!(T::Z , T::last());
-/// }{
-/// 	#[derive(Debug,Eq,PartialEq,EnumEnds)]
-/// 	enum T{
-/// 		A,
-/// 		B(),
-/// 		C{},
-/// 		D(u8),
-/// 		E{e: u8},
-/// 		F(u8,u16),
-/// 		G{g1: u8,g2: u16},
-/// 		H
-/// 	}
-///
-/// 	assert_eq!(T::A , T::first());
-/// 	assert_eq!(T::H , T::last());
+/// impl Ends for Enum{
+/// 	fn first() -> Self { Enum::A }
+/// 	fn last() -> Self { Enum::F }
 /// }
 /// ```
 #[proc_macro_derive(EnumEnds)]
@@ -157,129 +108,62 @@ pub fn derive_EnumEnds(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
 /// A variant's index is computed by its index in the defined order of the enum item.
 ///
 /// # Requirements
-/// - The derived item is an enum
+/// - The derived item is an enum.
 ///
-/// # Examples
+/// # Example using derive
+///
+/// ```rust
+/// use enum_traits_macros::*;
+///
+/// #[derive(EnumIndex,EnumToIndex)]
+/// enum Enum{
+/// 	A,
+/// 	B(u8),
+/// 	C{c: u16},
+/// 	D,
+/// 	E(u32),
+/// 	F{f: u64},
+/// }
+/// ```
+///
+/// # Expanded example
 ///
 /// ```rust
 /// use enum_traits::*;
-/// use enum_traits_macros::*;
-/// {
-/// 	#[derive(EnumIndex,EnumToIndex)]
-/// 	enum T{}
-/// }{
-/// 	#[derive(EnumIndex,EnumToIndex)]
-/// 	enum T{A}
 ///
-/// 	assert_eq!(0,T::A.index());
+/// enum Enum{
+/// 	A,
+/// 	B(u8),
+/// 	C{c: u16},
+/// 	D,
+/// 	E(u32),
+/// 	F{f: u64},
+/// }
 ///
-/// 	assert_eq!(0,T::A.into_index());
-/// }{
-/// 	#[derive(EnumIndex,EnumToIndex)]
-/// 	enum T{A,B,C,D,E,F,G,H}
-///
-/// 	assert_eq!(0,T::A.index());
-/// 	assert_eq!(1,T::B.index());
-/// 	assert_eq!(2,T::C.index());
-/// 	assert_eq!(3,T::D.index());
-/// 	assert_eq!(4,T::E.index());
-/// 	assert_eq!(5,T::F.index());
-/// 	assert_eq!(6,T::G.index());
-/// 	assert_eq!(7,T::H.index());
-///
-/// 	assert_eq!(0,T::A.into_index());
-/// 	assert_eq!(1,T::B.into_index());
-/// 	assert_eq!(2,T::C.into_index());
-/// 	assert_eq!(3,T::D.into_index());
-/// 	assert_eq!(4,T::E.into_index());
-/// 	assert_eq!(5,T::F.into_index());
-/// 	assert_eq!(6,T::G.into_index());
-/// 	assert_eq!(7,T::H.into_index());
-/// }{
-/// 	#[derive(EnumIndex,EnumToIndex)]
-/// 	enum T{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,X,Y,Z}
-///
-/// 	assert_eq!(00,T::A.index());
-/// 	assert_eq!(01,T::B.index());
-/// 	assert_eq!(02,T::C.index());
-/// 	assert_eq!(03,T::D.index());
-/// 	assert_eq!(04,T::E.index());
-/// 	assert_eq!(05,T::F.index());
-/// 	assert_eq!(06,T::G.index());
-/// 	assert_eq!(07,T::H.index());
-/// 	assert_eq!(08,T::I.index());
-/// 	assert_eq!(09,T::J.index());
-/// 	assert_eq!(10,T::K.index());
-/// 	assert_eq!(11,T::L.index());
-/// 	assert_eq!(12,T::M.index());
-/// 	assert_eq!(13,T::N.index());
-/// 	assert_eq!(14,T::O.index());
-/// 	assert_eq!(15,T::P.index());
-/// 	assert_eq!(16,T::Q.index());
-/// 	assert_eq!(17,T::R.index());
-/// 	assert_eq!(18,T::S.index());
-/// 	assert_eq!(19,T::T.index());
-/// 	assert_eq!(20,T::U.index());
-/// 	assert_eq!(21,T::V.index());
-/// 	assert_eq!(22,T::X.index());
-/// 	assert_eq!(23,T::Y.index());
-/// 	assert_eq!(24,T::Z.index());
-///
-/// 	assert_eq!(00,T::A.into_index());
-/// 	assert_eq!(01,T::B.into_index());
-/// 	assert_eq!(02,T::C.into_index());
-/// 	assert_eq!(03,T::D.into_index());
-/// 	assert_eq!(04,T::E.into_index());
-/// 	assert_eq!(05,T::F.into_index());
-/// 	assert_eq!(06,T::G.into_index());
-/// 	assert_eq!(07,T::H.into_index());
-/// 	assert_eq!(08,T::I.into_index());
-/// 	assert_eq!(09,T::J.into_index());
-/// 	assert_eq!(10,T::K.into_index());
-/// 	assert_eq!(11,T::L.into_index());
-/// 	assert_eq!(12,T::M.into_index());
-/// 	assert_eq!(13,T::N.into_index());
-/// 	assert_eq!(14,T::O.into_index());
-/// 	assert_eq!(15,T::P.into_index());
-/// 	assert_eq!(16,T::Q.into_index());
-/// 	assert_eq!(17,T::R.into_index());
-/// 	assert_eq!(18,T::S.into_index());
-/// 	assert_eq!(19,T::T.into_index());
-/// 	assert_eq!(20,T::U.into_index());
-/// 	assert_eq!(21,T::V.into_index());
-/// 	assert_eq!(22,T::X.into_index());
-/// 	assert_eq!(23,T::Y.into_index());
-/// 	assert_eq!(24,T::Z.into_index());
-/// }{
-/// 	#[derive(EnumIndex,EnumToIndex)]
-/// 	enum T{
-/// 		A,
-/// 		B(),
-/// 		C{},
-/// 		D(u8),
-/// 		E{e: u8},
-/// 		F(u8,u16),
-/// 		G{g1: u8,g2: u16},
-/// 		H
+/// impl Index for Enum{
+/// 	type Type = u8;
+/// }
+/// impl ToIndex for Enum{
+/// 	fn into_index(self) -> <Self as Index>::Type{
+/// 		match self{
+/// 			Enum::A     => 0,
+/// 			Enum::B(..) => 1,
+/// 			Enum::C{..} => 2,
+/// 			Enum::D     => 3,
+/// 			Enum::E(..) => 4,
+/// 			Enum::F{..} => 5,
+/// 		}
 /// 	}
-///
-/// 	assert_eq!(0,T::A.index());
-/// 	assert_eq!(1,T::B().index());
-/// 	assert_eq!(2,T::C{}.index());
-/// 	assert_eq!(3,T::D(0).index());
-/// 	assert_eq!(4,T::E{e: 0}.index());
-/// 	assert_eq!(5,T::F(0,0).index());
-/// 	assert_eq!(6,T::G{g1: 0,g2: 0}.index());
-/// 	assert_eq!(7,T::H.index());
-///
-/// 	assert_eq!(0,T::A.into_index());
-/// 	assert_eq!(1,T::B().into_index());
-/// 	assert_eq!(2,T::C{}.into_index());
-/// 	assert_eq!(3,T::D(0).into_index());
-/// 	assert_eq!(4,T::E{e: 0}.into_index());
-/// 	assert_eq!(5,T::F(0,0).into_index());
-/// 	assert_eq!(6,T::G{g1: 0,g2: 0}.into_index());
-/// 	assert_eq!(7,T::H.into_index());
+/// 	fn index(&self) -> <Self as Index>::Type{
+/// 		match self{
+/// 			&Enum::A     => 0,
+/// 			&Enum::B(..) => 1,
+/// 			&Enum::C{..} => 2,
+/// 			&Enum::D     => 3,
+/// 			&Enum::E(..) => 4,
+/// 			&Enum::F{..} => 5,
+/// 		}
+/// 	}
 /// }
 /// ```
 #[proc_macro_derive(EnumToIndex)]
@@ -290,40 +174,182 @@ pub fn derive_EnumToIndex(input: proc_macro::TokenStream) -> proc_macro::TokenSt
 /// A variant's index is computed by its index in the defined order of the enum item.
 ///
 /// # Requirements
-/// - The derived item is an enum
+/// - The derived item is an enum.
+///
+/// # Example using derive
+///
+/// ```rust
+/// use enum_traits_macros::*;
+///
+/// #[derive(EnumFromIndex,EnumIndex)]
+/// enum Enum{A,B,C,D,E,F}
+/// ```
+///
+/// # Expanded example
+///
+/// ```rust
+/// use enum_traits::*;
+///
+/// enum Enum{A,B,C,D,E,F}
+///
+/// impl Index for Enum{
+/// 	type Type = u8;
+/// }
+/// impl FromIndex for Enum {
+/// 	fn from_index(index: <Self as Index>::Type) -> Option<Self> {
+/// 		Some(match index{
+/// 				 0 => Enum::A,
+/// 				 1 => Enum::B,
+/// 				 2 => Enum::C,
+/// 				 3 => Enum::D,
+/// 				 4 => Enum::E,
+/// 				 5 => Enum::F,
+/// 				 _ => return None,
+/// 			 })
+/// 	}
+/// 	unsafe fn from_index_unchecked(index: <Self as Index>::Type) -> Self {
+/// 		match index{
+/// 			0 => Enum::A,
+/// 			1 => Enum::B,
+/// 			2 => Enum::C,
+/// 			3 => Enum::D,
+/// 			4 => Enum::E,
+/// 			5 => Enum::F,
+/// 			_ => unreachable!(),
+/// 		}
+/// 	}
+/// }
+/// ```
 #[proc_macro_derive(EnumFromIndex)]
 pub fn derive_EnumFromIndex(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_from_index::gen_impl)}
 
 /// Implements [`enum_traits::Index`].
 ///
-/// [`Type`][`enum_traits::Index::Type`] is computed by the following:
-/// - If the `repr` attribute exists for the enum item, it becomes the type specified in `repr`.
-/// - Else, the smallest integer type fitting the number of variants is used.
+/// [`Type`][`enum_traits::Index::Type`] is computed by the smallest unsigned integer type fitting the number of variants minus one.
 ///
 /// # Requirements
 ///
-/// - The derived item is an enum
+/// - The derived item is an enum.
+///
+/// # Example using derive
+///
+/// ```rust
+/// use enum_traits_macros::*;
+///
+/// #[derive(EnumIndex)]
+/// enum Enum{A,B,C,D,E,F}
+///
+/// #[derive(EnumIndex)]
+/// enum Enum2{A = 1000,B = 50000,C,D,E,F}
+///
+/// #[derive(EnumIndex)]
+/// #[repr(u64)]
+/// enum Enum3{A,B,C,D,E,F}
+/// ```
+///
+/// # Expanded example
+///
+/// ```rust
+/// use enum_traits::*;
+/// use enum_traits_macros::*;
+///
+/// enum Enum{A,B,C,D,E,F}
+///
+/// enum Enum2{A = 1000,B = 50000,C,D,E,F}
+///
+/// #[repr(u64)]
+/// enum Enum3{A,B,C,D,E,F}
+///
+/// impl Index for Enum{
+/// 	type Type = u8;
+/// }
+///
+/// impl Index for Enum2{
+/// 	type Type = u8;
+/// }
+///
+/// impl Index for Enum3{
+/// 	type Type = u8;
+/// }
+/// ```
 #[proc_macro_derive(EnumIndex)]
 pub fn derive_EnumIndex(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
 	derive_enum(input,enum_index::gen_impl)
 }
 
-/// Creates a struct and implements [`enum_traits::Iterable`].
+/// Creates a struct representing the iterator state and implements [`enum_traits::Iterable`].
 ///
 /// A struct named ((name of Self) + "Iter") will be generated with the same visibility as `Self`.
 /// This struct will then implement `Iterator` and `Iter` will be assigned to it when implementing `Iterable` for `Self`.
 ///
 /// # Requirements
-/// - The derived item is an enum
-/// - The enum variants are all unit variants
+/// - The derived item is an enum.
+/// - The enum variants are all unit variants.
+///
+/// # Example using derive
+///
+/// ```rust
+/// use enum_traits_macros::*;
+///
+/// #[derive(EnumIter)]
+/// enum Enum{A,B,C,D,E,F}
+/// ```
+///
+/// # Expanded example
+///
+/// ```rust
+/// use enum_traits::*;
+/// enum Enum{A,B,C,D,E,F}
+///
+/// struct EnumIter(pub Option<Enum>);
+///
+/// impl Iterable for Enum{
+/// 	type Iter = EnumIter;
+///
+/// 	fn variants() -> Self::Iter { EnumIter(None) }
+/// }
+///
+/// impl Iterator for EnumIter{
+/// 	type Item = Enum;
+///
+/// 	fn next(&mut self) -> Option<Self::Item>{
+/// 		Some(match &self.0{
+/// 			&None => {
+/// 				self.0 = Some(Enum::A);
+/// 				Enum::A }
+/// 			&Some(Enum::A) => {
+/// 				self.0 = Some(Enum::B);
+/// 				Enum::B
+/// 			}
+/// 			&Some(Enum::B) => {
+/// 				self.0 = Some(Enum::C);
+/// 				Enum::C
+/// 			}
+/// 			&Some(Enum::C) => {
+/// 				self.0 = Some(Enum::D);
+/// 				Enum::D
+/// 			}
+/// 			&Some(Enum::D) => {
+/// 				self.0 = Some(Enum::E);
+/// 				Enum::E
+/// 			}
+/// 			&Some(Enum::E) => {
+/// 				self.0 = Some(Enum::F);
+/// 				Enum::F
+/// 			}
+/// 			_ => return None,
+/// 		})
+/// 	}
+/// }
+/// ```
 #[proc_macro_derive(EnumIter)]
 pub fn derive_EnumIter(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_iter::gen_impl)}
 
 /// Implements [`Iterator`].
 ///
 /// # Requirements
-/// - The derived item is an enum
-/// - The enum variants are all unit variants
+/// - The derived item is an enum.
+/// - The enum variants are all unit variants.
 #[proc_macro_derive(EnumIterator)]
 pub fn derive_EnumIterator(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_iterator::gen_impl)}
 
@@ -334,22 +360,48 @@ pub fn derive_EnumIterator(input: proc_macro::TokenStream) -> proc_macro::TokenS
 /// # Requirements
 /// - The derived item is an enum.
 ///
-/// # Examples
+/// # Example using derive
 ///
 /// ```rust
-/// use enum_traits::*;
 /// use enum_traits_macros::*;
 ///
 /// #[derive(EnumVariantName)]
-/// enum Enum {
-/// 	Dog,
-/// 	Cat(i32),
-/// 	Robot{speed: f32},
+/// enum Enum{
+/// 	A,
+/// 	B(u8),
+/// 	C{c: u16},
+/// 	D,
+/// 	E(u32),
+/// 	F{f: u64},
+/// }
+/// ```
+///
+/// # Expanded example
+///
+/// ```rust
+/// use enum_traits::*;
+///
+/// enum Enum{
+/// 	A,
+/// 	B(u8),
+/// 	C{c: u16},
+/// 	D,
+/// 	E(u32),
+/// 	F{f: u64},
 /// }
 ///
-/// assert_eq!(Enum::Dog.variant_name(), "Dog");
-/// assert_eq!(Enum::Cat(0).variant_name(), "Cat");
-/// assert_eq!(Enum::Robot{speed: 0.0}.variant_name(), "Robot");
+/// impl VariantName for Enum{
+/// 	fn variant_name(&self) -> &'static str{
+/// 		match self{
+/// 			&Enum::A     => "A",
+/// 			&Enum::B(..) => "B",
+/// 			&Enum::C{..} => "C",
+/// 			&Enum::D     => "D",
+/// 			&Enum::E(..) => "E",
+/// 			&Enum::F{..} => "F",
+/// 		}
+/// 	}
+/// }
 /// ```
 #[proc_macro_derive(EnumVariantName)]
 pub fn derive_EnumVariantName(input: proc_macro::TokenStream) -> proc_macro::TokenStream {derive_enum(input,enum_variant_name::gen_impl)}
@@ -360,7 +412,7 @@ pub fn derive_EnumVariantName(input: proc_macro::TokenStream) -> proc_macro::Tok
 /// - The derived item is an enum.
 /// - The enum variants are all unit variants.
 ///
-/// # Example:
+/// # Example
 ///
 ///	```rust
 /// use core::str::FromStr;
@@ -380,9 +432,10 @@ pub fn derive_EnumVariantName(input: proc_macro::TokenStream) -> proc_macro::Tok
 /// assert_eq!(Err(())     , Enum::from_str("C"));
 /// assert_eq!(Ok(Enum::D) , Enum::from_str("D"));
 /// assert_eq!(Ok(Enum::E) , Enum::from_str("E"));
+/// assert_eq!(Err(())     , Enum::from_str("F"));
 /// ```
 ///
-/// # Expanded:
+/// # Expanded example
 ///
 ///	```rust
 /// use core::str::FromStr;
@@ -407,6 +460,8 @@ pub fn derive_EnumVariantName(input: proc_macro::TokenStream) -> proc_macro::Tok
 ///			})
 ///		}
 ///	}
+///
+/// // <rest is omitted>
 ///	```
 #[proc_macro_derive(EnumFromVariantName)]
 pub fn derive_EnumFromVariantName(input: proc_macro::TokenStream) -> proc_macro::TokenStream {derive_enum(input,enum_from_variant_name::gen_impl)}
@@ -419,57 +474,60 @@ pub fn derive_EnumFromVariantName(input: proc_macro::TokenStream) -> proc_macro:
 /// # Requirements
 /// - The derived item is an enum.
 ///
-/// # Examples
+/// # Example using derive
 ///
 /// ```rust
-/// use enum_traits::*;
 /// use enum_traits_macros::*;
 ///
 /// #[derive(EnumTag)]
 /// enum Enum{
-/// 	Dog,
-/// 	Cat(i32),
-/// 	Robot{speed: f32},
+/// 	A,
+/// 	B(u8),
+/// 	C{c: u16},
+/// 	D,
+/// 	E(u32),
+/// 	F{f: u64},
 /// }
-///
-/// assert_eq!(EnumTag::Dog  ,Enum::Dog.tag());
-/// assert_eq!(EnumTag::Cat  ,Enum::Cat(0).tag());
-/// assert_eq!(EnumTag::Robot,Enum::Robot{speed: 0.0}.tag());
 /// ```
 ///
-/// Expanded example
+/// # Expanded example
 ///
 /// ```rust
 /// use enum_traits::*;
 ///
 /// enum Enum{
-/// 	Dog,
-/// 	Cat(i32),
-/// 	Robot{speed: f32},
+/// 	A,
+/// 	B(u8),
+/// 	C{c: u16},
+/// 	D,
+/// 	E(u32),
+/// 	F{f: u64},
 /// }
 ///
-/// enum EnumTag{
-/// 	Dog,
-/// 	Cat,
-/// 	Robot,
-/// }
+/// enum EnumTag{A,B,C,D,E,F}
 ///
 /// impl Tag for Enum{
 /// 	type Tag = EnumTag;
 ///
 /// 	fn into_tag(self) -> Self::Tag{
 /// 		match self {
-/// 			Enum::Dog       => EnumTag::Dog,
-/// 			Enum::Cat(..)   => EnumTag::Cat,
-/// 			Enum::Robot{..} => EnumTag::Robot,
+/// 			Enum::A     => EnumTag::A,
+/// 			Enum::B(..) => EnumTag::B,
+/// 			Enum::C{..} => EnumTag::C,
+/// 			Enum::D     => EnumTag::D,
+/// 			Enum::E(..) => EnumTag::E,
+/// 			Enum::F{..} => EnumTag::F,
 /// 		}
 /// 	}
 ///
 /// 	fn tag(&self) -> Self::Tag{
 /// 		match self {
-/// 			&Enum::Dog       => EnumTag::Dog,
-/// 			&Enum::Cat(..)   => EnumTag::Cat,
-/// 			&Enum::Robot{..} => EnumTag::Robot,
+/// 			&Enum::A     => EnumTag::A,
+/// 			&Enum::B(..) => EnumTag::B,
+/// 			&Enum::C{..} => EnumTag::C,
+/// 			&Enum::D     => EnumTag::D,
+/// 			&Enum::E(..) => EnumTag::E,
+/// 			&Enum::F{..} => EnumTag::F,
 /// 		}
 /// 	}
 /// }
@@ -478,6 +536,8 @@ pub fn derive_EnumFromVariantName(input: proc_macro::TokenStream) -> proc_macro:
 pub fn derive_EnumTag(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_tag::gen_impl)}
 
 /// Implements functions that checks if an value of the enum matches a certain variant.
+///
+/// The generated names of the functions are converted from CamelCase to snake_case using [util::camelcase_to_snakecase].
 ///
 /// # Requirements
 /// - The derived item is an enum.
@@ -491,19 +551,19 @@ pub fn derive_EnumTag(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 /// enum Enum {
 /// 	Dog,
 /// 	Cat(i32),
-/// 	Robot{speed: f32},
+/// 	RobotInDisguise{speed: f32},
 /// }
 ///
 /// assert!(Enum::Dog.is_dog());
 /// assert!(Enum::Cat(0).is_cat());
-/// assert!(Enum::Robot{speed: 0.0}.is_robot());
+/// assert!(Enum::RobotInDisguise{speed: 0.0}.is_robot_in_disguise());
 ///
 /// assert!(!Enum::Dog.is_cat());
-/// assert!(!Enum::Dog.is_robot());
-/// assert!(!Enum::Robot{speed: 0.0}.is_cat());
-/// assert!(!Enum::Robot{speed: 0.0}.is_dog());
+/// assert!(!Enum::Dog.is_robot_in_disguise());
+/// assert!(!Enum::RobotInDisguise{speed: 0.0}.is_cat());
+/// assert!(!Enum::RobotInDisguise{speed: 0.0}.is_dog());
 /// assert!(!Enum::Cat(0).is_dog());
-/// assert!(!Enum::Cat(0).is_robot());
+/// assert!(!Enum::Cat(0).is_robot_in_disguise());
 /// ```
 ///
 /// # Expanded example
@@ -512,37 +572,43 @@ pub fn derive_EnumTag(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 /// enum Enum {
 /// 	Dog,
 /// 	Cat(i32),
-/// 	Robot{speed: f32},
+/// 	RobotInDisguise{speed: f32},
 /// }
 ///
 /// impl Enum{
 /// 	fn is_dog(&self) -> bool{if let &Enum::Dog = self {true} else {false}}
 /// 	fn is_cat(&self) -> bool{if let &Enum::Cat(_) = self {true} else {false}}
-/// 	fn is_robot(&self) -> bool{if let &Enum::Robot{..} = self {true} else {false}}
+/// 	fn is_robot_in_disguise(&self) -> bool{if let &Enum::RobotInDisguise{..} = self {true} else {false}}
 /// }
+///
+/// // <rest is omitted>
 /// ```
-
 #[proc_macro_derive(EnumIsVariantFns)]
 pub fn derive_EnumIsVariantFns(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_is_variant_fns::gen_impl)}
 
-/// Implements [`From`] for all variants in the enum by using the type of the variant.
+/// Implements [`From`] for all variants in the enum by using the type of the fields.
 ///
-/// If more than one field exist in a variant, a tuple is used to represent the variant (Both `enum Enum{A{x: i8}}` and `enum Enum{A(i8)}` generates `impl From<i8>`).
+/// If more than one field exist in a variant, a tuple is used to represent the variant.
+///
+/// Note that both tuple variants and record variants become tuples in the `impl From`:
+///
+/// - `enum Enum{A{x: i8}}`
+/// - `enum Enum{A(i8)}`
+///
+/// both become `impl From<i8>`.
 ///
 /// If no fields exist in a variant, an empty tuple is used to represent the variant (`enum Enum{A}` generates `impl From<()>`).
 ///
-/// Note that both tuple variants and record variants become tuples in the `impl From`.
-///
 /// # Requirements
 /// - The derived item is an enum.
-/// - There are no variants in which their types are identical when all type parameters are applied.
+/// - There are no variants in which the types of their fields are identical when all type parameters are applied and converted to tuples.
 ///
 /// # Example
 ///
 /// ```rust
 /// use enum_traits_macros::*;
 ///
-/// #[derive(EnumFromVariantType,Debug,PartialEq,Eq)]
+/// #[derive(EnumFromVariantFields,Debug,PartialEq,Eq)]
 /// enum Enum{
 ///     A,
 ///     B(u8),
@@ -607,6 +673,203 @@ pub fn derive_EnumIsVariantFns(input: proc_macro::TokenStream) -> proc_macro::To
 ///         Enum::F{a: x0 , b: x1 , c: x2}
 ///     }
 /// }
+///
+/// // <rest is omitted>
 /// ```
-#[proc_macro_derive(EnumFromVariantType)]
-pub fn derive_EnumFromVariantType(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_from_variant_type::gen_impl)}
+#[proc_macro_derive(EnumFromVariantFields)]
+pub fn derive_EnumFromVariantFields(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_from_variant_fields::gen_impl)}
+
+/// Implements [`enum_traits::Step`].
+///
+/// The next and previous functions are computed by using the variants of the enum in their defined order.
+///
+/// # Requirements
+/// - The derived item is an enum.
+/// - The enum's variants are all unit variants.
+///
+/// # Example using derive
+///
+/// ```rust
+/// use enum_traits_macros::*;
+///
+/// #[derive(EnumStep)]
+/// enum Enum{A,B,C,D}
+/// ```
+///
+/// # Expanded example
+///
+/// ```rust
+/// use enum_traits::*;
+///
+/// enum Enum{A,B,C,D}
+///
+/// impl Step for Enum{
+/// 	fn next(self) -> Option<Self>{match self{
+/// 		Enum::A => Some(Enum::B),
+/// 		Enum::B => Some(Enum::C),
+/// 		Enum::C => Some(Enum::D),
+/// 		Enum::D => None,
+/// 	}}
+/// 	fn previous(self) -> Option<Self>{match self{
+/// 		Enum::A => None,
+/// 		Enum::B => Some(Enum::A),
+/// 		Enum::C => Some(Enum::B),
+/// 		Enum::D => Some(Enum::C),
+/// 	}}
+/// }
+/// ```
+#[proc_macro_derive(EnumStep)]
+pub fn derive_EnumStep(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_step::gen_impl)}
+
+/// Implements [`enum_traits::FromDiscriminant`] for any discriminant type.
+///
+/// The implementation is using pattern matching on the values of [`enum_traits::IntoDiscriminant`] and therefore requires an explicit `impl IntoDiscriminant` of the desired discriminant type.
+///
+/// See [`enum_traits::impl_IntoDiscriminant_of_numeric`] for a standard definition of [`IntoDiscriminant`].
+///
+/// # Requirements
+/// - The derived item is an enum.
+/// - The enum variants are all unit variants.
+///
+/// # Example
+///
+/// ```rust
+/// use enum_traits::*;
+/// use enum_traits_macros::*;
+///
+/// #[derive(EnumFromDiscriminant,Debug,PartialEq,Eq)]
+/// #[repr(u8)]
+/// pub enum Enum{
+/// 	A = 8,
+/// 	B,
+/// 	C = 5,
+/// 	D = 7,
+/// }
+/// ```
+///
+/// # Expanded example
+///
+/// ```rust
+/// use enum_traits::*;
+/// use enum_traits_macros::*;
+///
+/// #[repr(u8)]
+/// pub enum Enum{
+/// 	A = 8,
+/// 	B,
+/// 	C = 5,
+/// 	D = 7,
+/// }
+///
+/// impl<T> FromDiscriminant<T> for Enum where
+/// 	Self: IntoDiscriminant<T>,
+/// 	T: PartialEq
+/// {
+/// 	#[inline]
+/// 	fn from_discriminant(discriminant: T) -> Option<Self>{
+/// 		match discriminant{
+/// 			n if n == Enum::A.into_discriminant() => Some(Enum::A),
+/// 			n if n == Enum::B.into_discriminant() => Some(Enum::B),
+/// 			n if n == Enum::C.into_discriminant() => Some(Enum::C),
+/// 			n if n == Enum::D.into_discriminant() => Some(Enum::D),
+/// 			_ => None,
+/// 		}
+/// 	}
+///
+/// 	#[inline]
+/// 	unsafe fn from_discriminant_unchecked(discriminant: T) -> Self{
+/// 		match discriminant{
+/// 			n if n == Enum::A.into_discriminant() => Enum::A,
+/// 			n if n == Enum::B.into_discriminant() => Enum::B,
+/// 			n if n == Enum::C.into_discriminant() => Enum::C,
+/// 			n if n == Enum::D.into_discriminant() => Enum::D,
+/// 			_ => ::core::hint::unreachable_unchecked(),
+/// 		}
+/// 	}
+/// }
+///
+/// // <rest is omitted>
+/// ```
+/// # LLVM IR example
+///
+/// This shows how `from_discriminant_unchecked` becomes an identity.
+///
+/// Compiler version: rustc 1.66.0-nightly (57f097ea2 2022-10-01)
+///
+/// ```rust
+/// use enum_traits::*;
+/// use enum_traits_macros::*;
+///
+/// #[derive(EnumFromDiscriminant,Debug,PartialEq,Eq)]
+/// #[repr(u8)]
+/// pub enum Enum{
+/// 	A = 8,
+/// 	B,
+/// 	C = 5,
+/// 	D = 7,
+/// }
+///
+/// impl IntoDiscriminant<u8> for Enum{
+/// 	#[inline(always)] fn into_discriminant(self) -> u8{self as u8}
+/// }
+///
+/// #[no_mangle]
+/// #[inline(never)]
+/// pub fn llvm_ir_example1(n: u8) -> Option<Enum>{
+/// 	Enum::from_discriminant(n)
+/// }
+///
+/// #[no_mangle]
+/// #[inline(never)]
+/// pub unsafe fn llvm_ir_example2(n: u8) -> Enum{
+/// 	Enum::from_discriminant_unchecked(n)
+/// }
+///
+/// #[no_mangle]
+/// #[inline(never)]
+/// pub fn llvm_ir_example3(n: ::core::mem::Discriminant<Enum>) -> Option<Enum>{
+/// 	Enum::from_discriminant(n)
+/// }
+///
+/// #[no_mangle]
+/// #[inline(never)]
+/// pub unsafe fn llvm_ir_example4(n: ::core::mem::Discriminant<Enum>) -> Enum{
+/// 	Enum::from_discriminant_unchecked(n)
+/// }
+/// ```
+///
+/// ```llvm
+/// ; Function Attrs: mustprogress nofree noinline norecurse nosync nounwind nonlazybind readnone willreturn uwtable
+/// define noundef i8 @llvm_ir_example1(i8 %n) unnamed_addr #0 personality ptr @rust_eh_personality {
+/// start:
+/// 	%switch.tableidx = add i8 %n, -5
+/// 	%0 = icmp ult i8 %switch.tableidx, 5
+/// 	%switch.cast = zext i8 %switch.tableidx to i40
+/// 	%switch.shiftamt = shl nuw nsw i40 %switch.cast, 3
+/// 	%switch.downshift = lshr i40 38789383173, %switch.shiftamt
+/// 	%switch.masked = trunc i40 %switch.downshift to i8
+/// 	%.0.i = select i1 %0, i8 %switch.masked, i8 4
+/// 	ret i8 %.0.i
+/// }
+///
+/// ; Function Attrs: mustprogress nofree noinline norecurse nosync nounwind nonlazybind readnone willreturn uwtable
+/// define noundef i8 @llvm_ir_example2(i8 returned %n) unnamed_addr #0 personality ptr @rust_eh_personality {
+/// start:
+/// 	ret i8 %n
+/// }
+///
+/// @llvm_ir_example3 = unnamed_addr alias i8 (i8), ptr @llvm_ir_example1
+/// @llvm_ir_example4 = unnamed_addr alias i8 (i8), ptr @llvm_ir_example2
+///
+/// ; <rest is omitted>
+/// ```
+#[proc_macro_derive(EnumFromDiscriminant)]
+pub fn derive_EnumFromDiscriminant(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
+	derive_enum(input,|item| {
+		//let ty = util::minimum_type_containing_enum(&item);
+		enum_from_discriminant::gen_impl(item)
+	})
+}
+
+#[proc_macro_derive(EnumFieldStructs)]
+pub fn derive_EnumFieldStructs(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_field_structs::gen_impl)}

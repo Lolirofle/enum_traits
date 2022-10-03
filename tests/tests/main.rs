@@ -244,7 +244,6 @@ mod discriminants{
 		A=1,B,C=4,D,E=16,F
 	}
 
-	#[allow(dead_code)]
 	#[test]
 	fn test_len(){
 		assert_eq!(6,<Discriminants as Len>::LEN);
@@ -356,7 +355,7 @@ mod large{
 
 		let n: <Enum_u16_1 as Index>::Type = 0; let _ = n == 0u16;
 		let n: <Enum_u16_2 as Index>::Type = 0; let _ = n == 0u8;
-		let n: <Enum_u16_3 as Index>::Type = 0; let _ = n == 0u16;
+		let n: <Enum_u16_3 as Index>::Type = 0; let _ = n == 0u8;
 	}
 }
 
@@ -430,13 +429,13 @@ mod readmemd{
 	}
 }
 
-#[allow(dead_code)]
 mod generic_where{
 	use alloc::boxed::Box;
 	use alloc::vec::Vec;
 	use enum_traits_macros::*;
 
 	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumToIndex,EnumLen,EnumIsVariantFns,EnumTag,EnumVariantName,EnumFromVariantName)]
+	#[allow(dead_code)]
 	enum Generic<'x,'y: 'x,'z,X,Y: 'y,Z> where
 		'z: 'y,
 		X: 'x,
@@ -456,7 +455,6 @@ mod generic_where{
 	}
 }
 
-#[allow(dead_code)]
 #[test]
 fn test_ends(){
 	{
@@ -464,22 +462,27 @@ fn test_ends(){
 		assert_eq!(T::A,T::first());
 		assert_eq!(T::A,T::last());
 	}{
+		#[allow(dead_code)]
 		#[derive(Debug,Eq,PartialEq,EnumEnds)]enum T{A,B,C}
 		assert_eq!(T::A,T::first());
 		assert_eq!(T::C,T::last());
 	}{
+		#[allow(dead_code)]
 		#[derive(Debug,Eq,PartialEq,EnumEnds)]enum T{A,B,C,D,E,F,G}
 		assert_eq!(T::A,T::first());
 		assert_eq!(T::G,T::last());
 	}{
+		#[allow(dead_code)]
 		#[derive(Debug,Eq,PartialEq,EnumEnds)]enum T{A,B,C,D,E,F,G,H}
 		assert_eq!(T::A,T::first());
 		assert_eq!(T::H,T::last());
 	}{
+		#[allow(dead_code)]
 		#[derive(Debug,Eq,PartialEq,EnumEnds)]enum T{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,X,Y,Z}
 		assert_eq!(T::A,T::first());
 		assert_eq!(T::Z,T::last());
 	}{
+		#[allow(dead_code)]
 		#[derive(Debug,Eq,PartialEq,EnumEnds)]enum T{A,B(u64),C{c: i32},D}
 		assert_eq!(T::A,T::first());
 		assert_eq!(T::D,T::last());
@@ -487,7 +490,6 @@ fn test_ends(){
 }
 
 
-#[allow(dead_code)]
 #[test]
 fn test_iterator(){
 	use core::iter::Iterator;
@@ -564,7 +566,6 @@ fn test_iterator(){
 	}
 }
 
-#[allow(dead_code)]
 #[test]
 fn test_iter(){
 	use core::iter::Iterator;
@@ -644,5 +645,28 @@ fn test_iter(){
 		assert_eq!(None      ,t.next());
 	}
 }
+/*
+#[test]
+fn test_from_discriminants(){
+	use enum_traits::*;
+	use enum_traits_macros::*;
+
+	#[derive(Debug,Eq,PartialEq,EnumFromDiscriminant)]enum T{
+		A = 5,
+		B = 1,
+		C = 3,
+		D = 7,
+		//E = 7,
+	}
+
+	impl IntoDiscriminant<u8> for T{
+		fn into_discriminant(self) -> u8{
+			self as u8
+		}
+	}
+
+	assert_eq!(Some(T::A),t.next());
+}
+*/
 
 fn main(){}
