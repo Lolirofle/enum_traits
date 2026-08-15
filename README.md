@@ -2,7 +2,7 @@
 
 A library with traits and accompanying procedural macros that adds functionality to enums.
 
-Provides traits and "derives" for enum items in the Rust programming language:
+Provides traits, "derives" and attributes for enum items in the Rust programming language:
 
 ### Derives ###
 - EnumIndex (impl Index)
@@ -33,6 +33,11 @@ Provides traits and "derives" for enum items in the Rust programming language:
 - Step
 - IntoDiscriminant
 - FromDiscriminant
+
+### Attributes ###
+- impl_enum_len
+- impl_enum_first
+- impl_enum_last
 
 ### Usage ###
 
@@ -116,6 +121,23 @@ fn f2(){
 		Some(Enum::VariantB) => true,
 		_ => false
 	});
+}
+
+fn f3(){
+	//Using attributes (without any traits and derives)
+	#[impl_enum_len(OUR_CUSTOM_LENGTH)]
+	#[impl_enum_first(THIS_IS_THE_FIRST)]
+	#[impl_enum_last(HERE_IS_THE_LAST)]
+	enum Enum{
+		A,
+		B,
+		C,
+		D,
+	}
+
+	assert_eq!(Enum::A,Enum::THIS_IS_THE_FIRST);
+	assert_eq!(Enum::D,Enum::HERE_IS_THE_LAST);
+	assert_eq!(Enum::OUR_CUSTOM_LENGTH,4);
 }
 ```
 

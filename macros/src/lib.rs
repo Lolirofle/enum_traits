@@ -34,9 +34,16 @@ use syn::ItemEnum;
 fn derive_enum<F>(input: proc_macro::TokenStream,gen_impl: F) -> proc_macro::TokenStream
 	where F: FnOnce(ItemEnum) -> TokenStream
 {
-	let input = proc_macro2::TokenStream::from(input);
-	let item = syn::parse2::<ItemEnum>(input).expect("`derive(Enum*)` may only be applied to enum items");
+	let item = syn::parse2::<ItemEnum>(input.into()).expect("`derive(Enum*)` may only be applied to enum items");
 	proc_macro::TokenStream::from(gen_impl(item))
+}
+
+#[inline(always)]
+fn attr_enum<F>(attr: proc_macro::TokenStream,input: proc_macro::TokenStream,gen_impl: F) -> proc_macro::TokenStream
+	where F: FnOnce(TokenStream,ItemEnum) -> TokenStream
+{
+	let item = syn::parse::<ItemEnum>(input.into()).expect("`derive(Enum*)` may only be applied to enum items");
+	proc_macro::TokenStream::from(gen_impl(attr.into(),item))
 }
 
 /// Implements [`enum_traits::Len`].
@@ -69,6 +76,38 @@ fn derive_enum<F>(input: proc_macro::TokenStream,gen_impl: F) -> proc_macro::Tok
 #[cfg(feature = "len")]
 #[proc_macro_derive(EnumLen)]
 pub fn derive_EnumLen(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_len::gen_impl)}
+
+/// Implements a length constant to the enum.
+///
+/// The length is computed from the number of variants in the enum item.
+///
+/// # Requirements
+/// - The derived item is an enum.
+///
+/// # Example using attributes
+///
+/// ```rust
+/// use enum_traits_macros::*;
+///
+/// #[impl_enum_len(LENGTH)]
+/// enum Enum{A,B,C,D,E,F}
+/// ```
+///
+/// # Expanded example
+///
+/// ```rust
+///
+/// enum Enum{A,B,C,D,E,F}
+///
+/// impl Enum{
+/// 	const LENGTH: usize = 6;
+/// }
+/// ```
+#[cfg(feature = "len")]
+#[proc_macro_attribute]
+pub fn impl_enum_len(attr: proc_macro::TokenStream,item: proc_macro::TokenStream) -> proc_macro::TokenStream{
+	attr_enum(attr,item,enum_len::gen_attr_impl)
+}
 
 /// Implements [`enum_traits::Ends`].
 ///
@@ -104,6 +143,74 @@ pub fn derive_EnumLen(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 #[cfg(feature = "ends")]
 #[proc_macro_derive(EnumEnds)]
 pub fn derive_EnumEnds(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_ends::gen_impl)}
+
+/// Implements a constant to the first variant in the enum.
+///
+/// The ends are computed by using the first variant of the enum in the defined order.
+///
+/// # Requirements
+/// - The derived item is an enum.
+/// - The enum has at least one variant.
+/// - The enum's first variant is an unit variant.
+///
+/// # Example using attributes
+///
+/// ```rust
+/// use enum_traits_macros::*;
+///
+/// #[impl_enum_first(START)]
+/// enum Enum{A,B,C,D,E,F}
+/// ```
+///
+/// # Expanded example
+///
+/// ```rust
+///
+/// enum Enum{A,B,C,D,E,F}
+///
+/// impl Enum{
+/// 	const START: Self = Enum::A;
+/// }
+/// ```
+#[cfg(feature = "ends")]
+#[proc_macro_attribute]
+pub fn impl_enum_first(attr: proc_macro::TokenStream,item: proc_macro::TokenStream) -> proc_macro::TokenStream{
+	attr_enum(attr,item,enum_ends::gen_attr_impl_first)
+}
+
+/// Implements a constant to the last variant in the enum.
+///
+/// The ends are computed by using the last variant of the enum in the defined order.
+///
+/// # Requirements
+/// - The derived item is an enum.
+/// - The enum has at least one variant.
+/// - The enum's last variant is an unit variant.
+///
+/// # Example using attributes
+///
+/// ```rust
+/// use enum_traits_macros::*;
+///
+/// #[impl_enum_last(END)]
+/// enum Enum{A,B,C,D,E,F}
+/// ```
+///
+/// # Expanded example
+///
+/// ```rust
+///
+/// enum Enum{A,B,C,D,E,F}
+///
+/// impl Enum{
+/// 	const END: Self = Enum::F;
+/// }
+/// ```
+#[cfg(feature = "ends")]
+#[proc_macro_attribute]
+pub fn impl_enum_last(attr: proc_macro::TokenStream,item: proc_macro::TokenStream) -> proc_macro::TokenStream{
+	attr_enum(attr,item,enum_ends::gen_attr_impl_last)
+}
 
 /// Implements [`enum_traits::ToIndex`].
 ///
