@@ -21,10 +21,10 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 		#[automatically_derived]
 		impl #impl_generics ::enum_traits::FromIndex for #ident #ty_generics #where_clause{
 			#[inline]
-			fn from_index(index: <Self as ::enum_traits::Index>::Type) -> Option<Self>{
-				Some(match index{
+			fn from_index(index: <Self as ::enum_traits::Index>::Type) -> ::core::option::Option<Self>{
+				::core::option::Option::Some(match index{
 					#( #match_arms1 )*
-					_ => return None
+					_ => return ::core::option::Option::None
 				})
 			}
 

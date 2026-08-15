@@ -43,19 +43,19 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 		let fn_next = quote!{
 			#[inline]
 			#[allow(unreachable_code)]
-			fn next(&mut self) -> Option<Self::Item>{
-				Some(match self{
+			fn next(&mut self) -> ::core::option::Option<Self::Item>{
+				::core::option::Option::Some(match self{
 					#( #next_match_arms )*
-					_ => return None
+					_ => return ::core::option::Option::None
 				})
 			}
 		};
 
 		let fn_size_hint = quote!{
 			#[inline(always)]
-			fn size_hint(&self) -> (usize,Option<usize>){
+			fn size_hint(&self) -> (usize,::core::option::Option<usize>){
 				use ::core::iter::ExactSizeIterator;
-				(self.len(),Some(self.len()))
+				(self.len(),::core::option::Option::Some(self.len()))
 			}
 		};
 
@@ -69,16 +69,16 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 		};
 
 		let fn_last = match last.map(variant_unit_ident){
-			Some(last_ident) => quote!{
+			::core::option::Option::Some(last_ident) => quote!{
 				#[inline(always)]
-				fn last(self) -> Option<Self::Item>{
-					Some(#ident::#last_ident)
+				fn last(self) -> ::core::option::Option<Self::Item>{
+					::core::option::Option::Some(#ident::#last_ident)
 				}
 			},
-			None => quote!{
+			::core::option::Option::None => quote!{
 				#[inline(always)]
-				fn last(self) -> Option<Self::Item>{
-					None
+				fn last(self) -> ::core::option::Option<Self::Item>{
+					::core::option::Option::None
 				}
 			},
 		};

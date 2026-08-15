@@ -25,7 +25,7 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting o
 			let iter = item.variants.iter().map(variant_unit_ident);
 			iter.zip(item.variants.iter().map(variant_unit_ident).skip(1))
 		}.map(|(variant_ident1,variant_ident2)|{
-			quote! { &Some(#ident::#variant_ident1) => {self.0 = Some(#ident::#variant_ident2); #ident::#variant_ident2}, }
+			quote! { &::core::option::Option::Some(#ident::#variant_ident1) => {self.0 = ::core::option::Option::Some(#ident::#variant_ident2); #ident::#variant_ident2}, }
 		});
 
 	let len_match_arms = item.variants.iter().enumerate().map(|(i,variant)|{
@@ -46,34 +46,34 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting o
 	let struct_ident = format_ident!("{}Iter",ident);
 
 	let struct_iter = quote!{
-		#visibility struct #struct_ident #ty_generics #where_clause (pub Option<#ident #ty_generics>);
+		#visibility struct #struct_ident #ty_generics #where_clause (pub ::core::option::Option<#ident #ty_generics>);
 	};
 
 	let impl_default = quote!{
 		#[automatically_derived]
 		impl #impl_generics ::core::default::Default for #struct_ident #ty_generics #where_clause{
 			#[inline(always)]
-			fn default() -> Self{#struct_ident (None)}
+			fn default() -> Self{#struct_ident (::core::option::Option::None)}
 		}
 	};
 
 	let impl_iter = {
 		let fn_next = quote!{
 			#[inline]
-			fn next(&mut self) -> Option<Self::Item>{
-				Some(match &self.0{
-					&None => {self.0 = Some(#ident::#variant_first_ident); #ident::#variant_first_ident},
+			fn next(&mut self) -> ::core::option::Option<Self::Item>{
+				::core::option::Option::Some(match &self.0{
+					&::core::option::Option::None => {self.0 = ::core::option::Option::Some(#ident::#variant_first_ident); #ident::#variant_first_ident},
 					#( #next_match_arms )*
-					_ => return None
+					_ => return ::core::option::Option::None
 				})
 			}
 		};
 
 		let fn_size_hint = quote!{
 			#[inline(always)]
-			fn size_hint(&self) -> (usize,Option<usize>){
+			fn size_hint(&self) -> (usize,::core::option::Option<usize>){
 				use ::core::iter::ExactSizeIterator;
-				(self.len(),Some(self.len()))
+				(self.len(),::core::option::Option::Some(self.len()))
 			}
 		};
 
@@ -88,15 +88,15 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting o
 			}
 		};
 
-		let fn_last = if let Some(last_ident) = last.map(variant_unit_ident){quote!{
+		let fn_last = if let ::core::option::Option::Some(last_ident) = last.map(variant_unit_ident){quote!{
 			#[inline(always)]
-			fn last(self) -> Option<Self::Item>{
-				Some(#ident::#last_ident)
+			fn last(self) -> ::core::option::Option<Self::Item>{
+				::core::option::Option::Some(#ident::#last_ident)
 			}
 		}}else{quote!{
 			#[inline(always)]
-			fn last(self) -> Option<Self::Item>{
-				None
+			fn last(self) -> ::core::option::Option<Self::Item>{
+				::core::option::Option::None
 			}
 		}};
 
@@ -146,7 +146,7 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting o
 		#[automatically_derived]
 		impl #impl_generics ::enum_traits::Iterable for #ident #ty_generics #where_clause{
 			type Iter = #struct_ident;
-			#[inline(always)]fn variants() -> Self::Iter{#struct_ident(None)}
+			#[inline(always)]fn variants() -> Self::Iter{#struct_ident(::core::option::Option::None)}
 		}
 	};
 

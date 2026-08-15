@@ -70,7 +70,7 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 
 	let impls = item.variants.iter().filter_map(|variant|{
 		let (ty,pattern,expr) = fields_to_ty_pat_expr(&ident,&variant);
-		Some(quote!{
+		::core::option::Option::Some(quote!{
 			#[automatically_derived]
 			impl #impl_generics ::core::convert::From<#ty> for #ident #ty_generics #where_clause{
 				#[inline(always)]

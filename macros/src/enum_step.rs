@@ -28,10 +28,10 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 		let fn_next = quote!{
 			#[inline]
 			#[allow(unreachable_code)]
-			fn next(self) -> Option<Self>{
-				Some(match self{
+			fn next(self) -> ::core::option::Option<Self>{
+				::core::option::Option::Some(match self{
 					#( #next_match_arms )*
-					_ => return None
+					_ => return ::core::option::Option::None
 				})
 			}
 		};
@@ -39,10 +39,10 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 		let fn_prev = quote!{
 			#[inline]
 			#[allow(unreachable_code)]
-			fn previous(self) -> Option<Self>{
-				Some(match self{
+			fn previous(self) -> ::core::option::Option<Self>{
+				::core::option::Option::Some(match self{
 					#( #prev_match_arms )*
-					_ => return None
+					_ => return ::core::option::Option::None
 				})
 			}
 		};

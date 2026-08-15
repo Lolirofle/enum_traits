@@ -22,8 +22,8 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream {
 		impl #impl_generics ::core::str::FromStr for #ident #ty_generics #where_clause{
 			type Err = ();
 
-			fn from_str(str: &str) -> Result<Self,Self::Err>{
-				Ok(match str{
+			fn from_str(str: &str) -> ::core::result::Result<Self,Self::Err>{
+				::core::result::Result::Ok(match str{
 					#( #match_arms )*
 					_ => return Err(())
 				})

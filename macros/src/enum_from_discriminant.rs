@@ -33,10 +33,10 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 		#[automatically_derived]
 		impl #impl_generics ::enum_traits::FromDiscriminant<#type_param> for #ident #ty_generics #where_clause{
 			#[inline]
-			fn from_discriminant(discriminant: #type_param) -> Option<Self>{
-				Some(match discriminant{
+			fn from_discriminant(discriminant: #type_param) -> ::core::option::Option<Self>{
+				::core::option::Option::Some(match discriminant{
 					#( #match_arms1 , )*
-					_ => return None
+					_ => return ::core::option::Option::None
 				})
 			}
 
