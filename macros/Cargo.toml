@@ -1,6 +1,6 @@
 [package]
 name = "enum_traits_macros"
-version = "4.0.0"
+version = "4.1.0"
 authors = ["Lolirofle <1522957+Lolirofle@users.noreply.github.com>"]
 description = "Procedural macros adding functionality to enums. Derives traits from the crate `enum_traits`"
 documentation = "https://docs.rs/enum_traits"
@@ -26,7 +26,8 @@ default = [
 	"tag",
 	"to_index",
 	"variant_name",
-	"step"
+	"step",
+	"variants_array"
 ]
 ends                = []
 field_structs       = []
@@ -43,6 +44,7 @@ tag                 = []
 to_index            = []
 variant_name        = []
 step                = []
+variants_array      = []
 
 [lib]
 name = "enum_traits_macros"

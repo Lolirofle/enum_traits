@@ -38,6 +38,7 @@ Provides traits, "derives" and attributes for enum items in the Rust programming
 - impl_enum_len
 - impl_enum_first
 - impl_enum_last
+- impl_enum_variants_array
 
 ### Usage ###
 
@@ -128,6 +129,7 @@ fn f3(){
 	#[impl_enum_len(OUR_CUSTOM_LENGTH)]
 	#[impl_enum_first(THIS_IS_THE_FIRST)]
 	#[impl_enum_last(HERE_IS_THE_LAST)]
+	#[impl_enum_variants_array(#[deprecated] pub A_LIST)]
 	enum Enum{
 		A,
 		B,
@@ -138,8 +140,10 @@ fn f3(){
 	assert_eq!(Enum::A,Enum::THIS_IS_THE_FIRST);
 	assert_eq!(Enum::D,Enum::HERE_IS_THE_LAST);
 	assert_eq!(Enum::OUR_CUSTOM_LENGTH,4);
+	assert_eq!(Enum::OUR_CUSTOM_LENGTH,4);
+	assert_eq!(Enum::A_LIST,[Enum::A,Enum::B,Enum::C,Enum::D]);
 }
 ```
 
 See the tests for more examples.
-See the [docs for the library](https://docs.rs/crate/enum_traits/), [docs for the derives](https://docs.rs/crate/enum_traits_macros/), the tests or the source code for more information.
+See the [docs for the library](https://docs.rs/crate/enum_traits/), [docs for the derives](https://docs.rs/crate/enum_traits_macros/), the tests or the source code for more information and additional examples.

@@ -20,3 +20,16 @@ enum Fields{
 	VariantF,
 }
 */
+
+
+#[allow(dead_code)]
+pub mod attrs{
+	use enum_traits_macros::*;
+
+	/// ```no_compile
+	/// tests::attrs::T::LENGTH;
+	/// ```
+	#[impl_enum_len(#[cfg(all(test,not(test)))] pub LENGTH)]
+	#[derive(Eq,PartialEq,Debug)]
+	pub enum T{A,B,C,D}
+}

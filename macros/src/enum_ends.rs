@@ -1,3 +1,4 @@
+use crate::util::ident_attr_vis::IdentAttrVis;
 use proc_macro2::TokenStream;
 use syn::Fields;
 
@@ -33,7 +34,7 @@ pub fn gen_attr_impl_first(attr: TokenStream,item: syn::ItemEnum) -> TokenStream
 	let ident = &item.ident;
 	let variant_first_ident = enum_first_variant_ident(&item);
 
-	let const_ident = syn::parse2::<syn::Ident>(attr)
+	let IdentAttrVis{attrs,vis,ident: const_ident} = syn::parse2::<IdentAttrVis>(attr)
 		.expect("`impl_enum_first` expects an ident argument.");
 
 	quote!{
@@ -41,7 +42,7 @@ pub fn gen_attr_impl_first(attr: TokenStream,item: syn::ItemEnum) -> TokenStream
 
 		#[automatically_derived]
 		impl #impl_generics #ident #ty_generics #where_clause{
-			const #const_ident: Self = #ident::#variant_first_ident;
+			#( #attrs )* #vis const #const_ident: Self = #ident::#variant_first_ident;
 		}
 	}
 }
@@ -51,15 +52,15 @@ pub fn gen_attr_impl_last(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
 	let ident = &item.ident;
 	let variant_last_ident = enum_last_variant_ident(&item);
 
-	let const_ident = syn::parse2::<syn::Ident>(attr)
-		.expect("`impl_enum_first` expects an ident argument.");
+	let IdentAttrVis{attrs,vis,ident: const_ident} = syn::parse2::<IdentAttrVis>(attr)
+		.expect("`impl_enum_last` expects an ident argument.");
 
 	quote!{
 		#item
 
 		#[automatically_derived]
 		impl #impl_generics #ident #ty_generics #where_clause{
-			const #const_ident: Self = #ident::#variant_last_ident;
+			#( #attrs )* #vis const #const_ident: Self = #ident::#variant_last_ident;
 		}
 	}
 }
