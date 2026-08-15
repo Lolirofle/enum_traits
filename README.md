@@ -14,10 +14,12 @@ Provides traits and "derives" for enum items in the Rust programming language:
 - EnumIter (impl Iterable)
 - EnumIterator (impl Iterator)
 - EnumVariantName (impl VariantName)
-- EnumBitPattern (impl BitPattern)
-- EnumUnitVariant (impl UnitVariant)
 - EnumIsVariantFns
 - EnumFromVariantName (impl FromStr)
+- EnumTag
+- EnumFromVariantFields (impl From)
+- EnumStep (impl Step)
+- EnumFromDiscriminant (impl FromDiscriminant)
 
 ### Traits ###
 - Index
@@ -25,11 +27,12 @@ Provides traits and "derives" for enum items in the Rust programming language:
 - ToIndex
 - Len
 - Ends
-- Discriminant
 - Iterable
 - VariantName
-- BitPattern
-- UnitVariant
+- Tag
+- Step
+- IntoDiscriminant
+- FromDiscriminant
 
 ### Usage ###
 
@@ -40,17 +43,10 @@ enum_traits        = "*"
 enum_traits_macros = "*"
 ```
 
-With no_std:
-```TOML
-[dependencies]
-enum_traits        = {version="*",features=["no_std"]}
-enum_traits_macros = {version="*",features=["no_std"]}
-```
+All derives can be toggled using features.
 
 ### Examples ###
 ```rust
-//#![feature(associated_consts)]
-
 #[macro_use]extern crate enum_traits_macros;
 extern crate enum_traits;
 
@@ -72,7 +68,7 @@ fn f1(){
 }
 
 fn f2(){
-	#[derive(Debug,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumIter,EnumIterator,EnumDiscriminant,EnumEnds)]
+	#[derive(Debug,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumIter,EnumIterator,EnumFromDiscriminant,EnumEnds)]
 	enum Enum{
 		VariantA = 10,
 		VariantB = 20,
@@ -83,8 +79,7 @@ fn f2(){
 	assert_eq!(Enum::VariantB.into_index(),1);
 
 	//From EnumLen
-	//assert_eq!(Enum::LEN,3);
-	assert_eq!(Enum::len(),3);
+	assert_eq!(Enum::LEN,3);
 
 	//From EnumFromIndex
 	assert!(match Enum::from_index(1){
@@ -92,20 +87,20 @@ fn f2(){
 		_ => false
 	});
 
-	//From EnumDiscriminant
+	//From EnumFromDiscriminant
 	assert!(match Enum::from_discriminant(20){
 		Some(Enum::VariantB) => true,
 		_ => false
 	});
 
 	//From EnumEnds
-	assert!(match Enum::first(){
+	assert!(match Enum::FIRST{
 		Enum::VariantA => true,
 		_ => false
 	});
 
 	//From EnumEnds
-	assert!(match <Enum as Ends>::last(){
+	assert!(match <Enum as Ends>::LAST{
 		Enum::VariantC => true,
 		_ => false
 	});

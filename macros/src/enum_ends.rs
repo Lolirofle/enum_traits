@@ -14,8 +14,8 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 	quote!{
 		#[automatically_derived]
 		impl #impl_generics ::enum_traits::Ends for #ident #ty_generics #where_clause{
-			#[inline(always)]fn first() -> Self{#ident::#variant_first_ident}
-			#[inline(always)]fn last()  -> Self{#ident::#variant_last_ident}
+			const FIRST: Self = #ident::#variant_first_ident;
+			const LAST : Self = #ident::#variant_last_ident;
 		}
 	}
 }

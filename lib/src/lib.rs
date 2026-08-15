@@ -41,7 +41,7 @@
 //! assert_eq!(Enum::from_index(0)         , Some(Enum::A));
 //! assert_eq!(Enum::B.into_index()        , 1);
 //! assert_eq!(Enum::LEN                   , 6);
-//! assert_eq!(Enum::last()                , Enum::F);
+//! assert_eq!(Enum::LAST                , Enum::F);
 //! assert_eq!(Enum::B.next()              , Some(Enum::C));
 //!
 //! //Functions based on a variant's name.
@@ -419,38 +419,38 @@ pub trait Len{
 /// 	#[derive(Debug,PartialEq,EnumEnds)]
 /// 	enum T{A}
 ///
-/// 	assert_eq!(T::A , T::first());
-/// 	assert_eq!(T::A , T::last());
+/// 	assert_eq!(T::A , T::FIRST);
+/// 	assert_eq!(T::A , T::LAST);
 /// }{
 /// 	#[derive(Debug,PartialEq,EnumEnds)]
 /// 	enum T{A,B}
 ///
-/// 	assert_eq!(T::A , T::first());
-/// 	assert_eq!(T::B , T::last());
+/// 	assert_eq!(T::A , T::FIRST);
+/// 	assert_eq!(T::B , T::LAST);
 /// }{
 /// 	#[derive(Debug,PartialEq,EnumEnds)]
 /// 	enum T{A,B,C}
 ///
-/// 	assert_eq!(T::A , T::first());
-/// 	assert_eq!(T::C , T::last());
+/// 	assert_eq!(T::A , T::FIRST);
+/// 	assert_eq!(T::C , T::LAST);
 /// }{
 /// 	#[derive(Debug,PartialEq,EnumEnds)]
 /// 	enum T{A,B,C,D,E,F,G}
 ///
-/// 	assert_eq!(T::A , T::first());
-/// 	assert_eq!(T::G , T::last());
+/// 	assert_eq!(T::A , T::FIRST);
+/// 	assert_eq!(T::G , T::LAST);
 /// }{
 /// 	#[derive(Debug,PartialEq,EnumEnds)]
 /// 	enum T{A,B,C,D,E,F,G,H}
 ///
-/// 	assert_eq!(T::A , T::first());
-/// 	assert_eq!(T::H , T::last());
+/// 	assert_eq!(T::A , T::FIRST);
+/// 	assert_eq!(T::H , T::LAST);
 /// }{
 /// 	#[derive(Debug,PartialEq,EnumEnds)]
 /// 	enum T{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,X,Y,Z}
 ///
-/// 	assert_eq!(T::A , T::first());
-/// 	assert_eq!(T::Z , T::last());
+/// 	assert_eq!(T::A , T::FIRST);
+/// 	assert_eq!(T::Z , T::LAST);
 /// }{
 /// 	#[derive(Debug,PartialEq,EnumEnds)]
 /// 	enum T{
@@ -464,16 +464,16 @@ pub trait Len{
 /// 		H
 /// 	}
 ///
-/// 	assert_eq!(T::A , T::first());
-/// 	assert_eq!(T::H , T::last());
+/// 	assert_eq!(T::A , T::FIRST);
+/// 	assert_eq!(T::H , T::LAST);
 /// }
 /// ```
 pub trait Ends: Sized{
 	/// The first variant in a defined order of the enum.
-	fn first() -> Self;
+	const FIRST: Self;
 
 	/// The last variant in a defined order of the enum.
-	fn last() -> Self;
+	const LAST: Self;
 }
 
 /// An enum item type that have a corresponding iterator iterating over all variants.

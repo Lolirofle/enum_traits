@@ -97,8 +97,8 @@ pub fn derive_EnumLen(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 /// enum Enum{A,B,C,D,E,F}
 ///
 /// impl Ends for Enum{
-/// 	fn first() -> Self { Enum::A }
-/// 	fn last() -> Self { Enum::F }
+/// 	const FIRST: Self = Enum::A;
+/// 	const LAST: Self = Enum::F;
 /// }
 /// ```
 #[cfg(feature = "ends")]

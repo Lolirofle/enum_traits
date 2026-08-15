@@ -4,14 +4,14 @@ version = 4
 
 [[package]]
 name = "enum_traits"
-version = "3.1.0"
+version = "4.0.0"
 dependencies = [
  "enum_traits_macros",
 ]
 
 [[package]]
 name = "enum_traits_macros"
-version = "3.2.0"
+version = "4.0.0"
 dependencies = [
  "enum_traits",
  "proc-macro2",
@@ -39,9 +39,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.109"
+version = "3.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
+checksum = "53e9bae58849f64dfa4f5d5ae372c8341f7305f82a3868709269343628b659a3"
 dependencies = [
  "proc-macro2",
  "quote",

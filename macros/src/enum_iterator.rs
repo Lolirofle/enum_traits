@@ -28,13 +28,13 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 		});
 
 	let len_match_arms = item.variants.iter().enumerate().map(|(i,variant)|{
-		let i = Lit::Int(Literal::usize_unsuffixed(i).into());
+		let i = Lit::new(Literal::usize_unsuffixed(i));
 		let variant_ident = variant_unit_ident(variant);
 		quote! { &#ident::#variant_ident => #i, }
 	});
 
 	let count_match_arms = item.variants.iter().enumerate().map(|(i,variant)|{
-		let i = Lit::Int(Literal::usize_unsuffixed(i).into());
+		let i = Lit::new(Literal::usize_unsuffixed(i));
 		let variant_ident = variant_unit_ident(variant);
 		quote! { #ident::#variant_ident => #i, }
 	});

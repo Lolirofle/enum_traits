@@ -403,13 +403,13 @@ mod readmemd{
 		});
 
 		//From EnumEnds
-		assert!(match Enum::first(){
+		assert!(match Enum::FIRST{
 			Enum::VariantA => true,
 			_ => false
 		});
 
 		//From EnumEnds
-		assert!(match <Enum as Ends>::last(){
+		assert!(match <Enum as Ends>::LAST{
 			Enum::VariantC => true,
 			_ => false
 		});
@@ -458,33 +458,33 @@ mod generic_where{
 fn test_ends(){
 	{
 		#[derive(Debug,Eq,PartialEq,EnumEnds)]enum T{A}
-		assert_eq!(T::A,T::first());
-		assert_eq!(T::A,T::last());
+		assert_eq!(T::A,T::FIRST);
+		assert_eq!(T::A,T::LAST);
 	}{
 		#[allow(dead_code)]
 		#[derive(Debug,Eq,PartialEq,EnumEnds)]enum T{A,B,C}
-		assert_eq!(T::A,T::first());
-		assert_eq!(T::C,T::last());
+		assert_eq!(T::A,T::FIRST);
+		assert_eq!(T::C,T::LAST);
 	}{
 		#[allow(dead_code)]
 		#[derive(Debug,Eq,PartialEq,EnumEnds)]enum T{A,B,C,D,E,F,G}
-		assert_eq!(T::A,T::first());
-		assert_eq!(T::G,T::last());
+		assert_eq!(T::A,T::FIRST);
+		assert_eq!(T::G,T::LAST);
 	}{
 		#[allow(dead_code)]
 		#[derive(Debug,Eq,PartialEq,EnumEnds)]enum T{A,B,C,D,E,F,G,H}
-		assert_eq!(T::A,T::first());
-		assert_eq!(T::H,T::last());
+		assert_eq!(T::A,T::FIRST);
+		assert_eq!(T::H,T::LAST);
 	}{
 		#[allow(dead_code)]
 		#[derive(Debug,Eq,PartialEq,EnumEnds)]enum T{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,X,Y,Z}
-		assert_eq!(T::A,T::first());
-		assert_eq!(T::Z,T::last());
+		assert_eq!(T::A,T::FIRST);
+		assert_eq!(T::Z,T::LAST);
 	}{
 		#[allow(dead_code)]
 		#[derive(Debug,Eq,PartialEq,EnumEnds)]enum T{A,B(u64),C{c: i32},D}
-		assert_eq!(T::A,T::first());
-		assert_eq!(T::D,T::last());
+		assert_eq!(T::A,T::FIRST);
+		assert_eq!(T::D,T::LAST);
 	}
 }
 
@@ -495,14 +495,14 @@ fn test_iterator(){
 
 	{
 		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator)]enum T{A}
-		let mut t = T::first();
+		let mut t = T::FIRST;
 		assert_eq!(T::A,t);        assert_eq!(t.len(),0);
 		assert_eq!(None,t.next()); assert_eq!(t.len(),0);
 
-		assert_eq!(t.last(),Some(T::A));
+		assert_eq!(T::LAST,T::A);
 	}{
 		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator)]enum T{A,B,C}
-		let mut t = T::first();
+		let mut t = T::FIRST;
 
 		assert_eq!(T::A,t);              assert_eq!(t.len(),2);
 		assert_eq!(Some(T::B),t.next()); assert_eq!(t.len(),1);
@@ -512,7 +512,7 @@ fn test_iterator(){
 		assert_eq!(t.count(),0);
 	}{
 		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator)]enum T{A,B,C,D,E,F,G}
-		let mut t = T::first();
+		let mut t = T::FIRST;
 		assert_eq!(T::A,t);
 		assert_eq!(Some(T::B),t.next());
 		assert_eq!(Some(T::C),t.next());
@@ -523,7 +523,7 @@ fn test_iterator(){
 		assert_eq!(None      ,t.next());
 	}{
 		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator)]enum T{A,B,C,D,E,F,G,H}
-		let mut t = T::first();
+		let mut t = T::FIRST;
 		assert_eq!(T::A,t);
 		assert_eq!(Some(T::B),t.next());
 		assert_eq!(Some(T::C),t.next());
@@ -535,7 +535,7 @@ fn test_iterator(){
 		assert_eq!(None      ,t.next());
 	}{
 		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterator)]enum T{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,X,Y,Z}
-		let mut t = T::first();
+		let mut t = T::FIRST;
 		assert_eq!(T::A,t);
 		assert_eq!(Some(T::B),t.next());
 		assert_eq!(Some(T::C),t.next());
@@ -578,7 +578,7 @@ fn test_iter(){
 		assert_eq!(Some(T::A),t.next()); assert_eq!(t.len(),0);
 		assert_eq!(None,t.next());       assert_eq!(t.len(),0);
 
-		assert_eq!(t.last(),Some(T::A));
+		assert_eq!(T::LAST,T::A);
 	}{
 		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C}
 		let mut t = T::variants();

@@ -11,7 +11,7 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 	let ident = &item.ident;
 
 	fn match_arm_transform(ident: &Ident,(i,variant_ident): (usize,&Ident)) -> TokenStream{
-		let i = Lit::Int(Literal::usize_unsuffixed(i).into());
+		let i = Lit::new(Literal::usize_unsuffixed(i));
 		quote! { #i => #ident::#variant_ident, }
 	}
 	let match_arms1 = item.variants.iter().map(variant_unit_ident).enumerate().map(|arg| match_arm_transform(ident,arg));

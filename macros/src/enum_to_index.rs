@@ -7,7 +7,7 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 
 	let match_arms = item.variants.iter().enumerate().map(|(i,variant)|{
 		let variant_ident = &variant.ident;
-		let i = Lit::Int(Literal::usize_unsuffixed(i).into());
+		let i = Lit::new(Literal::usize_unsuffixed(i));
 
 		match variant.fields{
 			Fields::Unit => {
@@ -24,7 +24,7 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 
 	let match_arms_into = item.variants.iter().enumerate().map(|(i,variant)|{
 		let variant_ident = &variant.ident;
-		let i = Lit::Int(Literal::usize_unsuffixed(i).into());
+		let i = Lit::new(Literal::usize_unsuffixed(i));
 
 		match variant.fields{
 			Fields::Unit => {

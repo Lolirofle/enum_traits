@@ -29,19 +29,19 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting o
 		});
 
 	let len_match_arms = item.variants.iter().enumerate().map(|(i,variant)|{
-		let i = Lit::Int(Literal::usize_unsuffixed(i).into());
+		let i = Lit::new(Literal::usize_unsuffixed(i));
 		let variant_ident = variant_unit_ident(variant);
 		quote! { &#ident::#variant_ident => #i, }
 	});
 
 	let count_match_arms = item.variants.iter().enumerate().map(|(i,variant)|{
-		let i = Lit::Int(Literal::usize_unsuffixed(i).into());
+		let i = Lit::new(Literal::usize_unsuffixed(i));
 		let variant_ident = variant_unit_ident(variant);
 		quote! { #ident::#variant_ident => #i, }
 	});
 
 	let variant_first_ident = &item.variants.first().expect("`derive(EnumIter)` may only be applied to non-empty enums").ident;
-	//let variant_last_ident  = &item.variants.last().expect("`derive(EnumIter)` may only be applied to non-empty enums").ident;
+	//let variant_last_ident  = &item.variants.LAST.expect("`derive(EnumIter)` may only be applied to non-empty enums").ident;
 
 	let struct_ident = format_ident!("{}Iter",ident);
 
