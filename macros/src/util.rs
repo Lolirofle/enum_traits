@@ -2,17 +2,18 @@ use proc_macro2::Span;
 use alloc::string::String;
 use syn::{Fields,Ident,Variant};
 
-pub mod free_vars;
+#[cfg(feature = "field_structs")] pub mod free_vars;
 //pub mod occurs;
+#[cfg(feature = "field_structs")] pub mod vec_set;
 
 pub fn minimum_type_from_value(value: usize) -> Ident{
-	if value <= u8::max_value() as usize{
+	if value <= u8::MAX as usize{
 		Ident::new("u8",Span::call_site())
-	}else if value <= u16::max_value() as usize{
+	}else if value <= u16::MAX as usize{
 		Ident::new("u16",Span::call_site())
-	}else if value <= u32::max_value() as usize{
+	}else if value <= u32::MAX as usize{
 		Ident::new("u32",Span::call_site())
-	}else if value <= u64::max_value() as usize{
+	}else if value <= u64::MAX as usize{
 		Ident::new("u64",Span::call_site())
 	}else{
 		Ident::new("usize",Span::call_site())
@@ -66,6 +67,7 @@ pub fn variant_unit_ident<'v>(variant: &'v Variant,derive_name: &'static str) ->
 ///
 /// # Examples
 /// ```rust,ignore
+/// use enum_traits_macros::util::camelcase_to_snakecase;
 /// assert_eq!(camelcase_to_snakecase("SnakeCaseStringIsItReadable") , "snake_case_string_is_it_readable");
 /// assert_eq!(camelcase_to_snakecase("ANiceStringAndOKItIsIThink")  , "anice_string_and_okit_is_ithink");
 /// assert_eq!(camelcase_to_snakecase("OptionalBTreeLeaf")           , "optional_btree_leaf");

@@ -59,7 +59,6 @@ mod fields{
 		assert_eq!(6,Fields::<'static,u32>::LEN);
 	}
 
-	#[cfg(not(feature = "no_std_compile"))]
 	#[test]
 	fn test_isvariantfns(){
 		let i = 0u8;

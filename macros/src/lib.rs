@@ -2,7 +2,7 @@
 //!
 //! Also see [`enum_traits`] for some of the traits that this library derives.
 
-#![cfg_attr(test,feature(non_exhaustive_omitted_patterns_lint))]
+//#![cfg_attr(test,feature(non_exhaustive_omitted_patterns_lint))]
 
 #![allow(non_snake_case)]
 #![no_std]
@@ -10,21 +10,21 @@
 extern crate alloc;
 #[macro_use] extern crate quote;
 
-mod enum_ends;
-mod enum_field_structs;
-mod enum_from_discriminant;
-mod enum_from_index;
-mod enum_from_variant_fields;
-mod enum_from_variant_name;
-mod enum_index;
-mod enum_is_variant_fns;
-mod enum_iter;
-mod enum_iterator;
-mod enum_len;
-mod enum_tag;
-mod enum_to_index;
-mod enum_variant_name;
-mod enum_step;
+#[cfg(feature = "ends")]                mod enum_ends;
+#[cfg(feature = "field_structs")]       mod enum_field_structs;
+#[cfg(feature = "from_discriminant")]   mod enum_from_discriminant;
+#[cfg(feature = "from_index")]          mod enum_from_index;
+#[cfg(feature = "from_variant_fields")] mod enum_from_variant_fields;
+#[cfg(feature = "from_variant_name")]   mod enum_from_variant_name;
+#[cfg(feature = "index")]               mod enum_index;
+#[cfg(feature = "is_variant_fns")]      mod enum_is_variant_fns;
+#[cfg(feature = "iter")]                mod enum_iter;
+#[cfg(feature = "iterator")]            mod enum_iterator;
+#[cfg(feature = "len")]                 mod enum_len;
+#[cfg(feature = "tag")]                 mod enum_tag;
+#[cfg(feature = "to_index")]            mod enum_to_index;
+#[cfg(feature = "variant_name")]        mod enum_variant_name;
+#[cfg(feature = "step")]                mod enum_step;
 mod util;
 
 use proc_macro2::TokenStream;
@@ -66,6 +66,7 @@ fn derive_enum<F>(input: proc_macro::TokenStream,gen_impl: F) -> proc_macro::Tok
 /// 	const LEN: usize = 6;
 /// }
 /// ```
+#[cfg(feature = "len")]
 #[proc_macro_derive(EnumLen)]
 pub fn derive_EnumLen(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_len::gen_impl)}
 
@@ -100,6 +101,7 @@ pub fn derive_EnumLen(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 /// 	fn last() -> Self { Enum::F }
 /// }
 /// ```
+#[cfg(feature = "ends")]
 #[proc_macro_derive(EnumEnds)]
 pub fn derive_EnumEnds(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_ends::gen_impl)}
 
@@ -166,6 +168,7 @@ pub fn derive_EnumEnds(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
 /// 	}
 /// }
 /// ```
+#[cfg(feature = "to_index")]
 #[proc_macro_derive(EnumToIndex)]
 pub fn derive_EnumToIndex(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_to_index::gen_impl)}
 
@@ -220,6 +223,7 @@ pub fn derive_EnumToIndex(input: proc_macro::TokenStream) -> proc_macro::TokenSt
 /// 	}
 /// }
 /// ```
+#[cfg(feature = "from_index")]
 #[proc_macro_derive(EnumFromIndex)]
 pub fn derive_EnumFromIndex(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_from_index::gen_impl)}
 
@@ -272,6 +276,7 @@ pub fn derive_EnumFromIndex(input: proc_macro::TokenStream) -> proc_macro::Token
 /// 	type Type = u8;
 /// }
 /// ```
+#[cfg(feature = "index")]
 #[proc_macro_derive(EnumIndex)]
 pub fn derive_EnumIndex(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
 	derive_enum(input,enum_index::gen_impl)
@@ -342,6 +347,7 @@ pub fn derive_EnumIndex(input: proc_macro::TokenStream) -> proc_macro::TokenStre
 /// 	}
 /// }
 /// ```
+#[cfg(feature = "iter")]
 #[proc_macro_derive(EnumIter)]
 pub fn derive_EnumIter(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_iter::gen_impl)}
 
@@ -350,6 +356,7 @@ pub fn derive_EnumIter(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
 /// # Requirements
 /// - The derived item is an enum.
 /// - The enum variants are all unit variants.
+#[cfg(feature = "iterator")]
 #[proc_macro_derive(EnumIterator)]
 pub fn derive_EnumIterator(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_iterator::gen_impl)}
 
@@ -403,6 +410,7 @@ pub fn derive_EnumIterator(input: proc_macro::TokenStream) -> proc_macro::TokenS
 /// 	}
 /// }
 /// ```
+#[cfg(feature = "variant_name")]
 #[proc_macro_derive(EnumVariantName)]
 pub fn derive_EnumVariantName(input: proc_macro::TokenStream) -> proc_macro::TokenStream {derive_enum(input,enum_variant_name::gen_impl)}
 
@@ -463,6 +471,7 @@ pub fn derive_EnumVariantName(input: proc_macro::TokenStream) -> proc_macro::Tok
 ///
 /// // <rest is omitted>
 ///	```
+#[cfg(feature = "from_variant_name")]
 #[proc_macro_derive(EnumFromVariantName)]
 pub fn derive_EnumFromVariantName(input: proc_macro::TokenStream) -> proc_macro::TokenStream {derive_enum(input,enum_from_variant_name::gen_impl)}
 
@@ -532,6 +541,7 @@ pub fn derive_EnumFromVariantName(input: proc_macro::TokenStream) -> proc_macro:
 /// 	}
 /// }
 /// ```
+#[cfg(feature = "tag")]
 #[proc_macro_derive(EnumTag)]
 pub fn derive_EnumTag(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_tag::gen_impl)}
 
@@ -583,6 +593,7 @@ pub fn derive_EnumTag(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 ///
 /// // <rest is omitted>
 /// ```
+#[cfg(feature = "is_variant_fns")]
 #[proc_macro_derive(EnumIsVariantFns)]
 pub fn derive_EnumIsVariantFns(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_is_variant_fns::gen_impl)}
 
@@ -676,6 +687,7 @@ pub fn derive_EnumIsVariantFns(input: proc_macro::TokenStream) -> proc_macro::To
 ///
 /// // <rest is omitted>
 /// ```
+#[cfg(feature = "from_variant_fields")]
 #[proc_macro_derive(EnumFromVariantFields)]
 pub fn derive_EnumFromVariantFields(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_from_variant_fields::gen_impl)}
 
@@ -718,6 +730,7 @@ pub fn derive_EnumFromVariantFields(input: proc_macro::TokenStream) -> proc_macr
 /// 	}}
 /// }
 /// ```
+#[cfg(feature = "step")]
 #[proc_macro_derive(EnumStep)]
 pub fn derive_EnumStep(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_step::gen_impl)}
 
@@ -813,25 +826,25 @@ pub fn derive_EnumStep(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
 /// 	#[inline(always)] fn into_discriminant(self) -> u8{self as u8}
 /// }
 ///
-/// #[no_mangle]
+/// #[unsafe(no_mangle)]
 /// #[inline(never)]
 /// pub fn llvm_ir_example1(n: u8) -> Option<Enum>{
 /// 	Enum::from_discriminant(n)
 /// }
 ///
-/// #[no_mangle]
+/// #[unsafe(no_mangle)]
 /// #[inline(never)]
 /// pub unsafe fn llvm_ir_example2(n: u8) -> Enum{
 /// 	Enum::from_discriminant_unchecked(n)
 /// }
 ///
-/// #[no_mangle]
+/// #[unsafe(no_mangle)]
 /// #[inline(never)]
 /// pub fn llvm_ir_example3(n: ::core::mem::Discriminant<Enum>) -> Option<Enum>{
 /// 	Enum::from_discriminant(n)
 /// }
 ///
-/// #[no_mangle]
+/// #[unsafe(no_mangle)]
 /// #[inline(never)]
 /// pub unsafe fn llvm_ir_example4(n: ::core::mem::Discriminant<Enum>) -> Enum{
 /// 	Enum::from_discriminant_unchecked(n)
@@ -863,6 +876,7 @@ pub fn derive_EnumStep(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
 ///
 /// ; <rest is omitted>
 /// ```
+#[cfg(feature = "from_discriminant")]
 #[proc_macro_derive(EnumFromDiscriminant)]
 pub fn derive_EnumFromDiscriminant(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
 	derive_enum(input,|item| {
@@ -871,5 +885,6 @@ pub fn derive_EnumFromDiscriminant(input: proc_macro::TokenStream) -> proc_macro
 	})
 }
 
+#[cfg(feature = "field_structs")]
 #[proc_macro_derive(EnumFieldStructs)]
 pub fn derive_EnumFieldStructs(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_field_structs::gen_impl)}

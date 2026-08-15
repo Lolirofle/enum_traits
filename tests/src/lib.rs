@@ -1,11 +1,13 @@
-//cargo rustc -- -Z unstable-options --pretty=expanded --test
-//cargo expand-macros
-//cargo expand --test main
-//cargo expand --ugly --all-features > [FILE]
-//cargo -v rustc --release -- --emit=llvm-ir
+//Useful commands for testing:
+//  cargo rustc -- -Z unstable-options --pretty=expanded --test
+//  cargo expand-macros
+//  cargo expand --test main
+//  cargo expand --ugly --all-features > [FILE]
+//  cargo -v rustc --release -- --emit=llvm-ir
 
 #![no_std]
 
+/*
 use enum_traits_macros::*;
 
 #[derive(EnumFieldStructs)]
@@ -17,3 +19,4 @@ enum Fields{
 	VariantE{a: i32,b: i32,c: i32,d: i32,e: (u16,i32)},
 	VariantF,
 }
+*/

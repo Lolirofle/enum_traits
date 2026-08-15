@@ -2,7 +2,7 @@
 name = "tests"
 version = "0.0.0"
 authors = ["Lolirofle <1522957+Lolirofle@users.noreply.github.com>"]
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 enum_traits = {path="../lib"}

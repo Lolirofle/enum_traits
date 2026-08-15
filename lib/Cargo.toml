@@ -9,7 +9,7 @@ readme = "../README.md"
 keywords = ["enum","trait","derive","proc-macros","macro"]
 categories = ["development-tools::procedural-macro-helpers"]
 license = "MIT"
-edition = "2021"
+edition = "2024"
 
 [lib]
 name = "enum_traits"

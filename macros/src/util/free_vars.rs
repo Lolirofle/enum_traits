@@ -1,32 +1,30 @@
-use alloc::vec;
 use alloc::vec::Vec;
 use core::default::Default;
-use core::hash::Hash;
-use hashbrown::HashSet;
+use crate::util::vec_set::VecSet;
 use syn::{Ident,Lifetime};
 use syn::visit as vis;
 
 pub struct FreeVars<Var>{
-	vars: HashSet<Var>,
-	ignore_scopes: Vec<HashSet<Var>>,
+	vars: VecSet<Var>,
+	ignore_scopes: Vec<VecSet<Var>>,
 }
 
 impl<Var> FreeVars<Var> where
-	Var: Copy + Eq + Hash
+	Var: Copy + Eq
 {
 	#[inline]
 	pub fn new() -> Self{FreeVars{
-		vars: HashSet::new(),
+		vars: VecSet::from_vec(Vec::new()),
 		ignore_scopes: {
 			let mut vec = Vec::with_capacity(8);
-			vec.push(HashSet::new());
+			vec.push(VecSet::from_vec(Vec::new()));
 			vec
 		},
 	}}
 
 	#[inline]
 	fn scope(&mut self){
-		self.ignore_scopes.push(HashSet::new());
+		self.ignore_scopes.push(VecSet::from_vec(Vec::new()));
 	}
 
 	#[inline]
@@ -35,7 +33,7 @@ impl<Var> FreeVars<Var> where
 	}
 
 	#[inline]
-	fn latest_ignore_scope(&mut self) -> Option<&mut HashSet<Var>>{
+	fn latest_ignore_scope(&mut self) -> Option<&mut VecSet<Var>>{
 		self.ignore_scopes.last_mut()
 	}
 
@@ -47,7 +45,7 @@ impl<Var> FreeVars<Var> where
 	}
 
 	pub fn is_ignored(&self,var: Var) -> bool{
-		self.ignore_scopes.iter().any(|ignore_scope| ignore_scope.contains(&var))
+		self.ignore_scopes.iter().any(|ignore_scope| ignore_scope.contains(var))
 	}
 
 	#[inline]
@@ -59,7 +57,7 @@ impl<Var> FreeVars<Var> where
 
 	#[inline]
 	pub fn is_free(&self,var: Var) -> bool{
-		self.vars.contains(&var)
+		self.vars.contains(var)
 	}
 
 	#[inline]
