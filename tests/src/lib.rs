@@ -1,3 +1,7 @@
+//#![feature(min_adt_const_params,const_param_ty_trait)]
+#![allow(dead_code)]
+#![no_std]
+
 //Useful commands for testing:
 //  cargo rustc -- -Z unstable-options --pretty=expanded --test
 //  cargo expand-macros
@@ -5,24 +9,25 @@
 //  cargo expand --ugly --all-features > [FILE]
 //  cargo -v rustc --release -- --emit=llvm-ir
 
-#![no_std]
-
-/*
 use enum_traits_macros::*;
 
+//TODO: Also write tests on this
+#[allow(non_snake_case)]
 #[derive(EnumFieldStructs)]
-enum Fields{
+enum Fields<'a,X,Y>{
 	VariantA(i8),
 	VariantB(i32),
 	VariantC(u8,u16,u32),
 	VariantD{d: (u8,i32)},
 	VariantE{a: i32,b: i32,c: i32,d: i32,e: (u16,i32)},
 	VariantF,
+	VariantG(X),
+	VariantH(&'a X),
+	VariantI(&'a Y),
+	VariantJ{x: X,y: &'a Y},
+	VariantK{x: i8},
 }
-*/
 
-
-#[allow(dead_code)]
 pub mod attrs{
 	use enum_traits_macros::*;
 
@@ -33,3 +38,20 @@ pub mod attrs{
 	#[derive(Eq,PartialEq,Debug)]
 	pub enum T{A,B,C,D}
 }
+
+/* TODO: An idea. Remove later
+enum Test{A(u8),B(u16),C(u32)}
+#[derive(Eq,PartialEq)] enum TestTags{A,B,C}
+struct A(u8);
+struct B(u16);
+struct C(u32);
+
+impl core::marker::ConstParamTy_ for TestTags{}
+
+trait TestFields<const T: TestTags>{
+	type Out;
+}
+impl TestFields<TestTags::A>{type Out = A;}
+impl TestFields<TestTags::B>{type Out = B;}
+impl TestFields<TestTags::C>{type Out = C;}
+*/

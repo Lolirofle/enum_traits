@@ -4,6 +4,8 @@
 //!
 //! These crates together generate various additional functionalities for enums based on their definitions.
 //!
+//! Note that this library is not required for [`enum_traits_macros`] to function.
+//!
 //! # Import
 //!
 //! Add one of the following snippets to `Cargo.toml`:
@@ -26,7 +28,7 @@
 //! use enum_traits_macros::*;
 //! use enum_traits::*;
 //!
-//! #[derive(Debug,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumStep,EnumVariantName,EnumFromVariantName,EnumFromDiscriminant)]
+//! #[derive(Debug,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumStep,EnumVariantName,EnumFromStr,EnumFromDiscriminant)]
 //! enum Enum{
 //! 	A = 10,
 //! 	B = 2,
@@ -62,7 +64,7 @@
 //! use enum_traits_macros::*;
 //! use enum_traits::*;
 //!
-//! #[derive(Debug,PartialEq,EnumIndex,EnumToIndex,EnumLen,EnumVariantName,EnumIsVariantFns,EnumFromVariantFields,EnumTag)]
+//! #[derive(Debug,PartialEq,EnumIndex,EnumToIndex,EnumLen,EnumVariantName,EnumIs,EnumFrom,EnumTag)]
 //! enum Enum<'l,T: ?Sized,const LEN: usize,I> where I: Iterator<Item = T>{
 //! 	None,
 //! 	List([&'l T; LEN]),
@@ -95,7 +97,7 @@
 
 #![no_std]
 
-use core::{borrow,mem};
+use core::mem;
 
 #[cfg(feature = "derive")]
 pub use enum_traits_macros::*;
@@ -104,7 +106,7 @@ pub use enum_traits_macros::*;
 ///
 /// This is primarily used by [`FromIndex`] and [`ToIndex`].
 ///
-/// Derive this trait for an enum automatically using [`#[derive(EnumIndex)]`][EnumIndex].
+/// Derive this trait for an enum automatically using [`#[derive(EnumIndex)]`][enum_traits_macros::EnumIndex].
 ///
 /// # Requirements
 ///
@@ -117,7 +119,7 @@ pub trait Index{
 
 /// A constructor from an index based on an order on the variants of an enum type.
 ///
-/// Derive this trait for an enum automatically using [`#[derive(EnumFromIndex)]`][EnumFromIndex].
+/// Derive this trait for an enum automatically using [`#[derive(EnumFromIndex)]`][enum_traits_macros::EnumFromIndex].
 ///
 /// # Examples of correctness
 ///
@@ -227,7 +229,7 @@ pub trait FromIndex: Index + Sized{
 
 /// Indices based on an order on the variants of an enum type.
 ///
-/// Derive this trait for an enum automatically using [`#[derive(EnumToIndex)]`][EnumToIndex]
+/// Derive this trait for an enum automatically using [`#[derive(EnumToIndex)]`][enum_traits_macros::EnumToIndex]
 ///
 /// # Examples of correctness
 ///
@@ -362,7 +364,7 @@ pub trait ToIndex: Index{
 
 /// Number of variants in an enum type.
 ///
-/// Derive this trait for an enum automatically using [`#[derive(EnumLen)]`][EnumLen].
+/// Derive this trait for an enum automatically using [`#[derive(EnumLen)]`][enum_traits_macros::EnumLen].
 ///
 /// # Examples of correctness
 ///
@@ -408,7 +410,7 @@ pub trait Len{
 
 /// Constructors for the endpoints of an enum based on an order on the variants.
 ///
-/// Derive this trait for an enum automatically using [`#[derive(EnumEnds)]`][EnumEnds].
+/// Derive this trait for an enum automatically using [`#[derive(EnumEnds)]`][enum_traits_macros::EnumEnds].
 ///
 /// # Examples of correctness
 ///
@@ -478,12 +480,10 @@ pub trait Ends: Sized{
 
 /// An enum item type that have a corresponding iterator iterating over all variants.
 ///
-/// Derive this trait for an enum automatically using [`#[derive(EnumIter)]`][EnumIter].
-pub trait Iterable where
-	<<Self as Iterable>::Iter as Iterator>::Item: borrow::Borrow<Self>
-{
+/// Derive this trait for an enum automatically using [`#[derive(EnumIterable)]`][enum_traits_macros::EnumIterable].
+pub trait Iterable{
 	/// The type of the iterator
-	type Iter: Iterator;
+	type Iter: Iterator<Item = Self>;
 
 	/// Constructs an iterator that iterates over every variant in the defined order
 	fn variants() -> Self::Iter;
@@ -491,7 +491,7 @@ pub trait Iterable where
 
 /// A function converting from a variant to its defined name.
 ///
-/// Derive this trait for an enum automatically using [`#[derive(EnumVariantName)]`][EnumVariantName].
+/// Derive this trait for an enum automatically using [`#[derive(EnumVariantName)]`][enum_traits_macros::EnumVariantName].
 ///
 /// # Examples of correctness
 ///
@@ -517,7 +517,7 @@ pub trait VariantName{
 
 /// An enum item type that have a corresponding enum consisting of only unit variants describing the discriminants.
 ///
-/// Derive this trait for an enum automatically using [`#[derive(EnumTag)]`][EnumTag].
+/// Derive this trait for an enum automatically using [`#[derive(EnumTag)]`][enum_traits_macros::EnumTag].
 ///
 /// # Example of correctness
 ///
@@ -588,7 +588,7 @@ pub trait Tag{
 
 /// The next and previous value of an enum based on an order on the variants.
 ///
-/// Derive this trait for an enum automatically using [`#[derive(EnumStep)]`][EnumStep].
+/// Derive this trait for an enum automatically using [`#[derive(EnumStep)]`][enum_traits_macros::EnumStep].
 ///
 /// # Examples of correctness
 ///
@@ -656,7 +656,7 @@ pub trait Step: Sized{
 
 /// Represents an enum type that can be converted into a representation of its discriminant type.
 ///
-/// This is primarily used by the automatic derivation [`#[derive(EnumFromDiscriminant)]`][EnumFromDiscriminant].
+/// This is primarily used by the automatic derivation [`#[derive(EnumFromDiscriminant)]`][enum_traits_macros::EnumFromDiscriminant].
 ///
 /// # Example implementation
 ///
@@ -722,7 +722,7 @@ macro_rules! impl_IntoDiscriminant_of_numeric{
 
 /// Represents an enum type that can be converted from a representation of its discriminant type.
 ///
-/// Derive this trait for an enum automatically using [`#[derive(EnumFromDiscriminant)]`][EnumFromDiscriminant].
+/// Derive this trait for an enum automatically using [`#[derive(EnumFromDiscriminant)]`][enum_traits_macros::EnumFromDiscriminant].
 ///
 /// # Examples of correctness
 ///
@@ -796,7 +796,7 @@ pub trait FromDiscriminant<D>: Sized{
 /*
 /// Represents an enum type that have an array that lists all of the variants.
 ///
-/// Derive this trait for an enum automatically using [`#[derive(EnumArray)]`][EnumArray].
+/// Derive this trait for an enum automatically using [`#[derive(EnumArray)]`][enum_traits_macros::EnumArray].
 ///
 /// # Examples of correctness
 ///

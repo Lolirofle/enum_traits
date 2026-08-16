@@ -1,6 +1,7 @@
 use proc_macro2::{Literal,TokenStream};
 use syn::{Fields,Lit};
 
+#[cfg(feature = "derive_to_index")]
 pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = item.ident;

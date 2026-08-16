@@ -3,10 +3,11 @@ use proc_macro2::{Literal,TokenStream};
 use syn::{Ident,Lit,Variant};
 
 fn variant_unit_ident(variant: &Variant) -> &Ident{
-	util::variant_unit_ident(variant,"EnumIter")
+	util::variant_unit_ident(variant,"EnumIterable")
 }
 
-pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting output (EnumIter may not need Option, but then empty enums are not represented. Are they necessary to include?)
+#[cfg(feature = "derive_iterable")]
+pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting output (EnumIterable may not need Option, but then empty enums are not represented. Are they necessary to include?)
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = item.ident;
 	let visibility = &item.vis;
@@ -40,8 +41,7 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting o
 		quote! { #ident::#variant_ident => #i, }
 	});
 
-	let variant_first_ident = &item.variants.first().expect("`derive(EnumIter)` may only be applied to non-empty enums").ident;
-	//let variant_last_ident  = &item.variants.LAST.expect("`derive(EnumIter)` may only be applied to non-empty enums").ident;
+	let variant_first_ident = &item.variants.first().expect("`derive(EnumIterable)` may only be applied to non-empty enums").ident;
 
 	let struct_ident = format_ident!("{}Iter",ident);
 
@@ -113,7 +113,7 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting o
 		}
 	};
 
-	//TODO: May be an incorrect use of DoubleEndedIterator. Use Step instead
+	//TODO: May be an incorrect use of DoubleEndedIterator. Use Step instead?
 	/*let impl_diter = quote!{
 		#[automatically_derived]
 		impl #impl_generics ::core::iter::Iterator for ::core::iter::Rev<#struct_ident> #ty_generics #where_clause{
@@ -142,17 +142,17 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting o
 		}
 	};
 
-	let impl_intoiter = quote!{
+	let impl_iterable = quote!{
 		#[automatically_derived]
 		impl #impl_generics ::enum_traits::Iterable for #ident #ty_generics #where_clause{
-			type Iter = #struct_ident;
+			type Iter = #struct_ident #ty_generics;
 			#[inline(always)]fn variants() -> Self::Iter{#struct_ident(::core::option::Option::None)}
 		}
 	};
 
 	quote!{
 		#struct_iter
-		#impl_intoiter
+		#impl_iterable
 		#impl_default
 		#impl_iter
 		//#impl_diter

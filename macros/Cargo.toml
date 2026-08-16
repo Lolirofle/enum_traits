@@ -1,6 +1,6 @@
 [package]
 name = "enum_traits_macros"
-version = "4.1.0"
+version = "5.0.0"
 authors = ["Lolirofle <1522957+Lolirofle@users.noreply.github.com>"]
 description = "Procedural macros adding functionality to enums. Derives traits from the crate `enum_traits`"
 documentation = "https://docs.rs/enum_traits"
@@ -14,12 +14,13 @@ edition = "2024"
 [features]
 default = [
 	"ends",
+	"field_structs",
 	"from_discriminant",
 	"from_index",
-	"from_variant_fields",
-	"from_variant_name",
+	"from",
+	"from_str",
 	"index",
-	"is_variant_fns",
+	"is",
 	"iter",
 	"iterator",
 	"len",
@@ -27,24 +28,56 @@ default = [
 	"to_index",
 	"variant_name",
 	"step",
-	"variants_array"
+	"attr_variants_array"
 ]
-ends                = []
-field_structs       = []
-from_discriminant   = []
-from_index          = []
-from_variant_fields = []
-from_variant_name   = []
-index               = []
-is_variant_fns      = []
-iter                = []
-iterator            = []
-len                 = []
-tag                 = []
-to_index            = []
-variant_name        = []
-step                = []
-variants_array      = []
+ends              = ["derive_ends"             ,"attr_ends"]
+field_structs     = ["derive_field_structs"    ,"attr_field_structs"]
+from_discriminant = ["derive_from_discriminant","attr_from_discriminant"]
+from_index        = ["derive_from_index"       ,"attr_from_index"]
+from              = ["derive_from"             ,"attr_from"]
+from_str          = ["derive_from_str"         ,"attr_from_str"]
+index             = ["derive_index"            ,"attr_index"]
+is                = ["derive_is"               ,"attr_is"]
+iter              = ["derive_iterable"         ,"attr_iterable"]
+iterator          = ["derive_iterator"         ,"attr_iterator"]
+len               = ["derive_len"              ,"attr_len"]
+tag               = ["derive_tag"              ,"attr_tag"]
+to_index          = ["derive_to_index"         ,"attr_to_index"]
+variant_name      = ["derive_variant_name"     ,"attr_variant_name"]
+step              = ["derive_step"             ,"attr_step"]
+variants_array    = ["derive_variants_array"   ,"attr_variants_array"]
+derive_ends              = []
+derive_field_structs     = []
+derive_from_discriminant = []
+derive_from_index        = []
+derive_from              = []
+derive_from_str          = []
+derive_index             = []
+derive_is                = []
+derive_iterable          = []
+derive_iterator          = []
+derive_len               = []
+derive_tag               = []
+derive_to_index          = []
+derive_variant_name      = []
+derive_step              = []
+derive_variants_array    = []
+attr_ends              = []
+attr_field_structs     = []
+attr_from_discriminant = []
+attr_from_index        = []
+attr_from              = []
+attr_from_str          = []
+attr_index             = []
+attr_is                = []
+attr_iterable          = []
+attr_iterator          = []
+attr_len               = []
+attr_tag               = []
+attr_to_index          = []
+attr_variant_name      = []
+attr_step              = []
+attr_variants_array    = []
 
 [lib]
 name = "enum_traits_macros"

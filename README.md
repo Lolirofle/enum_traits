@@ -11,13 +11,13 @@ Provides traits, "derives" and attributes for enum items in the Rust programming
 - EnumLen (impl Len)
 - EnumEnds (impl Ends)
 - EnumDiscriminant (impl Discriminant)
-- EnumIter (impl Iterable)
+- EnumIterable (impl Iterable)
 - EnumIterator (impl Iterator)
 - EnumVariantName (impl VariantName)
-- EnumIsVariantFns
-- EnumFromVariantName (impl FromStr)
+- EnumIs
+- EnumFromStr (impl FromStr)
 - EnumTag
-- EnumFromVariantFields (impl From)
+- EnumFrom (impl From)
 - EnumStep (impl Step)
 - EnumFromDiscriminant (impl FromDiscriminant)
 
@@ -27,7 +27,6 @@ Provides traits, "derives" and attributes for enum items in the Rust programming
 - ToIndex
 - Len
 - Ends
-- Iterable
 - VariantName
 - Tag
 - Step
@@ -74,7 +73,7 @@ fn f1(){
 }
 
 fn f2(){
-	#[derive(Debug,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumIter,EnumIterator,EnumFromDiscriminant,EnumEnds)]
+	#[derive(Debug,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumIterable,EnumIterator,EnumFromDiscriminant,EnumEnds)]
 	enum Enum{
 		VariantA = 10,
 		VariantB = 20,
@@ -111,8 +110,8 @@ fn f2(){
 		_ => false
 	});
 
-	//From EnumIter
-	assert!(match Enum::variants().next(){
+	//From EnumIterable
+	assert!(match Enum::into_iter().next(){
 		Some(Enum::VariantA) => true,
 		_ => false
 	});

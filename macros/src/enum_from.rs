@@ -64,6 +64,7 @@ fn fields_to_ty_pat_expr(item_ident: &Ident,variant: &Variant) -> (TokenStream,T
 	},
 )}
 
+#[cfg(feature = "derive_from")]
 pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = item.ident;

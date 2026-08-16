@@ -2,9 +2,7 @@ use proc_macro2::Span;
 use alloc::string::String;
 use syn::{Fields,Ident,Variant};
 
-#[cfg(feature = "field_structs")] pub mod free_vars;
-//pub mod occurs;
-#[cfg(feature = "field_structs")] pub mod vec_set;
+#[cfg(any(feature = "derive_field_structs",feature = "attr_field_structs"))] pub mod occurs;
 pub mod ident_attr_vis;
 
 pub fn minimum_type_from_value(value: usize) -> Ident{

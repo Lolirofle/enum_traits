@@ -6,6 +6,7 @@ fn variant_unit_ident(variant: &Variant) -> &Ident{
 	util::variant_unit_ident(variant,"EnumIterator")
 }
 
+#[cfg(feature = "derive_iterator")]
 pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = item.ident;

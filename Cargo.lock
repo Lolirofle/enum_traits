@@ -4,14 +4,14 @@ version = 4
 
 [[package]]
 name = "enum_traits"
-version = "4.0.0"
+version = "5.0.0"
 dependencies = [
  "enum_traits_macros",
 ]
 
 [[package]]
 name = "enum_traits_macros"
-version = "4.0.0"
+version = "5.0.0"
 dependencies = [
  "enum_traits",
  "proc-macro2",

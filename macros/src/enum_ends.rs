@@ -14,6 +14,7 @@ fn enum_last_variant_ident(item: &syn::ItemEnum) -> &syn::Ident{
 	&variant_last.ident
 }
 
+#[cfg(feature = "derive_ends")]
 pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
@@ -29,6 +30,7 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 	}
 }
 
+#[cfg(feature = "attr_ends")]
 pub fn gen_attr_impl_first(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
@@ -47,6 +49,7 @@ pub fn gen_attr_impl_first(attr: TokenStream,item: syn::ItemEnum) -> TokenStream
 	}
 }
 
+#[cfg(feature = "attr_ends")]
 pub fn gen_attr_impl_last(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;

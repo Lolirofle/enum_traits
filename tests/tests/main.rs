@@ -6,12 +6,13 @@ use enum_traits::*;
 use enum_traits_macros::*;
 
 //TODO: Unit tests that should fail
+//TODO: Tests for EnumFrom and other stuff that are not tested
 
 mod fields{
 	use enum_traits::*;
 	use enum_traits_macros::*;
 
-	#[derive(Debug,Eq,PartialEq,EnumIndex,              EnumToIndex,EnumLen,EnumIsVariantFns,EnumTag,                               EnumVariantName,EnumFromVariantName)]
+	#[derive(Debug,Eq,PartialEq,EnumIndex,              EnumToIndex,EnumLen,EnumIs,EnumTag,                               EnumVariantName,EnumFromStr)]
 	enum Fields<'t,T: 't>{
 		VariantA(&'t T),
 		VariantB(T),
@@ -162,7 +163,7 @@ mod nofields{
 	use enum_traits::*;
 	use enum_traits_macros::*;
 
-	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumIsVariantFns,EnumTag,EnumEnds,EnumIterator,EnumIter,EnumVariantName,EnumFromVariantName)]
+	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumIs,EnumTag,EnumEnds,EnumIterator,EnumIterable,EnumVariantName,EnumFromStr)]
 	enum NoFields{
 		A,B,C,D,E,F
 	}
@@ -215,7 +216,7 @@ mod nofields{
 	}
 
 	#[test]
-	fn test_from_variant_name(){
+	fn test_from_str(){
 		use core::str::FromStr;
 
 		let mut v: Result<NoFields,()>;
@@ -232,12 +233,12 @@ mod discriminants{
 	use enum_traits::*;
 	use enum_traits_macros::*;
 
-	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumIterator,EnumIter)]
+	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumIterator,EnumIterable)]
 	enum Discriminants{
 		A=1,B=2,C=4,D=8,E=16,F=33
 	}
 
-	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumIterator,EnumIter)]
+	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumIterator,EnumIterable)]
 	#[repr(u32)]
 	enum SomeDiscriminants{
 		A=1,B,C=4,D,E=16,F
@@ -382,7 +383,7 @@ mod readmemd{
 	#[test]
 	#[allow(dead_code)]
 	fn f2(){
-		#[derive(Debug,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumIter,EnumIterator,EnumEnds)]
+		#[derive(Debug,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumIterable,EnumIterator,EnumEnds)]
 		enum Enum{
 			VariantA = 10,
 			VariantB = 20,
@@ -414,7 +415,7 @@ mod readmemd{
 			_ => false
 		});
 
-		//From EnumIter
+		//From EnumIterable
 		assert!(match Enum::variants().next(){
 			Some(Enum::VariantA) => true,
 			_ => false
@@ -433,7 +434,7 @@ mod generic_where{
 	use alloc::vec::Vec;
 	use enum_traits_macros::*;
 
-	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumToIndex,EnumLen,EnumIsVariantFns,EnumTag,EnumVariantName,EnumFromVariantName)]
+	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumToIndex,EnumLen,EnumIs,EnumTag,EnumVariantName,EnumFromStr)]
 	#[allow(dead_code)]
 	enum Generic<'x,'y: 'x,'z,X,Y: 'y,Z> where
 		'z: 'y,
@@ -571,7 +572,7 @@ fn test_iter(){
 	use enum_traits::Iterable;
 
 	{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterable)]enum T{A}
 		let mut t = T::variants();
 		assert_eq!(t.len(),1);
 
@@ -580,7 +581,7 @@ fn test_iter(){
 
 		assert_eq!(T::LAST,T::A);
 	}{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterable)]enum T{A,B,C}
 		let mut t = T::variants();
 		assert_eq!(t.len(),3);
 
@@ -591,7 +592,7 @@ fn test_iter(){
 
 		assert_eq!(t.count(),0);
 	}{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C,D,E,F,G}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterable)]enum T{A,B,C,D,E,F,G}
 		let mut t = T::variants();
 		assert_eq!(Some(T::A),t.next());
 		assert_eq!(Some(T::B),t.next());
@@ -602,7 +603,7 @@ fn test_iter(){
 		assert_eq!(Some(T::G),t.next());
 		assert_eq!(None      ,t.next());
 	}{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C,D,E,F,G,H}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterable)]enum T{A,B,C,D,E,F,G,H}
 		let mut t = T::variants();
 		assert_eq!(Some(T::A),t.next());
 		assert_eq!(Some(T::B),t.next());
@@ -614,7 +615,7 @@ fn test_iter(){
 		assert_eq!(Some(T::H),t.next());
 		assert_eq!(None      ,t.next());
 	}{
-		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIter)]enum T{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,X,Y,Z}
+		#[derive(Debug,Eq,PartialEq,EnumEnds,EnumIterable)]enum T{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,X,Y,Z}
 		let mut t = T::variants();
 		assert_eq!(Some(T::A),t.next());
 		assert_eq!(Some(T::B),t.next());

@@ -1,6 +1,10 @@
 //! Derives additional functionalities for enum items using procedural macros.
 //!
 //! Also see [`enum_traits`] for some of the traits that this library derives.
+//!
+//! There are also macros that work independently of [`enum_traits`]. See the documentation for each of the macros for more information.
+//!
+//! All of the functionality in this library can be toggled by using feature flags. See `Cargo.toml` for all the flags. This can be useful if only a few macros are used or if some features break in the future.
 
 //#![cfg_attr(test,feature(non_exhaustive_omitted_patterns_lint))]
 
@@ -10,22 +14,22 @@
 extern crate alloc;
 #[macro_use] extern crate quote;
 
-#[cfg(feature = "ends")]                mod enum_ends;
-#[cfg(feature = "field_structs")]       mod enum_field_structs;
-#[cfg(feature = "from_discriminant")]   mod enum_from_discriminant;
-#[cfg(feature = "from_index")]          mod enum_from_index;
-#[cfg(feature = "from_variant_fields")] mod enum_from_variant_fields;
-#[cfg(feature = "from_variant_name")]   mod enum_from_variant_name;
-#[cfg(feature = "index")]               mod enum_index;
-#[cfg(feature = "is_variant_fns")]      mod enum_is_variant_fns;
-#[cfg(feature = "iter")]                mod enum_iter;
-#[cfg(feature = "iterator")]            mod enum_iterator;
-#[cfg(feature = "len")]                 mod enum_len;
-#[cfg(feature = "tag")]                 mod enum_tag;
-#[cfg(feature = "to_index")]            mod enum_to_index;
-#[cfg(feature = "variant_name")]        mod enum_variant_name;
-#[cfg(feature = "step")]                mod enum_step;
-#[cfg(feature = "variants_array")]      mod enum_variants_array;
+#[cfg(any(feature = "derive_ends"             ,feature = "attr_ends"))]              mod enum_ends;
+#[cfg(any(feature = "derive_field_structs"    ,feature = "attr_field_structs"))]     mod enum_field_structs;
+#[cfg(any(feature = "derive_from_discriminant",feature = "attr_from_discriminant"))] mod enum_from_discriminant;
+#[cfg(any(feature = "derive_from_index"       ,feature = "attr_from_index"))]        mod enum_from_index;
+#[cfg(any(feature = "derive_from"             ,feature = "attr_from"))]              mod enum_from;
+#[cfg(any(feature = "derive_from_str"         ,feature = "attr_from_str"))]          mod enum_from_str;
+#[cfg(any(feature = "derive_index"            ,feature = "attr_index"))]             mod enum_index;
+#[cfg(any(feature = "derive_is"               ,feature = "attr_is"))]                mod enum_is;
+#[cfg(any(feature = "derive_iterable"         ,feature = "attr_iterable"))]          mod enum_iterable;
+#[cfg(any(feature = "derive_iterator"         ,feature = "attr_iterator"))]          mod enum_iterator;
+#[cfg(any(feature = "derive_len"              ,feature = "attr_len"))]               mod enum_len;
+#[cfg(any(feature = "derive_tag"              ,feature = "attr_tag"))]               mod enum_tag;
+#[cfg(any(feature = "derive_to_index"         ,feature = "attr_to_index"))]          mod enum_to_index;
+#[cfg(any(feature = "derive_variant_name"     ,feature = "attr_variant_name"))]      mod enum_variant_name;
+#[cfg(any(feature = "derive_step"             ,feature = "attr_step"))]              mod enum_step;
+#[cfg(any(feature = "derive_variants_array"   ,feature = "attr_variants_array"))]    mod enum_variants_array;
 mod util;
 
 use proc_macro2::TokenStream;
@@ -47,7 +51,7 @@ fn attr_enum<F>(attr: proc_macro::TokenStream,input: proc_macro::TokenStream,gen
 	proc_macro::TokenStream::from(gen_impl(attr.into(),item))
 }
 
-/// Implements [`enum_traits::Len`].
+/// Implements [`enum_traits::Len`](../enum_traits/trait.Len.html).
 ///
 /// The length is computed from the number of variants in the enum item.
 ///
@@ -74,7 +78,7 @@ fn attr_enum<F>(attr: proc_macro::TokenStream,input: proc_macro::TokenStream,gen
 /// 	const LEN: usize = 6;
 /// }
 /// ```
-#[cfg(feature = "len")]
+#[cfg(feature = "derive_len")]
 #[proc_macro_derive(EnumLen)]
 pub fn derive_EnumLen(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_len::gen_impl)}
 
@@ -84,6 +88,9 @@ pub fn derive_EnumLen(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 ///
 /// # Requirements
 /// - The derived item is an enum.
+///
+/// # Syntax
+/// `#[impl_enum_len(<OuterAttribute*> <Visibility?> <Identifier>)]`
 ///
 /// # Example using attributes
 ///
@@ -97,20 +104,19 @@ pub fn derive_EnumLen(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 /// # Expanded example
 ///
 /// ```rust
-///
 /// enum Enum{A,B,C,D,E,F}
 ///
 /// impl Enum{
 /// 	const LENGTH: usize = 6;
 /// }
 /// ```
-#[cfg(feature = "len")]
+#[cfg(feature = "attr_len")]
 #[proc_macro_attribute]
 pub fn impl_enum_len(attr: proc_macro::TokenStream,item: proc_macro::TokenStream) -> proc_macro::TokenStream{
 	attr_enum(attr,item,enum_len::gen_attr_impl)
 }
 
-/// Implements [`enum_traits::Ends`].
+/// Implements [`enum_traits::Ends`](../enum_traits/trait.Ends.html).
 ///
 /// The ends are computed by using the first and the last variant of the enum in the defined order.
 ///
@@ -141,7 +147,7 @@ pub fn impl_enum_len(attr: proc_macro::TokenStream,item: proc_macro::TokenStream
 /// 	const LAST: Self = Enum::F;
 /// }
 /// ```
-#[cfg(feature = "ends")]
+#[cfg(feature = "derive_ends")]
 #[proc_macro_derive(EnumEnds)]
 pub fn derive_EnumEnds(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_ends::gen_impl)}
 
@@ -153,6 +159,9 @@ pub fn derive_EnumEnds(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
 /// - The derived item is an enum.
 /// - The enum has at least one variant.
 /// - The enum's first variant is an unit variant.
+///
+/// # Syntax
+/// `#[impl_enum_first(<OuterAttribute*> <Visibility?> <Identifier>)]`
 ///
 /// # Example using attributes
 ///
@@ -166,14 +175,13 @@ pub fn derive_EnumEnds(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
 /// # Expanded example
 ///
 /// ```rust
-///
 /// enum Enum{A,B,C,D,E,F}
 ///
 /// impl Enum{
 /// 	const START: Self = Enum::A;
 /// }
 /// ```
-#[cfg(feature = "ends")]
+#[cfg(feature = "attr_ends")]
 #[proc_macro_attribute]
 pub fn impl_enum_first(attr: proc_macro::TokenStream,item: proc_macro::TokenStream) -> proc_macro::TokenStream{
 	attr_enum(attr,item,enum_ends::gen_attr_impl_first)
@@ -187,6 +195,9 @@ pub fn impl_enum_first(attr: proc_macro::TokenStream,item: proc_macro::TokenStre
 /// - The derived item is an enum.
 /// - The enum has at least one variant.
 /// - The enum's last variant is an unit variant.
+///
+/// # Syntax
+/// `#[impl_enum_last(<OuterAttribute*> <Visibility?> <Identifier>)]`
 ///
 /// # Example using attributes
 ///
@@ -207,13 +218,13 @@ pub fn impl_enum_first(attr: proc_macro::TokenStream,item: proc_macro::TokenStre
 /// 	const END: Self = Enum::F;
 /// }
 /// ```
-#[cfg(feature = "ends")]
+#[cfg(feature = "derive_ends")]
 #[proc_macro_attribute]
 pub fn impl_enum_last(attr: proc_macro::TokenStream,item: proc_macro::TokenStream) -> proc_macro::TokenStream{
 	attr_enum(attr,item,enum_ends::gen_attr_impl_last)
 }
 
-/// Implements [`enum_traits::ToIndex`].
+/// Implements [`enum_traits::ToIndex`](../enum_traits/trait.ToIndex.html).
 ///
 /// A variant's index is computed by its index in the defined order of the enum item.
 ///
@@ -276,11 +287,11 @@ pub fn impl_enum_last(attr: proc_macro::TokenStream,item: proc_macro::TokenStrea
 /// 	}
 /// }
 /// ```
-#[cfg(feature = "to_index")]
+#[cfg(feature = "derive_to_index")]
 #[proc_macro_derive(EnumToIndex)]
 pub fn derive_EnumToIndex(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_to_index::gen_impl)}
 
-/// Implements [`enum_traits::FromIndex`].
+/// Implements [`enum_traits::FromIndex`](../enum_traits/trait.FromIndex.html).
 ///
 /// A variant's index is computed by its index in the defined order of the enum item.
 ///
@@ -331,13 +342,13 @@ pub fn derive_EnumToIndex(input: proc_macro::TokenStream) -> proc_macro::TokenSt
 /// 	}
 /// }
 /// ```
-#[cfg(feature = "from_index")]
+#[cfg(feature = "derive_from_index")]
 #[proc_macro_derive(EnumFromIndex)]
 pub fn derive_EnumFromIndex(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_from_index::gen_impl)}
 
-/// Implements [`enum_traits::Index`].
+/// Implements [`enum_traits::Index`](../enum_traits/trait.Index.html).
 ///
-/// [`Type`][`enum_traits::Index::Type`] is computed by the smallest unsigned integer type fitting the number of variants minus one.
+/// [`enum_traits::Index::Type`](../enum_traits/trait.Index.html#associatedtype.Type) is computed by the smallest unsigned integer type fitting the number of variants minus one.
 ///
 /// # Requirements
 ///
@@ -384,16 +395,16 @@ pub fn derive_EnumFromIndex(input: proc_macro::TokenStream) -> proc_macro::Token
 /// 	type Type = u8;
 /// }
 /// ```
-#[cfg(feature = "index")]
+#[cfg(feature = "derive_index")]
 #[proc_macro_derive(EnumIndex)]
 pub fn derive_EnumIndex(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
 	derive_enum(input,enum_index::gen_impl)
 }
 
-/// Creates a struct representing the iterator state and implements [`enum_traits::Iterable`].
+/// Creates a struct representing the iterator state and implements [`enum_traits::Iterable`](../enum_traits/trait.Iterable.html).
 ///
-/// A struct named ((name of Self) + "Iter") will be generated with the same visibility as `Self`.
-/// This struct will then implement `Iterator` and `Iter` will be assigned to it when implementing `Iterable` for `Self`.
+/// A struct named `<name of Self> + "Iter"` will be generated with the same visibility as `Self`.
+/// This struct will then implement [`core::iter::Iterator`] and [`core::iter::Iterator::Item`] will be assigned to it when implementing [`enum_traits::Iterable`](../enum_traits/trait.Iterable.html) for `Self`.
 ///
 /// # Requirements
 /// - The derived item is an enum.
@@ -404,7 +415,7 @@ pub fn derive_EnumIndex(input: proc_macro::TokenStream) -> proc_macro::TokenStre
 /// ```rust
 /// use enum_traits_macros::*;
 ///
-/// #[derive(EnumIter)]
+/// #[derive(EnumIterable)]
 /// enum Enum{A,B,C,D,E,F}
 /// ```
 ///
@@ -414,15 +425,15 @@ pub fn derive_EnumIndex(input: proc_macro::TokenStream) -> proc_macro::TokenStre
 /// use enum_traits::*;
 /// enum Enum{A,B,C,D,E,F}
 ///
-/// struct EnumIter(pub Option<Enum>);
+/// struct EnumIterable(pub Option<Enum>);
 ///
 /// impl Iterable for Enum{
-/// 	type Iter = EnumIter;
+/// 	type Iter = EnumIterable;
 ///
-/// 	fn variants() -> Self::Iter { EnumIter(None) }
+/// 	fn variants() -> Self::Iter { EnumIterable(None) }
 /// }
 ///
-/// impl Iterator for EnumIter{
+/// impl Iterator for EnumIterable{
 /// 	type Item = Enum;
 ///
 /// 	fn next(&mut self) -> Option<Self::Item>{
@@ -455,20 +466,20 @@ pub fn derive_EnumIndex(input: proc_macro::TokenStream) -> proc_macro::TokenStre
 /// 	}
 /// }
 /// ```
-#[cfg(feature = "iter")]
-#[proc_macro_derive(EnumIter)]
-pub fn derive_EnumIter(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_iter::gen_impl)}
+#[cfg(feature = "derive_iterable")]
+#[proc_macro_derive(EnumIterable)]
+pub fn derive_EnumIter(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_iterable::gen_impl)}
 
-/// Implements [`Iterator`].
+/// Implements [`core::iter::Iterator`].
 ///
 /// # Requirements
 /// - The derived item is an enum.
 /// - The enum variants are all unit variants.
-#[cfg(feature = "iterator")]
+#[cfg(feature = "derive_iterator")]
 #[proc_macro_derive(EnumIterator)]
 pub fn derive_EnumIterator(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_iterator::gen_impl)}
 
-/// Implements [`enum_traits::EnumVariantName`].
+/// Implements [`enum_traits::EnumVariantName`](../enum_traits/trait.VariantName.html).
 ///
 /// The names are generated from the variant names.
 ///
@@ -518,7 +529,7 @@ pub fn derive_EnumIterator(input: proc_macro::TokenStream) -> proc_macro::TokenS
 /// 	}
 /// }
 /// ```
-#[cfg(feature = "variant_name")]
+#[cfg(feature = "derive_variant_name")]
 #[proc_macro_derive(EnumVariantName)]
 pub fn derive_EnumVariantName(input: proc_macro::TokenStream) -> proc_macro::TokenStream {derive_enum(input,enum_variant_name::gen_impl)}
 
@@ -535,7 +546,7 @@ pub fn derive_EnumVariantName(input: proc_macro::TokenStream) -> proc_macro::Tok
 /// use core::str::FromStr;
 /// use enum_traits_macros::*;
 ///
-/// #[derive(EnumFromVariantName,Debug,PartialEq)]
+/// #[derive(EnumFromStr,Debug,PartialEq)]
 /// enum Enum {
 /// 	A,
 /// 	B(i32),
@@ -580,14 +591,14 @@ pub fn derive_EnumVariantName(input: proc_macro::TokenStream) -> proc_macro::Tok
 ///
 /// // <rest is omitted>
 ///	```
-#[cfg(feature = "from_variant_name")]
-#[proc_macro_derive(EnumFromVariantName)]
-pub fn derive_EnumFromVariantName(input: proc_macro::TokenStream) -> proc_macro::TokenStream {derive_enum(input,enum_from_variant_name::gen_impl)}
+#[cfg(feature = "derive_from_str")]
+#[proc_macro_derive(EnumFromStr)]
+pub fn derive_EnumFromStr(input: proc_macro::TokenStream) -> proc_macro::TokenStream {derive_enum(input,enum_from_str::gen_impl)}
 
-/// Creates an enum with unit variants from the derived enum, and implements [`enum_traits::Tag`].
+/// Creates an enum with unit variants from the derived enum, and implements [`enum_traits::Tag`](../enum_traits/trait.Tag.html).
 ///
-/// An enum named ((name of Self) + "Tag") will be created with the same visibility as `Self`.
-/// This enum will then be assigned to [`enum_traits::Tag::Tag`] when implementing [`enum_traits::Tag`] for `Self`.
+/// An enum named `<name of Self> + "Tag"` will be created with the same visibility as `Self`.
+/// This enum will then be assigned to [`enum_traits::Tag::Tag`](../enum_traits/trait.Tag.html#associatedtype.Tag) when implementing [`enum_traits::Tag`](../enum_traits/trait.Tag.html) for `Self`.
 ///
 /// # Requirements
 /// - The derived item is an enum.
@@ -650,7 +661,7 @@ pub fn derive_EnumFromVariantName(input: proc_macro::TokenStream) -> proc_macro:
 /// 	}
 /// }
 /// ```
-#[cfg(feature = "tag")]
+#[cfg(feature = "derive_tag")]
 #[proc_macro_derive(EnumTag)]
 pub fn derive_EnumTag(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_tag::gen_impl)}
 
@@ -666,7 +677,7 @@ pub fn derive_EnumTag(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 /// ```rust
 /// use enum_traits_macros::*;
 ///
-/// #[derive(EnumIsVariantFns)]
+/// #[derive(EnumIs)]
 /// enum Enum {
 /// 	Dog,
 /// 	Cat(i32),
@@ -702,33 +713,33 @@ pub fn derive_EnumTag(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 ///
 /// // <rest is omitted>
 /// ```
-#[cfg(feature = "is_variant_fns")]
-#[proc_macro_derive(EnumIsVariantFns)]
-pub fn derive_EnumIsVariantFns(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_is_variant_fns::gen_impl)}
+#[cfg(feature = "derive_is")]
+#[proc_macro_derive(EnumIs)]
+pub fn derive_EnumIs(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_is::gen_impl)}
 
-/// Implements [`From`] for all variants in the enum by using the type of the fields.
+/// Implements [`core::convert::From`] for all variants in the enum by using the types of the fields.
 ///
 /// If more than one field exist in a variant, a tuple is used to represent the variant.
 ///
-/// Note that both tuple variants and record variants become tuples in the `impl From`:
+/// Both tuple fields and record fields become tuples in the `impl From`:
 ///
 /// - `enum Enum{A{x: i8}}`
 /// - `enum Enum{A(i8)}`
 ///
-/// both become `impl From<i8>`.
+/// both generate `impl From<i8>`.
 ///
-/// If no fields exist in a variant, an empty tuple is used to represent the variant (`enum Enum{A}` generates `impl From<()>`).
+/// A unit variant (with no fields) is represented by the unit type (an empty tuple) (`enum Enum{A}` generates `impl From<()>`).
 ///
 /// # Requirements
 /// - The derived item is an enum.
-/// - There are no variants in which the types of their fields are identical when all type parameters are applied and converted to tuples.
+/// - There are no variants with the same types in their fields (after type parameters are applied and converted to tuples). Otherwise, "conflicting implementations of trait From<_>" errors will be reported when compiling the generated code.
 ///
 /// # Example
 ///
 /// ```rust
 /// use enum_traits_macros::*;
 ///
-/// #[derive(EnumFromVariantFields,Debug,PartialEq,Eq)]
+/// #[derive(EnumFrom,Debug,PartialEq,Eq)]
 /// enum Enum{
 ///     A,
 ///     B(u8),
@@ -796,11 +807,11 @@ pub fn derive_EnumIsVariantFns(input: proc_macro::TokenStream) -> proc_macro::To
 ///
 /// // <rest is omitted>
 /// ```
-#[cfg(feature = "from_variant_fields")]
-#[proc_macro_derive(EnumFromVariantFields)]
-pub fn derive_EnumFromVariantFields(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_from_variant_fields::gen_impl)}
+#[cfg(feature = "derive_from")]
+#[proc_macro_derive(EnumFrom)]
+pub fn derive_EnumFrom(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_from::gen_impl)}
 
-/// Implements [`enum_traits::Step`].
+/// Implements [`enum_traits::Step`](../enum_traits/trait.Step.html).
 ///
 /// The next and previous functions are computed by using the variants of the enum in their defined order.
 ///
@@ -839,15 +850,15 @@ pub fn derive_EnumFromVariantFields(input: proc_macro::TokenStream) -> proc_macr
 /// 	}}
 /// }
 /// ```
-#[cfg(feature = "step")]
+#[cfg(feature = "derive_step")]
 #[proc_macro_derive(EnumStep)]
 pub fn derive_EnumStep(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_step::gen_impl)}
 
-/// Implements [`enum_traits::FromDiscriminant`] for any discriminant type.
+/// Implements [`enum_traits::FromDiscriminant`](../enum_traits/trait.FromDiscriminant.html) for any discriminant type.
 ///
-/// The implementation is using pattern matching on the values of [`enum_traits::IntoDiscriminant`] and therefore requires an explicit `impl IntoDiscriminant` of the desired discriminant type.
+/// The implementation is using pattern matching on the values of [`enum_traits::IntoDiscriminant`](../enum_traits/trait.IntoDiscriminant.html) and therefore requires an explicit `impl IntoDiscriminant` of the desired discriminant type.
 ///
-/// See [`enum_traits::impl_IntoDiscriminant_of_numeric`] for a standard definition of [`IntoDiscriminant`].
+/// See [`enum_traits::impl_IntoDiscriminant_of_numeric`](../enum_traits/macro.impl_IntoDiscriminant_of_numeric.html) for a standard definition of [`IntoDiscriminant`](../enum_traits/trait.IntoDiscriminant.html).
 ///
 /// # Requirements
 /// - The derived item is an enum.
@@ -985,7 +996,7 @@ pub fn derive_EnumStep(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
 ///
 /// ; <rest is omitted>
 /// ```
-#[cfg(feature = "from_discriminant")]
+#[cfg(feature = "derive_from_discriminant")]
 #[proc_macro_derive(EnumFromDiscriminant)]
 pub fn derive_EnumFromDiscriminant(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
 	derive_enum(input,|item| {
@@ -994,12 +1005,11 @@ pub fn derive_EnumFromDiscriminant(input: proc_macro::TokenStream) -> proc_macro
 	})
 }
 
-#[cfg(feature = "field_structs")]
+#[cfg(feature = "derive_field_structs")]
 #[proc_macro_derive(EnumFieldStructs)]
 pub fn derive_EnumFieldStructs(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_field_structs::gen_impl)}
 
-/*
-/// Implements [`enum_traits::VariantsArray`].
+/// Implements [`enum_traits::VariantsArray`](../enum_traits/trait.VariantsArray.html).
 ///
 /// The array is constructed by the variants in order.
 ///
@@ -1031,16 +1041,18 @@ pub fn derive_EnumFieldStructs(input: proc_macro::TokenStream) -> proc_macro::To
 /// 	const variants: [Self; <Self as Len>::LEN] = [Self::A,Self::B,Self::C,Self::D,Self::E,Self::F];
 /// }
 /// ```
-#[cfg(feature = "variants_array")]
+#[cfg(feature = "derive_variants_array")]
 #[proc_macro_derive(EnumVariantsArray)]
 pub fn derive_EnumVariantsArray(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_variants_array::gen_impl)}
-*/
 
-/// Implements an array constant that lists every variant in order to the enum.
+/// Implements an array constant that lists every variant of the enum in order.
 ///
 /// # Requirements
 /// - The derived item is an enum.
 /// - The enum's variants are all unit variants.
+///
+/// # Syntax
+/// `#[impl_enum_variants_array(<OuterAttribute*> <Visibility?> <Identifier>)]`
 ///
 /// # Example using attributes
 ///
@@ -1054,14 +1066,13 @@ pub fn derive_EnumVariantsArray(input: proc_macro::TokenStream) -> proc_macro::T
 /// # Expanded example
 ///
 /// ```rust
-///
 /// enum Enum{A,B,C,D,E,F}
 ///
 /// impl Enum{
 /// 	const VARIANTS: [Self; 6] = [Enum::A,Enum::B,Enum::C,Enum::D,Enum::E,Enum::F];
 /// }
 /// ```
-#[cfg(feature = "len")]
+#[cfg(feature = "attr_variants_array")]
 #[proc_macro_attribute]
 pub fn impl_enum_variants_array(attr: proc_macro::TokenStream,item: proc_macro::TokenStream) -> proc_macro::TokenStream{
 	attr_enum(attr,item,enum_variants_array::gen_attr_impl)

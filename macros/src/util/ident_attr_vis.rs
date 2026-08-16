@@ -3,6 +3,7 @@ use syn::parse::discouraged::Speculative;
 use alloc::vec::Vec;
 
 /// An identifier preceded by optional attributes and an optional visibility.
+/// Should loosely follow the initial parts of `syn::ItemConst` and `syn::TraitItemConst`.
 /// Examples:
 /// - `#[cfg(feature = "x")] pub Name`
 /// - `#[derive(Debug)] Name2`

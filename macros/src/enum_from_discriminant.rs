@@ -3,6 +3,7 @@ use crate::util;
 use proc_macro2::{Span,TokenStream};
 use syn::{Ident,GenericParam,TypeParam,Variant,parse_quote};
 
+#[cfg(feature = "derive_from_discriminant")]
 pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 	let type_param = &Ident::new("__EnumTraitsFromDiscriminantParam",Span::mixed_site());
 	let generics_added = {
