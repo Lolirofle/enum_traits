@@ -62,7 +62,7 @@ pub fn gen_attr(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
 
 		#[automatically_derived]
 		impl #impl_generics #ident #ty_generics #where_clause{
-			#( #fn_attrs )* #fn_vis fn_sign{
+			#( #fn_attrs )* #fn_vis #fn_sign{
 				match self{
 					#( #match_arms )*
 				}

@@ -30,6 +30,9 @@ default = [
 	"step",
 	"attr_variants_array"
 ]
+
+# Shorthand for other feature flags.
+# These are not used in the codebase.
 ends              = ["derive_ends"             ,"attr_ends"]
 field_structs     = ["derive_field_structs"    ,"attr_field_structs"]
 from_discriminant = ["derive_from_discriminant","attr_from_discriminant"]
@@ -46,6 +49,8 @@ to_index          = ["derive_to_index"         ,"attr_to_index"]
 variant_name      = ["derive_variant_name"     ,"attr_variant_name"]
 step              = ["derive_step"             ,"attr_step"]
 variants_array    = ["derive_variants_array"   ,"attr_variants_array"]
+
+# Individual features flags that are used in the codebase.
 derive_ends              = []
 derive_field_structs     = []
 derive_from_discriminant = []
