@@ -3,7 +3,7 @@ use proc_macro2::{Literal,TokenStream};
 use syn::spanned::Spanned;
 
 #[cfg(feature = "derive_iterable")]
-pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting output (EnumIterable may not need Option, but then empty enums are not represented. Are they necessary to include?)
+pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting output (EnumIterable may not need Option, but then empty enums are not represented. Are they necessary to include?)
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
 	let visibility = &item.vis;

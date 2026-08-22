@@ -77,6 +77,7 @@ enum EnumE{A,B(u32)}
 enum EnumE{A,B}
 */
 
+/*
 enum EnumE{A,B(u32)}
 
 impl core::convert::TryFrom<EnumE> for u32{
@@ -98,3 +99,4 @@ impl<'l> core::convert::TryFrom<&'l EnumE> for &'l u32{
 		}
 	}
 }
+*/

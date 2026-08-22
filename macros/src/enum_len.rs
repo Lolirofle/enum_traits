@@ -1,9 +1,7 @@
-use crate::util;
-use crate::util::parse::ItemPrefix;
 use proc_macro2::TokenStream;
 
 #[cfg(feature = "derive_len")]
-pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
+pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = item.ident;
 	let len = item.variants.len();
@@ -17,7 +15,10 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 }
 
 #[cfg(feature = "attr_len")]
-pub fn gen_attr_impl(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
+pub fn gen_attr(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
+	use crate::util;
+	use crate::util::parse::ItemPrefix;
+
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
 	let len = item.variants.len();

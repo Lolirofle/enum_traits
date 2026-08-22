@@ -4,7 +4,7 @@ use syn::{Fields,Generics};
 use syn::visit::Visit;
 
 #[cfg(feature = "derive_field_structs")]
-pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
+pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 	let ref visibility = item.vis;
 
 	let variant_structs = item.variants.iter().map(|variant|{

@@ -1,29 +1,8 @@
 use proc_macro2::{Literal,TokenStream};
 use syn::{Fields,Lit};
 
-#[cfg(feature = "derive_to_index")]
-pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
-	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
-	let ident = item.ident;
-
-	let match_arms = item.variants.iter().enumerate().map(|(i,variant)|{
-		let variant_ident = &variant.ident;
-		let i = Lit::new(Literal::usize_unsuffixed(i));
-
-		match variant.fields{
-			Fields::Unit => {
-				quote! { &#ident::#variant_ident => #i, }
-			}
-			Fields::Unnamed(_) => {
-				quote! { &#ident::#variant_ident(..) => #i, }
-			}
-			Fields::Named(_) => {
-				quote! { &#ident::#variant_ident{..} => #i, }
-			}
-		}
-	});
-
-	let match_arms_into = item.variants.iter().enumerate().map(|(i,variant)|{
+fn gen_match_arms<'i>(ident: &syn::Ident,variants: impl Iterator<Item = &'i syn::Variant>) -> impl Iterator<Item = TokenStream>{
+	variants.enumerate().map(move |(i,variant)|{
 		let variant_ident = &variant.ident;
 		let i = Lit::new(Literal::usize_unsuffixed(i));
 
@@ -38,7 +17,16 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 				quote! { #ident::#variant_ident{..} => #i, }
 			}
 		}
-	});
+	})
+}
+
+#[cfg(feature = "derive_to_index")]
+pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
+	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+	let ident = &item.ident;
+
+	let match_arms_to = gen_match_arms(ident,item.variants.iter());
+	let match_arms_into = gen_match_arms(ident,item.variants.iter());
 
 	quote!{
 		#[automatically_derived]
@@ -50,8 +38,33 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 			}
 			fn index(&self) -> <Self as ::enum_traits::Index>::Type{
 				match self{
-					#( #match_arms )*
+					#( #match_arms_to )*
 					_ => unreachable!()
+				}
+			}
+		}
+	}
+}
+
+#[cfg(feature = "attr_to_index")]
+pub fn gen_attr(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
+	use crate::util;
+	use crate::util::parse::ItemPrefix;
+
+	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+	let ident = &item.ident;
+
+	let ItemPrefix(fn_attrs,fn_vis,fn_sign) = util::try_tokenstream!(syn::parse2::<ItemPrefix<syn::Signature>>(attr));
+	let match_arms = gen_match_arms(ident,item.variants.iter());
+
+	quote!{
+		#item
+
+		#[automatically_derived]
+		impl #impl_generics #ident #ty_generics #where_clause{
+			#( #fn_attrs )* #fn_vis fn_sign{
+				match self{
+					#( #match_arms )*
 				}
 			}
 		}
