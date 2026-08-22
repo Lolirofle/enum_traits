@@ -1,29 +1,37 @@
+use core::default::Default;
+use core::fmt;
 use proc_macro2::Span;
 use alloc::string::String;
-use syn::{Fields,Ident,Variant};
+use syn::spanned::Spanned;
 
 #[cfg(any(feature = "derive_field_structs",feature = "attr_field_structs"))] pub mod occurs;
-pub mod ident_attr_vis;
+pub mod parse;
 
-pub fn minimum_type_from_value(value: usize) -> Ident{
+pub fn minimum_type_from_value(value: usize) -> syn::Ident{
 	if value <= u8::MAX as usize{
-		Ident::new("u8",Span::call_site())
+		syn::Ident::new("u8",Span::call_site())
 	}else if value <= u16::MAX as usize{
-		Ident::new("u16",Span::call_site())
+		syn::Ident::new("u16",Span::call_site())
 	}else if value <= u32::MAX as usize{
-		Ident::new("u32",Span::call_site())
+		syn::Ident::new("u32",Span::call_site())
 	}else if value <= u64::MAX as usize{
-		Ident::new("u64",Span::call_site())
+		syn::Ident::new("u64",Span::call_site())
 	}else{
-		Ident::new("usize",Span::call_site())
+		syn::Ident::new("usize",Span::call_site())
 	}
 }
 
-pub fn variant_unit_ident<'v>(variant: &'v Variant,derive_name: &'static str) -> &'v Ident{
+pub fn check_unit_variant<'v,D>(variant: &'v syn::Variant,error_msg: D) -> syn::Result<()> where
+	D: fmt::Display
+{
 	match variant.fields{
-		Fields::Unit => &variant.ident,
-		_ => panic!("`derive({})` may only be applied to enum items with only unit variants",derive_name)
+		syn::Fields::Unit => Ok(()),
+		_ => Err(syn::Error::new(variant.span(),error_msg))
 	}
+}
+
+pub fn check_unit_variants<'v,'s>(variants: impl Iterator<Item = &'v syn::Variant>,error_ctx: &'s str) -> syn::Result<()>{
+	variants.map(|v| check_unit_variant(v,fmt::from_fn(|f| write!(f,"`{}` may only be applied to an enum item with only unit variants",error_ctx)))).collect()
 }
 
 /// Simple conversion from a CamelCase string to a snake_case string.
@@ -59,3 +67,51 @@ pub fn camelcase_to_snakecase<'s>(s: &'s str) -> String{
 	out
 }
 
+pub fn filter_attributes<'a,I: 'a>(ident: I,it: impl IntoIterator<Item = &'a syn::Attribute>) -> impl Iterator<Item = &'a syn::Attribute> where
+	syn::Ident: PartialEq<I>
+{
+	it.into_iter().filter(move |attr| attr.path().is_ident(&ident))
+}
+
+/*
+use syn::parse::Parse;
+pub fn parse_attributes<'a,I: 'a,T: Parse>(ident: I,it: impl IntoIterator<Item = &'a syn::Attribute>) -> impl Iterator<Item = syn::Result<T>> where
+	Ident: PartialEq<I>
+{
+	it.into_iter().filter_map(move |attr|{
+		if attr.path().is_ident(&ident){
+			Some(attr.parse_args())
+		}else{
+			None
+		}
+	})
+}
+*/
+
+pub fn parse_itemprefix_attributes<'a,const N: usize,I: 'a>(ident: I,item_kinds: [parse::ItemKind; N],it: impl IntoIterator<Item = &'a syn::Attribute>) -> syn::Result<[parse::ItemPrefix<Option<syn::Ident>>; N]> where
+	syn::Ident: PartialEq<I>,
+	[parse::ItemPrefix<Option<syn::Ident>>; N]: Default //TODO: Why is this not implemented in the general case in stdlib?
+{
+	let mut out: [_; _] = Default::default();
+	'attr: for attr in filter_attributes(ident,it){
+		let parse::ItemPrefix(a,v,parse::Successive((k,i))): parse::ItemPrefix<parse::Successive<(parse::ItemKind,syn::Ident)>> = attr.parse_args()?;
+		for n in 0..N{
+			if item_kinds[n] == k{
+				out[n] = parse::ItemPrefix(a,v,Some(i));
+				continue 'attr;
+			}
+		}
+		return Err(syn::Error::new(attr.span(),alloc::format!("Unexpected item kind `{}` in attribute argument. Expected one of the following: {:?}",k,item_kinds)));
+	}
+	Ok(out)
+}
+
+macro_rules! try_tokenstream{
+	($expr:expr $(,)?) => {
+		match $expr{
+			core::result::Result::Ok(x) => x,
+			core::result::Result::Err(e) => return e.into_compile_error()
+		}
+	};
+}
+pub(crate) use try_tokenstream;

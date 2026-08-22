@@ -23,9 +23,11 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 	let ident = &item.ident;
 
 	fn variant_to_match_arm(ident: &Ident,variant: &Variant,type_param: &Ident) -> TokenStream{
-		let variant_ident = util::variant_unit_ident(&variant,"EnumFromDiscriminant");
+		let variant_ident = &variant.ident;
 		quote! { n if n == <Self as ::enum_traits::IntoDiscriminant<#type_param>>::into_discriminant(#ident::#variant_ident) => #ident::#variant_ident }
 	}
+
+	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"derive(EnumFromDiscriminant)"));
 
 	let match_arms1 = item.variants.iter().map(|variant| variant_to_match_arm(ident,variant,type_param));
 	let match_arms2 = item.variants.iter().map(|variant| variant_to_match_arm(ident,variant,type_param));

@@ -123,8 +123,8 @@ pub fn impl_enum_len(attr: proc_macro::TokenStream,item: proc_macro::TokenStream
 /// # Requirements
 /// - The derived item is an enum.
 /// - The enum has at least one variant.
-/// - The enum's first variant is an unit variant.
-/// - The enum's last variant is an unit variant.
+/// - The enum's first variant is a unit variant.
+/// - The enum's last variant is a unit variant.
 ///
 /// # Example using derive
 ///
@@ -158,7 +158,7 @@ pub fn derive_EnumEnds(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
 /// # Requirements
 /// - The derived item is an enum.
 /// - The enum has at least one variant.
-/// - The enum's first variant is an unit variant.
+/// - The enum's first variant is a unit variant.
 ///
 /// # Syntax
 /// `#[impl_enum_first(<OuterAttribute*> <Visibility?> <Identifier>)]`
@@ -194,7 +194,7 @@ pub fn impl_enum_first(attr: proc_macro::TokenStream,item: proc_macro::TokenStre
 /// # Requirements
 /// - The derived item is an enum.
 /// - The enum has at least one variant.
-/// - The enum's last variant is an unit variant.
+/// - The enum's last variant is a unit variant.
 ///
 /// # Syntax
 /// `#[impl_enum_last(<OuterAttribute*> <Visibility?> <Identifier>)]`
@@ -600,6 +600,16 @@ pub fn derive_EnumFromStr(input: proc_macro::TokenStream) -> proc_macro::TokenSt
 /// An enum named `<name of Self> + "Tag"` will be created with the same visibility as `Self`.
 /// This enum will then be assigned to [`enum_traits::Tag::Tag`](../enum_traits/trait.Tag.html#associatedtype.Tag) when implementing [`enum_traits::Tag`](../enum_traits/trait.Tag.html) for `Self`.
 ///
+/// # Arguments
+/// A supplemental attribute `enum_tag` specifies options in the generated code using the following syntax:
+///
+/// `#[enum_tag(<OuterAttribute*> <Visibility?> enum <Identifier>)]`
+///
+/// The arguments are as follows:
+/// - Attributes on the tag enum (default is `#[derive(Copy,Clone,Debug,PartialEq,Eq,Hash)]`).
+/// - The visibility of the tag enum (default is the same as the original enum).
+/// - The name of the tag enum (default is `<name of Self> + "Tag"`).
+///
 /// # Requirements
 /// - The derived item is an enum.
 ///
@@ -616,6 +626,13 @@ pub fn derive_EnumFromStr(input: proc_macro::TokenStream) -> proc_macro::TokenSt
 /// 	D,
 /// 	E(u32),
 /// 	F{f: u64},
+/// }
+///
+/// #[derive(EnumTag)]
+/// #[enum_tag(#[deprecated] pub(crate) enum Enum2HasACustomName)]
+/// enum Enum2{
+/// 	A,
+/// 	B
 /// }
 /// ```
 ///
@@ -660,14 +677,49 @@ pub fn derive_EnumFromStr(input: proc_macro::TokenStream) -> proc_macro::TokenSt
 /// 		}
 /// 	}
 /// }
+///
+/// enum Enum2{
+/// 	A,
+/// 	B
+/// }
+///
+/// #[deprecated] pub(crate) enum Enum2HasACustomName{A,B}
+///
+/// impl Tag for Enum2{
+/// 	type Tag = Enum2HasACustomName;
+///
+/// 	fn into_tag(self) -> Self::Tag{
+/// 		match self {
+/// 			Enum2::A => Enum2HasACustomName::A,
+/// 			Enum2::B => Enum2HasACustomName::B,
+/// 		}
+/// 	}
+///
+/// 	fn tag(&self) -> Self::Tag{
+/// 		match self {
+/// 			&Enum2::A => Enum2HasACustomName::A,
+/// 			&Enum2::B => Enum2HasACustomName::B,
+/// 		}
+/// 	}
+/// }
 /// ```
 #[cfg(feature = "derive_tag")]
-#[proc_macro_derive(EnumTag)]
+#[proc_macro_derive(EnumTag,attributes(enum_tag))]
 pub fn derive_EnumTag(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_tag::gen_impl)}
 
 /// Implements functions that checks if an value of the enum matches a certain variant.
 ///
 /// The generated names of the functions are converted from CamelCase to snake_case using [util::camelcase_to_snakecase].
+///
+/// # Arguments
+/// A supplemental attribute `enum_is` specifies options in the generated code using the following syntax:
+///
+/// `#[enum_is(<OuterAttribute*> <Visibility?> fn <Identifier>)]`
+///
+/// The arguments are as follows:
+/// - Attributes on every function.
+/// - The visibility of every function (default is the same as the enum).
+/// - The additional prefix to every function name (default is `is_`).
 ///
 /// # Requirements
 /// - The derived item is an enum.
@@ -694,6 +746,14 @@ pub fn derive_EnumTag(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 /// assert!(!Enum::RobotInDisguise{speed: 0.0}.is_dog());
 /// assert!(!Enum::Cat(0).is_dog());
 /// assert!(!Enum::Cat(0).is_robot_in_disguise());
+///
+/// #[derive(EnumIs)]
+/// #[enum_is(#[deprecated] pub(crate) fn prefix_)]
+/// enum Enum2{
+/// 	A,
+/// 	B
+/// }
+///
 /// ```
 ///
 /// # Expanded example
@@ -712,9 +772,25 @@ pub fn derive_EnumTag(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 /// }
 ///
 /// // <rest is omitted>
+///
+/// enum Enum2{
+/// 	A,
+/// 	B
+/// }
+///
+/// impl Enum2 {
+///     #[deprecated] pub(crate) fn prefix_a(&self) -> bool{
+///         if let &Enum2::A = self {true} else {false}
+///     }
+///     #[deprecated] pub(crate) fn prefix_b(&self) -> bool{
+///         if let &Enum2::B = self {true} else {false}
+///     }
+/// }
+///
+/// // <rest is omitted>
 /// ```
 #[cfg(feature = "derive_is")]
-#[proc_macro_derive(EnumIs)]
+#[proc_macro_derive(EnumIs,attributes(enum_is))]
 pub fn derive_EnumIs(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_is::gen_impl)}
 
 /// Implements [`core::convert::From`] for all variants in the enum by using the types of the fields.
@@ -1005,6 +1081,57 @@ pub fn derive_EnumFromDiscriminant(input: proc_macro::TokenStream) -> proc_macro
 	})
 }
 
+/// Creates structs for each variant's fields and implements [`core::convert::From`] for every struct to the enum.
+///
+/// Structs named `<name of variant>` will be created with the same visibility as `Self`.
+///
+/// # Arguments
+/// A supplemental attribute `enum_field_structs` specifies options in the generated code using the following syntax:
+///
+/// `#[enum_field_structs(<OuterAttribute*> <Visibility?> struct <Identifier> <Identifier>)]`
+///
+/// The arguments are as follows:
+/// - Attributes on every struct.
+/// - The visibility of every struct (default is the same as the original enum).
+/// - The additional prefix to every struct.
+/// - The additional postfix to every struct.
+///
+/// # Requirements
+/// - The derived item is an enum.
+///
+/// # Example using derive
+///
+/// ```rust
+/// use enum_traits_macros::*;
+/// //TODO
+/// #[derive(EnumFieldStructs)]
+/// enum Fields<'a,X,Y>{
+/// 	A(i8),
+/// 	B(i32),
+/// 	C(u8,u16,u32),
+/// 	D{d: (u8,i32)},
+/// 	E{a: i32,b: i32,c: i32,d: i32,e: (u16,i32)},
+/// 	F,
+/// 	G(X),
+/// 	H(&'a Y),
+/// 	I{x: X,y: &'a Y},
+/// 	J{x: i8},
+/// }
+///
+/// #[derive(EnumFieldStructs)]
+/// #[enum_field_structs(#[deprecated] pub(crate) enum Enum2HasACustomName)]
+/// enum Enum2{
+/// 	X,
+/// 	Y
+/// }
+/// ```
+///
+/// # Expanded example
+///
+/// ```rust
+/// use enum_traits::*;
+///
+/// ```
 #[cfg(feature = "derive_field_structs")]
 #[proc_macro_derive(EnumFieldStructs)]
 pub fn derive_EnumFieldStructs(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_field_structs::gen_impl)}

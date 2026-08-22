@@ -1,47 +1,45 @@
 use crate::util;
 use proc_macro2::{Literal,TokenStream};
-use syn::{Ident,Lit,Variant};
-
-fn variant_unit_ident(variant: &Variant) -> &Ident{
-	util::variant_unit_ident(variant,"EnumIterable")
-}
+use syn::spanned::Spanned;
 
 #[cfg(feature = "derive_iterable")]
 pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting output (EnumIterable may not need Option, but then empty enums are not represented. Are they necessary to include?)
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
-	let ident = item.ident;
+	let ident = &item.ident;
 	let visibility = &item.vis;
 
 	let len = item.variants.len();
 	let last = item.variants.last();
 
+	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"derive(EnumIterable)"));
+
 	/*let prev_match_arms = {
-			let iter = item.variants.iter().rev().map(variant_unit_ident);
-			iter.zip(item.variants.iter().rev().map(variant_unit_ident).skip(1))
+			let iter = item.variants.iter().rev().map(|v| v.ident);
+			iter.zip(item.variants.iter().rev().map(|v| v.ident).skip(1))
 		}.map(|(variant_ident1,variant_ident2)|{
 			quote! { &Some(#ident::#variant_ident1) => {self.0 = Some(#ident::#variant_ident2); #ident::#variant_ident2}, }
 		});*/
 
 	let next_match_arms = {
-			let iter = item.variants.iter().map(variant_unit_ident);
-			iter.zip(item.variants.iter().map(variant_unit_ident).skip(1))
+			let iter = item.variants.iter().map(|v| &v.ident);
+			iter.zip(item.variants.iter().map(|v| &v.ident).skip(1))
 		}.map(|(variant_ident1,variant_ident2)|{
 			quote! { &::core::option::Option::Some(#ident::#variant_ident1) => {self.0 = ::core::option::Option::Some(#ident::#variant_ident2); #ident::#variant_ident2}, }
 		});
 
 	let len_match_arms = item.variants.iter().enumerate().map(|(i,variant)|{
-		let i = Lit::new(Literal::usize_unsuffixed(i));
-		let variant_ident = variant_unit_ident(variant);
+		let i = syn::Lit::new(Literal::usize_unsuffixed(i));
+		let variant_ident = &variant.ident;
 		quote! { &#ident::#variant_ident => #i, }
 	});
 
 	let count_match_arms = item.variants.iter().enumerate().map(|(i,variant)|{
-		let i = Lit::new(Literal::usize_unsuffixed(i));
-		let variant_ident = variant_unit_ident(variant);
+		let i = syn::Lit::new(Literal::usize_unsuffixed(i));
+		let variant_ident = &variant.ident;
 		quote! { #ident::#variant_ident => #i, }
 	});
 
-	let variant_first_ident = &item.variants.first().expect("`derive(EnumIterable)` may only be applied to non-empty enums").ident;
+	let variant_first_ident = &util::try_tokenstream!(item.variants.first().ok_or_else(|| syn::Error::new(item.span(),"`derive(EnumIterable)` may only be applied to non-empty enums"))).ident;
 
 	let struct_ident = format_ident!("{}Iter",ident);
 
@@ -88,7 +86,7 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting o
 			}
 		};
 
-		let fn_last = if let ::core::option::Option::Some(last_ident) = last.map(variant_unit_ident){quote!{
+		let fn_last = if let ::core::option::Option::Some(last_ident) = last.map(|v| &v.ident){quote!{
 			#[inline(always)]
 			fn last(self) -> ::core::option::Option<Self::Item>{
 				::core::option::Option::Some(#ident::#last_ident)

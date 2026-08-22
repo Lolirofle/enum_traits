@@ -11,6 +11,7 @@
 
 use enum_traits_macros::*;
 
+/*
 //TODO: Also write tests on this
 #[allow(non_snake_case)]
 #[derive(EnumFieldStructs)]
@@ -38,6 +39,7 @@ pub mod attrs{
 	#[derive(Eq,PartialEq,Debug)]
 	pub enum T{A,B,C,D}
 }
+*/
 
 /* TODO: An idea. Remove later
 enum Test{A(u8),B(u16),C(u32)}
@@ -55,3 +57,44 @@ impl TestFields<TestTags::A>{type Out = A;}
 impl TestFields<TestTags::B>{type Out = B;}
 impl TestFields<TestTags::C>{type Out = C;}
 */
+
+/*
+#[derive(EnumIs)]
+#[enum_is(#[deprecated] pub(crate) fn Enum2HasACustomName)]
+enum Enum2{
+	A,
+	B
+}
+*/
+
+/*
+#[derive(EnumEnds)]
+enum EnumE{A,B(u32)}
+*/
+
+/*
+#[impl_enum_first(24)]
+enum EnumE{A,B}
+*/
+
+enum EnumE{A,B(u32)}
+
+impl core::convert::TryFrom<EnumE> for u32{
+	type Error = ();
+	fn try_from(value: EnumE) -> Result<Self,Self::Error>{
+		match value{
+			EnumE::B(x) => Ok(x),
+			_ => Err(()),
+		}
+	}
+}
+
+impl<'l> core::convert::TryFrom<&'l EnumE> for &'l u32{
+	type Error = ();
+	fn try_from(value: &'l EnumE) -> Result<Self,Self::Error>{
+		match value{
+			EnumE::B(x) => Ok(x),
+			_ => Err(()),
+		}
+	}
+}

@@ -1,8 +1,9 @@
-use crate::util::ident_attr_vis::IdentAttrVis;
+use crate::util;
+use crate::util::parse::ItemPrefix;
 use proc_macro2::TokenStream;
 
 #[cfg(feature = "derive_len")]
-pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{//TODO: Consider allowing structs. Number of variants of struct is always 1
+pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = item.ident;
 	let len = item.variants.len();
@@ -21,8 +22,7 @@ pub fn gen_attr_impl(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
 	let ident = &item.ident;
 	let len = item.variants.len();
 
-	let IdentAttrVis{attrs,vis,ident: const_ident} = syn::parse2::<IdentAttrVis>(attr)
-		.expect("`impl_enum_len` expects an ident argument.");
+	let ItemPrefix(attrs,vis,const_ident) = util::try_tokenstream!(syn::parse2::<ItemPrefix<syn::Ident>>(attr));
 
 	quote!{
 		#item

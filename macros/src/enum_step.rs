@@ -1,26 +1,23 @@
 use crate::util;
 use proc_macro2::TokenStream;
-use syn::{Ident,Variant};
-
-fn variant_unit_ident(variant: &Variant) -> &Ident{
-	util::variant_unit_ident(variant,"EnumStep")
-}
 
 #[cfg(feature = "derive_step")]
 pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = item.ident;
 
+	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"derive(EnumStep)"));
+
 	let prev_match_arms = {
-			let iter = item.variants.iter().rev().map(variant_unit_ident);
-			iter.zip(item.variants.iter().rev().map(variant_unit_ident).skip(1))
+			let iter = item.variants.iter().rev().map(|v| &v.ident);
+			iter.zip(item.variants.iter().rev().map(|v| &v.ident).skip(1))
 		}.map(|(variant_ident1,variant_ident2)|{
 			quote! { #ident::#variant_ident1 => #ident::#variant_ident2, }
 		});
 
 	let next_match_arms = {
-			let iter = item.variants.iter().map(variant_unit_ident);
-			iter.zip(item.variants.iter().map(variant_unit_ident).skip(1))
+			let iter = item.variants.iter().map(|v| &v.ident);
+			iter.zip(item.variants.iter().map(|v| &v.ident).skip(1))
 		}.map(|(variant_ident1,variant_ident2)|{
 			quote! { #ident::#variant_ident1 => #ident::#variant_ident2, }
 		});

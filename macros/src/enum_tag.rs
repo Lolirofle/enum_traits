@@ -1,3 +1,5 @@
+use crate::util;
+use crate::util::parse::{ItemPrefix,ItemKind};
 use proc_macro2::TokenStream;
 use syn::Fields;
 
@@ -5,14 +7,23 @@ use syn::Fields;
 pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = item.ident;
-	let ref visibility = item.vis;
 
-	let unit_enum_ident = format_ident!("{}Tag",ident);
+	//Attribute options
+	let [ItemPrefix(unit_enum_attrs,unit_enum_vis,unit_enum_ident)]
+		= util::try_tokenstream!(util::parse_itemprefix_attributes("enum_tag",[ItemKind::Enum],&item.attrs));
+	let unit_enum_attrs = if unit_enum_attrs.is_empty(){
+		quote!(#[derive(Copy,Clone,Debug,PartialEq,Eq,Hash)])
+	}else{
+		quote!( #( #unit_enum_attrs )* )
+	};
+	let unit_enum_vis = unit_enum_vis.unwrap_or(item.vis);
+	let unit_enum_ident = unit_enum_ident.unwrap_or_else(|| format_ident!("{}Tag",ident));
+
+	//Generation
 
 	let match_arms = item.variants.iter().map(|variant|{
 		let variant_ident = &variant.ident;
-
-		match variant.fields {
+		match variant.fields{
 			Fields::Unit => {
 				quote! { &#ident::#variant_ident     => #unit_enum_ident::#variant_ident, }
 			}
@@ -27,8 +38,7 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 
 	let match_arms_into = item.variants.iter().map(|variant|{
 		let variant_ident = &variant.ident;
-
-		match variant.fields {
+		match variant.fields{
 			Fields::Unit => {
 				quote! { #ident::#variant_ident     => #unit_enum_ident::#variant_ident, }
 			}
@@ -48,8 +58,8 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 
 	quote!{
 		#[automatically_derived]
-		#[derive(Copy,Clone,Debug,PartialEq,Eq,Hash)]
-		#visibility enum #unit_enum_ident{
+		#unit_enum_attrs
+		#unit_enum_vis enum #unit_enum_ident{
 			#( #unit_variants )*
 		}
 

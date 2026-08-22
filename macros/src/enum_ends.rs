@@ -1,25 +1,27 @@
-use crate::util::ident_attr_vis::IdentAttrVis;
+use core::fmt;
+use crate::util;
+use crate::util::parse::ItemPrefix;
 use proc_macro2::TokenStream;
-use syn::Fields;
+use syn::spanned::Spanned;
 
-fn enum_first_variant_ident(item: &syn::ItemEnum) -> &syn::Ident{
-	let variant_first = item.variants.first().expect("`impl_enum_first` may only be applied to non-empty enums");
-	if let Fields::Unit = variant_first.fields {} else {panic!("`impl_enum_first` may only be applied to enums where the first variant is an unit variant");}
-	&variant_first.ident
+fn enum_first_variant_ident<'i>(item: &'i syn::ItemEnum,error_ctx: &'static str) -> syn::Result<&'i syn::Ident>{
+	let variant_first = item.variants.first().ok_or_else(|| syn::Error::new(item.span(),"`impl_enum_first` may only be applied to non-empty enums"))?;
+	util::check_unit_variant(variant_first,fmt::from_fn(|f| write!(f,"`{}` may only be applied to enums where the first variant is a unit variant",error_ctx)))?;
+	Ok(&variant_first.ident)
 }
 
-fn enum_last_variant_ident(item: &syn::ItemEnum) -> &syn::Ident{
-	let variant_last = item.variants.last().expect("`impl_enum_last` may only be applied to non-empty enums");
-	if let Fields::Unit = variant_last.fields {} else {panic!("`impl_enum_last` may only be applied to enums where the last variant is an unit variant");}
-	&variant_last.ident
+fn enum_last_variant_ident<'i>(item: &'i syn::ItemEnum,error_ctx: &'static str) -> syn::Result<&'i syn::Ident>{
+	let variant_last = item.variants.last().ok_or_else(|| syn::Error::new(item.span(),"`impl_enum_last` may only be applied to non-empty enums"))?;
+	util::check_unit_variant(variant_last,fmt::from_fn(|f| write!(f,"`{}` may only be applied to enums where the last variant is a unit variant",error_ctx)))?;
+	Ok(&variant_last.ident)
 }
 
 #[cfg(feature = "derive_ends")]
 pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
-	let variant_first_ident = enum_first_variant_ident(&item);
-	let variant_last_ident  = enum_last_variant_ident(&item);
+	let variant_first_ident = util::try_tokenstream!(enum_first_variant_ident(&item,"derive(Ends)"));
+	let variant_last_ident  = util::try_tokenstream!(enum_last_variant_ident(&item,"derive(Ends)"));
 
 	quote!{
 		#[automatically_derived]
@@ -34,10 +36,9 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 pub fn gen_attr_impl_first(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
-	let variant_first_ident = enum_first_variant_ident(&item);
+	let variant_first_ident = util::try_tokenstream!(enum_first_variant_ident(&item,"impl_enum_first"));
 
-	let IdentAttrVis{attrs,vis,ident: const_ident} = syn::parse2::<IdentAttrVis>(attr)
-		.expect("`impl_enum_first` expects an ident argument.");
+	let ItemPrefix(attrs,vis,const_ident) = util::try_tokenstream!(syn::parse2::<ItemPrefix<syn::Ident>>(attr));
 
 	quote!{
 		#item
@@ -53,10 +54,9 @@ pub fn gen_attr_impl_first(attr: TokenStream,item: syn::ItemEnum) -> TokenStream
 pub fn gen_attr_impl_last(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
-	let variant_last_ident = enum_last_variant_ident(&item);
+	let variant_last_ident = util::try_tokenstream!(enum_last_variant_ident(&item,"impl_enum_last"));
 
-	let IdentAttrVis{attrs,vis,ident: const_ident} = syn::parse2::<IdentAttrVis>(attr)
-		.expect("`impl_enum_last` expects an ident argument.");
+	let ItemPrefix(attrs,vis,const_ident) = util::try_tokenstream!(syn::parse2::<ItemPrefix<syn::Ident>>(attr));
 
 	quote!{
 		#item

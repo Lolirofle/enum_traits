@@ -1,10 +1,5 @@
 use crate::util;
 use proc_macro2::{Literal,TokenStream};
-use syn::{Ident,Lit,Variant};
-
-fn variant_unit_ident(variant: &Variant) -> &Ident{
-	util::variant_unit_ident(variant,"EnumIterator")
-}
 
 #[cfg(feature = "derive_iterator")]
 pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
@@ -14,29 +9,31 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 	let len = item.variants.len();
 	let last = item.variants.last();
 
+	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"derive(EnumIterator)"));
+
 	/*let prev_match_arms = {
-			let iter = item.variants.iter().rev().map(variant_unit_ident);
-			iter.zip(item.variants.iter().rev().map(variant_unit_ident).skip(1))
+			let iter = item.variants.iter().rev().map(|v| v.ident);
+			iter.zip(item.variants.iter().rev().map(|v| v.ident).skip(1))
 		}.map(|(variant_ident1,variant_ident2)|{
 			quote! { &mut #ident::#variant_ident1 => {*self = #ident::#variant_ident2; #ident::#variant_ident2}, }
 		});*/
 
 	let next_match_arms = {
-			let iter = item.variants.iter().map(variant_unit_ident);
-			iter.zip(item.variants.iter().map(variant_unit_ident).skip(1))
+			let iter = item.variants.iter().map(|v| &v.ident);
+			iter.zip(item.variants.iter().map(|v| &v.ident).skip(1))
 		}.map(|(variant_ident1,variant_ident2)|{
 			quote! { &mut #ident::#variant_ident1 => {*self = #ident::#variant_ident2; #ident::#variant_ident2}, }
 		});
 
 	let len_match_arms = item.variants.iter().enumerate().map(|(i,variant)|{
-		let i = Lit::new(Literal::usize_unsuffixed(i));
-		let variant_ident = variant_unit_ident(variant);
+		let i = syn::Lit::new(Literal::usize_unsuffixed(i));
+		let variant_ident = &variant.ident;
 		quote! { &#ident::#variant_ident => #i, }
 	});
 
 	let count_match_arms = item.variants.iter().enumerate().map(|(i,variant)|{
-		let i = Lit::new(Literal::usize_unsuffixed(i));
-		let variant_ident = variant_unit_ident(variant);
+		let i = syn::Lit::new(Literal::usize_unsuffixed(i));
+		let variant_ident = &variant.ident;
 		quote! { #ident::#variant_ident => #i, }
 	});
 
@@ -69,7 +66,7 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 			}
 		};
 
-		let fn_last = match last.map(variant_unit_ident){
+		let fn_last = match last.map(|v| &v.ident){
 			::core::option::Option::Some(last_ident) => quote!{
 				#[inline(always)]
 				fn last(self) -> ::core::option::Option<Self::Item>{

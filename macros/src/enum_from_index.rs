@@ -1,22 +1,21 @@
 use crate::util;
 use proc_macro2::{Literal,TokenStream};
-use syn::{Ident,Lit,Variant};
-
-fn variant_unit_ident(variant: &Variant) -> &Ident{
-	util::variant_unit_ident(variant,"EnumFromIndex")
-}
 
 #[cfg(feature = "derive_from_index")]
 pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
 
-	fn match_arm_transform(ident: &Ident,(i,variant_ident): (usize,&Ident)) -> TokenStream{
-		let i = Lit::new(Literal::usize_unsuffixed(i));
+	fn match_arm_transform(ident: &syn::Ident,(i,variant): (usize,&syn::Variant)) -> TokenStream{
+		let i = syn::Lit::new(Literal::usize_unsuffixed(i));
+		let variant_ident = &variant.ident;
 		quote! { #i => #ident::#variant_ident, }
 	}
-	let match_arms1 = item.variants.iter().map(variant_unit_ident).enumerate().map(|arg| match_arm_transform(ident,arg));
-	let match_arms2 = item.variants.iter().map(variant_unit_ident).enumerate().map(|arg| match_arm_transform(ident,arg));
+
+	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"derive(EnumFromIndex)"));
+
+	let match_arms1 = item.variants.iter().enumerate().map(|arg| match_arm_transform(ident,arg));
+	let match_arms2 = item.variants.iter().enumerate().map(|arg| match_arm_transform(ident,arg));
 
 	quote!{
 		#[automatically_derived]

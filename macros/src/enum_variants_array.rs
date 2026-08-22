@@ -1,5 +1,5 @@
 use crate::util;
-use crate::util::ident_attr_vis::IdentAttrVis;
+use crate::util::parse::ItemPrefix;
 use proc_macro2::TokenStream;
 
 #[cfg(feature = "derive_variants_array")]
@@ -7,8 +7,10 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = item.ident;
 
+	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"derive(EnumVariantsArray)"));
+
 	let contents = item.variants.iter().map(|variant|{
-		let variant_ident = util::variant_unit_ident(&variant,"EnumVariantsArray");
+		let variant_ident = variant.ident;
 		quote! { #ident::#variant_ident, }
 	});
 
@@ -25,14 +27,15 @@ pub fn gen_attr_impl(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
 
+	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"enum_variants_array"));
+
 	let len = item.variants.len();
 	let contents = item.variants.iter().map(|variant|{
-		let variant_ident = util::variant_unit_ident(&variant,"impl_enum_variants_array");
+		let variant_ident = &variant.ident;
 		quote! { #ident::#variant_ident, }
 	});
 
-	let IdentAttrVis{attrs,vis,ident: const_ident} = syn::parse2::<IdentAttrVis>(attr)
-		.expect("`impl_enum_variants_array` expects an ident argument.");
+	let ItemPrefix(attrs,vis,const_ident) = util::try_tokenstream!(syn::parse2::<ItemPrefix<syn::Ident>>(attr));
 
 	quote!{
 		#item

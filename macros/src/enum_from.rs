@@ -69,6 +69,7 @@ pub fn gen_impl(item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = item.ident;
 
+	//TODO: Whitelist/blacklist specific variants or the kinds of fields
 	let impls = item.variants.iter().filter_map(|variant|{
 		let (ty,pattern,expr) = fields_to_ty_pat_expr(&ident,&variant);
 		::core::option::Option::Some(quote!{
