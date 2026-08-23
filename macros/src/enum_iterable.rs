@@ -1,6 +1,7 @@
 use crate::util;
 use proc_macro2::{Literal,TokenStream};
-use syn::spanned::Spanned;
+use syn::ext::IdentExt as _;
+use syn::spanned::Spanned as _;
 
 #[cfg(feature = "derive_iterable")]
 pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting output (EnumIterable may not need Option, but then empty enums are not represented. Are they necessary to include?)
@@ -41,7 +42,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting
 
 	let variant_first_ident = &util::try_tokenstream!(item.variants.first().ok_or_else(|| syn::Error::new(item.span(),"`derive(EnumIterable)` may only be applied to non-empty enums"))).ident;
 
-	let struct_ident = format_ident!("{}Iter",ident);
+	let struct_ident = format_ident!("{}Iter",ident.unraw());
 
 	let struct_iter = quote!{
 		#visibility struct #struct_ident #ty_generics #where_clause (pub ::core::option::Option<#ident #ty_generics>);

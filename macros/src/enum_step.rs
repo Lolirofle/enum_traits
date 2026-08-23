@@ -1,14 +1,26 @@
 use crate::util;
 use proc_macro2::TokenStream;
 
-fn gen_prev_fn_body<'i>(ident: &syn::Ident,variants: impl Iterator<Item = &'i syn::Variant> + Clone) -> TokenStream{
-	let match_arms = {
-		let iter = variants.clone().map(|v| &v.ident);
-		iter.zip(variants.map(|v| &v.ident).skip(1))
-	}.map(|(variant_ident1,variant_ident2)|{
-		quote! { #ident::#variant_ident2 => #ident::#variant_ident1, }
-	});
+fn gen_prev_match_arms<'i>(variants: impl Iterator<Item = &'i syn::Variant> + Clone) -> impl Iterator<Item = TokenStream>{
+	variants.clone()
+		.map(|v| &v.ident)
+		.zip(variants.map(|v| &v.ident).skip(1))
+		.map(|(variant_ident1,variant_ident2)|{
+			quote! { Self::#variant_ident2 => Self::#variant_ident1, }
+		})
+}
 
+fn gen_next_match_arms<'i>(variants: impl Iterator<Item = &'i syn::Variant> + Clone) -> impl Iterator<Item = TokenStream>{
+	variants.clone()
+		.map(|v| &v.ident)
+		.zip(variants.map(|v| &v.ident).skip(1))
+		.map(|(variant_ident1,variant_ident2)|{
+			quote! { Self::#variant_ident1 => Self::#variant_ident2, }
+		})
+}
+
+fn gen_prev_fn_body<'i>(variants: impl Iterator<Item = &'i syn::Variant> + Clone) -> TokenStream{
+	let match_arms = gen_prev_match_arms(variants);
 	quote!{
 		::core::option::Option::Some(match self{
 			#( #match_arms )*
@@ -17,14 +29,8 @@ fn gen_prev_fn_body<'i>(ident: &syn::Ident,variants: impl Iterator<Item = &'i sy
 	}
 }
 
-fn gen_next_fn_body<'i>(ident: &syn::Ident,variants: impl Iterator<Item = &'i syn::Variant> + Clone) -> TokenStream{
-	let match_arms = {
-		let iter = variants.clone().map(|v| &v.ident);
-		iter.zip(variants.map(|v| &v.ident).skip(1))
-	}.map(|(variant_ident1,variant_ident2)|{
-		quote! { #ident::#variant_ident1 => #ident::#variant_ident2, }
-	});
-
+fn gen_next_fn_body<'i>(variants: impl Iterator<Item = &'i syn::Variant> + Clone) -> TokenStream{
+	let match_arms = gen_next_match_arms(variants);
 	quote!{
 		::core::option::Option::Some(match self{
 			#( #match_arms )*
@@ -40,8 +46,8 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 
 	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"derive(EnumStep)"));
 
-	let prev_body = gen_prev_fn_body(ident,item.variants.iter());
-	let next_body = gen_next_fn_body(ident,item.variants.iter());
+	let prev_body = gen_prev_fn_body(item.variants.iter());
+	let next_body = gen_next_fn_body(item.variants.iter());
 	quote!{
 		#[automatically_derived]
 		impl #impl_generics ::enum_traits::Step for #ident #ty_generics #where_clause{
@@ -66,7 +72,7 @@ pub fn gen_attr_prev(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
 
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
-	let body = gen_prev_fn_body(ident,item.variants.iter());
+	let body = gen_prev_fn_body(item.variants.iter());
 
 	let ItemPrefix(attrs,vis,sign) = util::try_tokenstream!(syn::parse2::<ItemPrefix<syn::Signature>>(attr));
 
@@ -86,7 +92,7 @@ pub fn gen_attr_next(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
 
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
-	let body = gen_next_fn_body(ident,item.variants.iter());
+	let body = gen_next_fn_body(item.variants.iter());
 
 	let ItemPrefix(attrs,vis,sign) = util::try_tokenstream!(syn::parse2::<ItemPrefix<syn::Signature>>(attr));
 
@@ -96,6 +102,56 @@ pub fn gen_attr_next(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
 		#[automatically_derived]
 		impl #impl_generics #ident #ty_generics #where_clause{
 			#( #attrs )* #vis #sign{#body}
+		}
+	}
+}
+
+#[cfg(feature = "attr_step")]
+pub fn gen_attr_prev_default(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
+	use crate::util::parse::{Delimited,ItemPrefix};
+
+	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+	let ident = &item.ident;
+	let match_arms = gen_prev_match_arms(item.variants.iter());
+
+	let Delimited((ItemPrefix(attrs,vis,sign),default)) = util::try_tokenstream!(syn::parse2::<Delimited<(ItemPrefix<syn::Signature>,syn::Expr)>>(attr));
+
+	quote!{
+		#item
+
+		#[automatically_derived]
+		impl #impl_generics #ident #ty_generics #where_clause{
+			#( #attrs )* #vis #sign{
+				match self{
+					#( #match_arms )*
+					_ => #default
+				}
+			}
+		}
+	}
+}
+
+#[cfg(feature = "attr_step")]
+pub fn gen_attr_next_default(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
+	use crate::util::parse::{Delimited,ItemPrefix};
+
+	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
+	let ident = &item.ident;
+	let match_arms = gen_next_match_arms(item.variants.iter());
+
+	let Delimited((ItemPrefix(attrs,vis,sign),default)) = util::try_tokenstream!(syn::parse2::<Delimited<(ItemPrefix<syn::Signature>,syn::Expr)>>(attr));
+
+	quote!{
+		#item
+
+		#[automatically_derived]
+		impl #impl_generics #ident #ty_generics #where_clause{
+			#( #attrs )* #vis #sign{
+				match self{
+					#( #match_arms )*
+					_ => #default
+				}
+			}
 		}
 	}
 }

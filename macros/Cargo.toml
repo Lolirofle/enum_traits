@@ -28,7 +28,8 @@ default = [
 	"to_index",
 	"variant_name",
 	"step",
-	"attr_variants_array"
+	"variants_array",
+	"into"
 ]
 
 # Shorthand for other feature flags.
@@ -49,6 +50,7 @@ to_index          = ["derive_to_index"         ,"attr_to_index"]
 variant_name      = ["derive_variant_name"     ,"attr_variant_name"]
 step              = ["derive_step"             ,"attr_step"]
 variants_array    = ["derive_variants_array"   ,"attr_variants_array"]
+into              = ["derive_into"             ,"attr_into"]
 
 # Individual features flags that are used in the codebase.
 derive_ends              = []
@@ -67,6 +69,7 @@ derive_to_index          = []
 derive_variant_name      = []
 derive_step              = []
 derive_variants_array    = []
+derive_into              = []
 attr_ends              = []
 attr_field_structs     = []
 attr_from_discriminant = []
@@ -83,6 +86,7 @@ attr_to_index          = []
 attr_variant_name      = []
 attr_step              = []
 attr_variants_array    = []
+attr_into              = []
 
 [lib]
 name = "enum_traits_macros"
@@ -90,7 +94,7 @@ proc-macro = true
 
 [dependencies]
 quote = "1.0"
-syn = {version="3.0" , features=["full","visit"]}
+syn = {version="3.0" , features=["full","visit","extra-traits"]}
 proc-macro2 = "1.0"
 
 [dev-dependencies]

@@ -1,69 +1,70 @@
 use proc_macro2::TokenStream;
-use syn::{Fields,FieldsNamed,FieldsUnnamed,Ident,Index,Member,Variant};
 
-fn fields_to_ty_pat_expr(item_ident: &Ident,variant: &Variant) -> (TokenStream,TokenStream,TokenStream){(
-	//Type
-	match variant.fields{
-		Fields::Unit => quote! { () },
-		Fields::Unnamed(FieldsUnnamed{unnamed: ref fields,..}) |
-		Fields::Named(FieldsNamed{named: ref fields,..}) => {
-			match fields.len(){
-				1 => {
-					let ty = &fields.first().unwrap().ty;
-					quote! { #ty }
-				},
-				_ => {
-					let tys = fields.iter().map(|field| &field.ty);
-					quote! { (#(#tys),*) }
-				},
+fn fields_to_ty_pat_expr(item_ident: &syn::Ident,variant: &syn::Variant) -> (TokenStream,TokenStream,TokenStream){
+	use syn::{Fields,FieldsNamed,FieldsUnnamed,Index,Member};
+	(
+		//Type
+		match variant.fields{
+			Fields::Unit => quote! { () },
+			Fields::Unnamed(FieldsUnnamed{unnamed: ref fields,..}) |
+			Fields::Named(FieldsNamed{named: ref fields,..}) => {
+				match fields.len(){
+					1 => {
+						let ty = &fields.first().unwrap().ty;
+						quote! { #ty }
+					},
+					_ => {
+						let tys = fields.iter().map(|field| &field.ty);
+						quote! { (#(#tys),*) }
+					},
+				}
 			}
-		}
-	},
+		},
 
-	//Pattern
-	match variant.fields{
-		Fields::Unit => quote! { () },
-		Fields::Unnamed(FieldsUnnamed{unnamed: ref fields,..}) |
-		Fields::Named(FieldsNamed{named: ref fields,..}) => {
-			match fields.len(){
-				1 => quote! { x0 },
-				_ => {
-					let vars = fields.iter()
+		//Pattern
+		match variant.fields{
+			Fields::Unit => quote! { () },
+			Fields::Unnamed(FieldsUnnamed{unnamed: ref fields,..}) |
+			Fields::Named(FieldsNamed{named: ref fields,..}) => {
+				match fields.len(){
+					1 => quote! { x0 },
+					_ => {
+						let vars = fields.iter()
+							.enumerate()
+							.map(|(i,_field)| format_ident!("x{}",i));
+						quote! { ( #(#vars),* ) }
+					},
+				}
+			}
+		},
+
+		//Expression
+		{
+			let variant_ident = &variant.ident;
+			match variant.fields{
+				Fields::Unit => quote! { #item_ident::#variant_ident },
+				Fields::Unnamed(FieldsUnnamed{unnamed: ref fields,..}) => {
+					let args = fields.iter()
 						.enumerate()
 						.map(|(i,_field)| format_ident!("x{}",i));
-					quote! { ( #(#vars),* ) }
+					quote! { #item_ident::#variant_ident( #(#args),* ) }
+				},
+				Fields::Named(FieldsNamed{named: ref fields,..}) => {
+					let args = fields.iter()
+						.enumerate()
+						.map(|(i,_field)| format_ident!("x{}",i));
+					let field_names = fields.iter()
+						.enumerate()
+						.map(|(i,field)| match field.ident{
+							Some(ref ident) => Member::Named(ident.clone()),
+							None => Member::Unnamed(Index::from(i)),
+						});
+					quote! { #item_ident::#variant_ident{ #(#field_names : #args),* } }
 				},
 			}
-		}
-	},
-
-	//Expression
-	{
-		let variant_ident = &variant.ident;
-		match variant.fields{
-			Fields::Unit => quote! { #item_ident::#variant_ident },
-			Fields::Unnamed(FieldsUnnamed{unnamed: ref fields,..}) => {
-				let args = fields.iter()
-					.enumerate()
-					.map(|(i,_field)| format_ident!("x{}",i));
-				quote! { #item_ident::#variant_ident( #(#args),* ) }
-			},
-			Fields::Named(FieldsNamed{named: ref fields,..}) => {
-				let args = fields.iter()
-					.enumerate()
-					.map(|(i,_field)| format_ident!("x{}",i));
-				let field_names = fields.iter()
-					.enumerate()
-					.map(|(i,field)| match field.ident{
-						Some(ref ident) => Member::Named(ident.clone()),
-						None => Member::Unnamed(Index::from(i)),
-					});
-				quote! { #item_ident::#variant_ident{ #(#field_names : #args),* } }
-			},
-		}
-	},
-)}
-
+		},
+	)
+}
 
 #[cfg(feature = "derive_from")]
 pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{

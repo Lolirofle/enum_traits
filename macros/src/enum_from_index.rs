@@ -1,5 +1,4 @@
 use crate::util;
-#[cfg(feature = "attr_from_index")] use crate::util::parse;
 use proc_macro2::{Literal,TokenStream};
 
 fn gen_match_arms<'v>(variants: impl Iterator<Item = &'v syn::Variant>) -> impl Iterator<Item = TokenStream>{
@@ -44,18 +43,18 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 
 #[cfg(feature = "attr_from_index")]
 pub fn gen_attr_default(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
-	use crate::util::parse::ItemPrefix;
+	use crate::util::parse::{Concat,Delimited,ItemKind,ItemPrefix};
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
 
 	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"impl_enum_from_index_default"));
-	let parse::Delimited((ItemPrefix(attrs,vis,parse::Successive((item_kind,fn_ident))),index_ty,default)) = util::try_tokenstream!(syn::parse2::<parse::Delimited<(ItemPrefix<parse::Successive<(parse::ItemKind,syn::Ident)>>,syn::Type,syn::Expr)>>(attr));
+	let Delimited((ItemPrefix(attrs,vis,Concat(kind,fn_ident)),index_ty,default)) = util::try_tokenstream!(syn::parse2::<Delimited<(ItemPrefix<Concat<ItemKind,syn::Ident>>,syn::Type,syn::Expr)>>(attr));
 	let match_arms = gen_match_arms(item.variants.iter());
 
 	quote!{
 		#[automatically_derived]
 		impl #impl_generics #ident #ty_generics #where_clause{
-			#( #attrs )* #vis #item_kind #fn_ident(index: #index_ty) -> Self{
+			#( #attrs )* #vis #kind #fn_ident(index: #index_ty) -> Self{
 				match index{
 					#( #match_arms )*
 					_ => #default
@@ -67,19 +66,19 @@ pub fn gen_attr_default(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
 
 #[cfg(feature = "attr_from_index")]
 pub fn gen_attr_optional(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
-	use crate::util::parse::{Delimited,ItemKind,ItemPrefix,Successive};
+	use crate::util::parse::{Concat,Delimited,ItemKind,ItemPrefix};
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
 
-	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"impl_enum_from_index_optional"));
-	let Delimited((ItemPrefix(attrs,vis,Successive((item_kind,fn_ident))),index_ty)) = util::try_tokenstream!(syn::parse2::<Delimited<(ItemPrefix<Successive<(ItemKind,syn::Ident)>>,syn::Type)>>(attr));
-	let item_kind = item_kind.or(ItemKind::default_fn());
+	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"impl_enum_from_index"));
+	let Delimited((ItemPrefix(attrs,vis,Concat(kind,fn_ident)),index_ty)) = util::try_tokenstream!(syn::parse2::<Delimited<(ItemPrefix<Concat<ItemKind,syn::Ident>>,syn::Type)>>(attr));
+	let kind = kind.or(ItemKind::r#fn());
 	let match_arms = gen_match_arms(item.variants.iter());
 
 	quote!{
 		#[automatically_derived]
 		impl #impl_generics #ident #ty_generics #where_clause{
-			#( #attrs )* #vis #item_kind #fn_ident(index: #index_ty) -> ::core::option::Option<Self>{
+			#( #attrs )* #vis #kind #fn_ident(index: #index_ty) -> ::core::option::Option<Self>{
 				::core::option::Option::Some(match index{
 					#( #match_arms )*
 					_ => return ::core::option::Option::None

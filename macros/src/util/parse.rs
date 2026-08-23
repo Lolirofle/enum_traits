@@ -1,18 +1,13 @@
-use syn::parse::{Parse,ParseStream,Result};
-use syn::parse::discouraged::Speculative;
 use alloc::vec::Vec;
+use core::default::Default;
+use syn::parse::{Parse,ParseStream,Result};
 
-pub struct Successive<T>(pub T);
-impl Parse for Successive<()>{
-	fn parse(_: ParseStream) -> Result<Self>{
-		Ok(Successive(()))
-	}
-}
-impl<A: Parse,B: Parse> Parse for Successive<(A,B)>{
+pub struct Concat<A,B>(pub A,pub B);
+impl<A: Parse,B: Parse> Parse for Concat<A,B>{
 	fn parse(input: ParseStream) -> Result<Self>{
 		let a = input.parse::<A>()?;
 		let b = input.parse::<B>()?;
-		Ok(Successive((a,b)))
+		Ok(Concat(a,b))
 	}
 }
 
@@ -54,8 +49,8 @@ impl_parse_delimited!(A,B,C,D,E,F,G,H);
 /// - `#[derive(Debug)] Name2`
 /// - `pub(crate) Name3`
 /// - `Name4`
-#[derive(Default)]
-pub struct ItemPrefix<I>(pub Vec<syn::Attribute>,pub Option<syn::Visibility>,pub I);
+//#[derive(Default)]
+pub struct ItemPrefix<I>(pub Vec<syn::Attribute>,pub syn::Visibility,pub I);
 
 impl<I: Parse> Parse for ItemPrefix<I>{
 	fn parse(input: ParseStream) -> Result<Self>{
@@ -64,23 +59,14 @@ impl<I: Parse> Parse for ItemPrefix<I>{
 		while input.peek(syn::Token![#]){
 			attrs.extend(input.call(syn::Attribute::parse_outer)?);
 		}
-
-		//Visibility
-		let fork = input.fork();
-		let vis = if let Ok(v) = fork.parse::<syn::Visibility>(){
-			input.advance_to(&fork);
-			Some(v)
-		}else{
-			None
-		};
-
+		let vis = input.parse::<syn::Visibility>()?;
 		let ident = input.parse::<I>()?;
 
 		Ok(ItemPrefix(attrs,vis,ident))
 	}
 }
 
-//#[derive(Copy,Clone,Debug,Eq,PartialEq,Hash)]
+#[derive(Clone)]
 pub enum ItemKind{
 	None,
 	Enum(syn::Token![enum]),
@@ -91,58 +77,43 @@ pub enum ItemKind{
 }
 
 impl ItemKind{
-	pub fn default_fn() -> Self{
-		ItemKind::Fn(None,None,syn::Safety::Default,None,core::default::Default::default())
-	}
-
 	pub fn or(self,default: Self) -> Self{match self{
 		ItemKind::None => default,
 		k => k
 	}}
-}
 
-impl core::fmt::Display for ItemKind{
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result{use ItemKind::*; match self{
-		None       => write!(f,"none"),
-		Enum  (..) => write!(f,"enum"),
-		Const (..) => write!(f,"const"),
-		Fn    (..) => write!(f,"fn"),
-		Struct(..) => write!(f,"struct"),
-		Impl  (..) => write!(f,"impl"),
+	pub fn span(&self) -> proc_macro2::Span{use ItemKind::*; match self{
+		None         => unimplemented!(),
+		Enum  (..,t) => t.span,
+		Const (..,t) => t.span,
+		Fn    (..,t) => t.span,
+		Struct(..,t) => t.span,
+		Impl  (..,t) => t.span,
 	}}
+
+	#[allow(unused)] pub fn r#enum()   -> Self{ItemKind::Enum(Default::default())}
+	#[allow(unused)] pub fn r#const()  -> Self{ItemKind::Const(Default::default())}
+	#[allow(unused)] pub fn r#fn()     -> Self{ItemKind::Fn(None,None,syn::Safety::Default,None,Default::default())}
+	#[allow(unused)] pub fn const_fn() -> Self{ItemKind::Fn(Some(Default::default()),None,syn::Safety::Default,None,Default::default())}
+	#[allow(unused)] pub fn r#struct() -> Self{ItemKind::Struct(Default::default())}
+	#[allow(unused)] pub fn r#impl()   -> Self{ItemKind::Impl(Default::default())}
 }
 
 impl Parse for ItemKind{
 	fn parse(input: ParseStream) -> Result<Self>{
-		fn parse_fn_after_const(input: ParseStream) -> Result<(Option<syn::Token![async]>,syn::Safety,Option<syn::Abi>,Option<syn::Token![fn]>)>{
-			match (input.parse()?,syn::Safety::parse_safe_or_unsafe(input)?,input.parse()?,input.parse()?){
-				t@(_,_,_,Some(_)) | t@(None,syn::Safety::Default,None,None) => Ok(t),
-				_ => Err(syn::Error::new(input.span(),"expected fn after fn related keywords"))
-
-			}
-		}
-
-		{
-			use ItemKind::*;
-			Ok(if input.peek(syn::Token![enum]){
-				Enum(input.parse::<syn::Token![enum]>()?)
-			}else if input.peek(syn::Token![const]){
-				let a = input.parse::<syn::Token![const]>()?;
-				if let (b,c,d,Option::Some(e)) = parse_fn_after_const(input)?{
-					Fn(Option::Some(a),b,c,d,e)
-				}else{
-					Const(a)
-				}
-			}else if let (b,c,d,Option::Some(e)) = parse_fn_after_const(input)?{
-				Fn(Option::None,b,c,d,e)
-			}else if input.peek(syn::Token![struct]){
-				Struct(input.parse::<syn::Token![struct]>()?)
-			}else if input.peek(syn::Token![impl]){
-				Impl(input.parse::<syn::Token![impl]>()?)
-			}else{
-				None
-			})
-		}
+		use ItemKind::*;
+		Ok(if input.peek(syn::Token![enum]){
+			Enum(input.parse::<syn::Token![enum]>()?)
+		}else if input.peek(syn::Token![struct]){
+			Struct(input.parse::<syn::Token![struct]>()?)
+		}else if input.peek(syn::Token![impl]){
+			Impl(input.parse::<syn::Token![impl]>()?)
+		}else{match (input.parse::<Option<syn::Token![const]>>()?,input.parse::<Option<syn::Token![async]>>()?,syn::Safety::parse_safe_or_unsafe(input)?,input.parse::<Option<syn::Abi>>()?,input.parse::<Option<syn::Token![fn]>>()?){
+			(Option::Some(a),Option::None,syn::Safety::Default,Option::None,Option::None) => Const(a),
+			(Option::None   ,Option::None,syn::Safety::Default,Option::None,Option::None) => None,
+			(a,b,c,d,Option::Some(e)) => Fn(a,b,c,d,e),
+			_ => return Err(syn::Error::new(input.span(),"expected fn after function qualifiers")),
+		}})
 	}
 }
 
@@ -162,3 +133,31 @@ impl quote::ToTokens for ItemKind{
 		Impl(t) => t.to_tokens(tokens),
 	}}
 }
+
+//Checks if the first arg (ItemKind) is matching the second arg pattern (ItemKind), becoming the first arg.
+//Or become the third arg if the first arg is itemKind::None.
+//For use in Result<_> functions.
+macro_rules! assert_itemkind{
+	($got:expr,$expected:pat,$default:expr) => {
+		match $got{
+			ItemKind::None => $default,
+			$expected      => $got,
+			_              => return Err(syn::Error::new($got.span(),"Unexpected item kind"))
+		}
+	};
+}
+pub(crate) use assert_itemkind;
+
+//Checks if the first arg (ItemKind) is matching the second arg pattern (ItemKind), becoming the first arg.
+//Or become the third arg if the first arg is itemKind::None.
+//For use in TokenStream functions.
+macro_rules! assert_tokenstream_itemkind{
+	($got:expr,$expected:pat,$default:expr) => {
+		match $got{
+			ItemKind::None => $default,
+			$expected      => $got,
+			_              => return syn::Error::new($got.span(),"Unexpected item kind").into_compile_error()
+		}
+	};
+}
+pub(crate) use assert_tokenstream_itemkind;

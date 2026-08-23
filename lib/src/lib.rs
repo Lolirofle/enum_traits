@@ -793,7 +793,6 @@ pub trait FromDiscriminant<D>: Sized{
 	unsafe fn from_discriminant_unchecked(d: D) -> Self;
 }
 
-/*
 /// Represents an enum type that have an array that lists all of the variants.
 ///
 /// Derive this trait for an enum automatically using [`#[derive(EnumArray)]`][enum_traits_macros::EnumArray].
@@ -804,7 +803,7 @@ pub trait FromDiscriminant<D>: Sized{
 /// use enum_traits::*;
 /// use enum_traits_macros::*;
 ///
-/// #[derive(EnumVariantsArray,EnumLen,Debug,PartialEq)]
+/// #[derive(EnumVariantsArray,Debug,PartialEq)]
 /// pub enum Enum{
 /// 	A = 8,
 /// 	B,
@@ -814,8 +813,7 @@ pub trait FromDiscriminant<D>: Sized{
 ///
 /// assert_eq!([Enum::A,Enum::B,Enum::C,Enum::D] , Enum::VARIANTS);
 /// ```
-pub trait VariantsArray: Sized + Len where [(); <Self as Len>::LEN]:{
+pub trait VariantsArray: Sized where Self: 'static{
 	/// An array containing all the variants.
-	const VARIANTS: [Self; <Self as Len>::LEN];
+	const VARIANTS: &'static [Self];
 }
-*/

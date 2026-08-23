@@ -1,7 +1,7 @@
 use proc_macro2::{Literal,TokenStream};
-use syn::{Fields,Lit};
 
 fn gen_match_arms<'i>(ident: &syn::Ident,variants: impl Iterator<Item = &'i syn::Variant>) -> impl Iterator<Item = TokenStream>{
+	use syn::{Fields,Lit};
 	variants.enumerate().map(move |(i,variant)|{
 		let variant_ident = &variant.ident;
 		let i = Lit::new(Literal::usize_unsuffixed(i));

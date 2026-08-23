@@ -6,19 +6,19 @@ Provides traits, "derives" and attributes for enum items in the Rust programming
 
 ### Derives ###
 - EnumIndex (impl Index)
-- EnumFromIndex (impl FromIndex)
-- EnumToIndex (impl ToIndex)
-- EnumLen (impl Len)
-- EnumEnds (impl Ends)
+- OK EnumFromIndex (impl FromIndex)
+- OK EnumToIndex (impl ToIndex)
+- OK EnumLen (impl Len)
+- OK EnumEnds (impl Ends)
 - EnumDiscriminant (impl Discriminant)
 - EnumIterable (impl Iterable)
 - EnumIterator (impl Iterator)
-- EnumVariantName (impl VariantName)
+- OK EnumVariantName (impl VariantName)
 - EnumIs
 - EnumFromVariantName (impl FromStr)
 - EnumTag
 - EnumFrom (impl From)
-- EnumStep (impl Step)
+- OK EnumStep (impl Step)
 - EnumFromDiscriminant (impl FromDiscriminant)
 - EnumVariantsArray (impl VariantsArray)
 
@@ -41,7 +41,7 @@ Provides traits, "derives" and attributes for enum items in the Rust programming
 - impl_enum_variants_array
 - impl_enum_to_index
 - impl_enum_from_index_default
-- impl_enum_from_index_optional
+- impl_enum_from_index
 - impl_enum_variant_name
 - impl_enum_from_variant_name
 - impl_enum_prev

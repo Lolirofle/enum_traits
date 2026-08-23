@@ -3,7 +3,7 @@ use crate::util::occurs;
 use crate::util::parse::ItemPrefix;
 use proc_macro2::TokenStream;
 use syn::{Fields,Generics};
-use syn::visit::Visit;
+use syn::visit::Visit as _;
 
 #[cfg(feature = "derive_field_structs")]
 pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{

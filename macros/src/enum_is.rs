@@ -1,37 +1,30 @@
-use alloc::string::ToString;
 use crate::util;
-use crate::util::parse::{ItemPrefix,ItemKind};
 use proc_macro2::TokenStream;
-use syn::Fields;
 
 #[cfg(feature = "derive_is")]
 pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
+	use alloc::string::ToString as _;
+	use crate::util::parse::{Concat,ItemKind,ItemPrefix,assert_tokenstream_itemkind};
+	use syn::ext::IdentExt as _;
+	use syn::Fields;
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = item.ident;
-
-	//Attribute options
-	let [ItemPrefix(fn_attrs,fn_vis,fn_ident_prefix)]
-		= util::try_tokenstream!(util::parse_itemprefix_attributes("enum_is",[ItemKind::Fn],&item.attrs));
-	let fn_attrs = if fn_attrs.is_empty(){
-		quote!( #[inline(always)] #[allow(dead_code)] )
-	}else{
-		quote!( #( #fn_attrs )* )
-	};
-	let fn_vis = fn_vis.unwrap_or(item.vis);
-	let fn_ident_prefix = fn_ident_prefix.unwrap_or_else(|| format_ident!("is_"));
+	let fn_attrs = quote!( #[inline(always)] #[allow(dead_code)] );
 
 	//Generation
 
 	let fns = item.variants.iter().map(|variant|{
-		let params = util::try_tokenstream!(util::attr_params!(enum_is,variant.attrs , exclude ; name: ItemPrefix<syn::Ident>));
+		let params = util::try_tokenstream!(util::attr_params!(enum_is,variant.attrs , exclude ; name: ItemPrefix<Concat<ItemKind,syn::Ident>>));
 		if params.exclude{
 			return quote!{};
 		}
 
-		let (fn_attrs,fn_vis,fn_ident) = match params.name{
-			Some(ItemPrefix(attrs,Some(ref vis),ident)) => (&quote!( #( #attrs )* ),vis,ident),
-			Some(ItemPrefix(attrs,None         ,ident)) => (&quote!( #( #attrs )* ),&fn_vis,ident),
-			None => (&fn_attrs,&fn_vis,format_ident!("{}{}",fn_ident_prefix,util::camelcase_to_snakecase(variant.ident.to_string().as_ref())))
+		let (fn_attrs,fn_vis,fn_kind,fn_ident) = match params.name{
+			Some(ItemPrefix(attrs,ref vis,Concat(kind,ident))) => {
+				let kind = assert_tokenstream_itemkind!(kind,ItemKind::Fn(..),ItemKind::const_fn());
+				(&quote!( #( #attrs )* ),vis,kind,ident)
+			},
+			None => (&fn_attrs,&item.vis,ItemKind::const_fn(),format_ident!("is_{}",util::camelcase_to_snakecase(variant.ident.unraw().to_string().as_ref())))
 		};
 
 		let pattern = {
@@ -44,7 +37,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 		};
 
 		quote! {
-			#fn_attrs #fn_vis const fn #fn_ident(&self) -> bool{
+			#fn_attrs #fn_vis #fn_kind #fn_ident(&self) -> bool{
 				if let #pattern = self{true}else{false}
 			}
 		}

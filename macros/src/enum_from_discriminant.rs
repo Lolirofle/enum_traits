@@ -1,19 +1,18 @@
 use crate::util;
 use proc_macro2::{Span,TokenStream};
-use syn::{Ident,GenericParam,TypeParam,Variant,parse_quote};
 
 #[cfg(feature = "derive_from_discriminant")]
 pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
-	let type_param = &Ident::new("__EnumTraitsFromDiscriminantParam",Span::mixed_site());
+	let type_param = &syn::Ident::new("__EnumTraitsFromDiscriminantParam",Span::mixed_site());
 	let generics_added = {
 		let mut generics = item.generics.clone();
 
 		let where_clause = generics.make_where_clause();
-		where_clause.predicates.push(parse_quote!{ Self: ::enum_traits::IntoDiscriminant<#type_param> });
-		where_clause.predicates.push(parse_quote!{ #type_param: ::core::cmp::PartialEq });
+		where_clause.predicates.push(syn::parse_quote!{ Self: ::enum_traits::IntoDiscriminant<#type_param> });
+		where_clause.predicates.push(syn::parse_quote!{ #type_param: ::core::cmp::PartialEq });
 
-		let type_param: TypeParam = type_param.clone().into();
-		generics.params.push(GenericParam::Type(type_param));
+		let type_param: syn::TypeParam = type_param.clone().into();
+		generics.params.push(syn::GenericParam::Type(type_param));
 
 		generics
 	};
@@ -21,7 +20,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 	let (_,ty_generics,_) = item.generics.split_for_impl();
 	let ident = &item.ident;
 
-	fn variant_to_match_arm(ident: &Ident,variant: &Variant,type_param: &Ident) -> TokenStream{
+	fn variant_to_match_arm(ident: &syn::Ident,variant: &syn::Variant,type_param: &syn::Ident) -> TokenStream{
 		let variant_ident = &variant.ident;
 		quote! { n if n == <Self as ::enum_traits::IntoDiscriminant<#type_param>>::into_discriminant(#ident::#variant_ident) => #ident::#variant_ident }
 	}

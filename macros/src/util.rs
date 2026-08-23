@@ -1,6 +1,6 @@
+use alloc::string::String;
 use core::fmt;
 use proc_macro2::Span;
-use alloc::string::String;
 use syn::spanned::Spanned;
 
 #[cfg(any(feature = "derive_field_structs",feature = "attr_field_structs"))] pub mod occurs;
@@ -70,6 +70,20 @@ pub fn filter_attributes<'a,I: 'a>(ident: I,it: impl IntoIterator<Item = &'a syn
 	syn::Ident: PartialEq<I>
 {
 	it.into_iter().filter(move |attr| attr.path().is_ident(&ident))
+}
+
+pub fn find_unique_attribute<'a,I: 'a>(ident: I,it: impl IntoIterator<Item = &'a syn::Attribute>) -> syn::Result<Option<&'a syn::Attribute>> where
+	syn::Ident: PartialEq<I>,
+	I: Copy + core::fmt::Display
+{
+	let mut out = None;
+	for attr in filter_attributes(ident,it){
+		match out{
+			None    => out = Some(attr),
+			Some(_) => return Err(syn::Error::new(attr.span(),alloc::fmt::from_fn(|f| write!(f,"Attribute `{}` is expected to be unique",ident))))
+		}
+	}
+	Ok(out)
 }
 
 macro_rules! try_tokenstream{
