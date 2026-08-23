@@ -28,7 +28,7 @@
 //! use enum_traits_macros::*;
 //! use enum_traits::*;
 //!
-//! #[derive(Debug,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumStep,EnumVariantName,EnumFromStr,EnumFromDiscriminant)]
+//! #[derive(Debug,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumEnds,EnumStep,EnumVariantName,EnumFromVariantName,EnumFromDiscriminant)]
 //! enum Enum{
 //! 	A = 10,
 //! 	B = 2,

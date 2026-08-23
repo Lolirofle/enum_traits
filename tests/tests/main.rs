@@ -12,7 +12,7 @@ mod fields{
 	use enum_traits::*;
 	use enum_traits_macros::*;
 
-	#[derive(Debug,Eq,PartialEq,EnumIndex,              EnumToIndex,EnumLen,EnumIs,EnumTag,                               EnumVariantName,EnumFromStr)]
+	#[derive(Debug,Eq,PartialEq,EnumIndex,              EnumToIndex,EnumLen,EnumIs,EnumTag,                               EnumVariantName,EnumFromVariantName)]
 	enum Fields<'t,T: 't>{
 		VariantA(&'t T),
 		VariantB(T),
@@ -163,7 +163,7 @@ mod nofields{
 	use enum_traits::*;
 	use enum_traits_macros::*;
 
-	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumIs,EnumTag,EnumEnds,EnumIterator,EnumIterable,EnumVariantName,EnumFromStr)]
+	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumFromIndex,EnumToIndex,EnumLen,EnumIs,EnumTag,EnumEnds,EnumIterator,EnumIterable,EnumVariantName,EnumFromVariantName)]
 	enum NoFields{
 		A,B,C,D,E,F
 	}
@@ -434,7 +434,7 @@ mod generic_where{
 	use alloc::vec::Vec;
 	use enum_traits_macros::*;
 
-	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumToIndex,EnumLen,EnumIs,EnumTag,EnumVariantName,EnumFromStr)]
+	#[derive(Debug,Eq,PartialEq,EnumIndex,EnumToIndex,EnumLen,EnumIs,EnumTag,EnumVariantName,EnumFromVariantName)]
 	#[allow(dead_code)]
 	enum Generic<'x,'y: 'x,'z,X,Y: 'y,Z> where
 		'z: 'y,

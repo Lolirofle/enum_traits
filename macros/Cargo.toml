@@ -18,7 +18,7 @@ default = [
 	"from_discriminant",
 	"from_index",
 	"from",
-	"from_str",
+	"from_variant_name",
 	"index",
 	"is",
 	"iter",
@@ -38,7 +38,7 @@ field_structs     = ["derive_field_structs"    ,"attr_field_structs"]
 from_discriminant = ["derive_from_discriminant","attr_from_discriminant"]
 from_index        = ["derive_from_index"       ,"attr_from_index"]
 from              = ["derive_from"             ,"attr_from"]
-from_str          = ["derive_from_str"         ,"attr_from_str"]
+from_variant_name = ["derive_from_variant_name","attr_from_variant_name"]
 index             = ["derive_index"            ,"attr_index"]
 is                = ["derive_is"               ,"attr_is"]
 iter              = ["derive_iterable"         ,"attr_iterable"]
@@ -56,7 +56,7 @@ derive_field_structs     = []
 derive_from_discriminant = []
 derive_from_index        = []
 derive_from              = []
-derive_from_str          = []
+derive_from_variant_name = []
 derive_index             = []
 derive_is                = []
 derive_iterable          = []
@@ -72,7 +72,7 @@ attr_field_structs     = []
 attr_from_discriminant = []
 attr_from_index        = []
 attr_from              = []
-attr_from_str          = []
+attr_from_variant_name = []
 attr_index             = []
 attr_is                = []
 attr_iterable          = []

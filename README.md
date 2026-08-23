@@ -15,11 +15,12 @@ Provides traits, "derives" and attributes for enum items in the Rust programming
 - EnumIterator (impl Iterator)
 - EnumVariantName (impl VariantName)
 - EnumIs
-- EnumFromStr (impl FromStr)
+- EnumFromVariantName (impl FromStr)
 - EnumTag
 - EnumFrom (impl From)
 - EnumStep (impl Step)
 - EnumFromDiscriminant (impl FromDiscriminant)
+- EnumVariantsArray (impl VariantsArray)
 
 ### Traits ###
 - Index
@@ -38,6 +39,13 @@ Provides traits, "derives" and attributes for enum items in the Rust programming
 - impl_enum_first
 - impl_enum_last
 - impl_enum_variants_array
+- impl_enum_to_index
+- impl_enum_from_index_default
+- impl_enum_from_index_optional
+- impl_enum_variant_name
+- impl_enum_from_variant_name
+- impl_enum_prev
+- impl_enum_next
 
 ### Usage ###
 

@@ -23,21 +23,29 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 	//Generation
 
 	let fns = item.variants.iter().map(|variant|{
-		let fn_ident = format_ident!("{}{}",fn_ident_prefix,util::camelcase_to_snakecase(variant.ident.to_string().as_ref()));
-		//TODO: Custom name using an attribute?
+		let params = util::try_tokenstream!(util::attr_params!(enum_is,variant.attrs , exclude ; name: ItemPrefix<syn::Ident>));
+		if params.exclude{
+			return quote!{};
+		}
+
+		let (fn_attrs,fn_vis,fn_ident) = match params.name{
+			Some(ItemPrefix(attrs,Some(ref vis),ident)) => (&quote!( #( #attrs )* ),vis,ident),
+			Some(ItemPrefix(attrs,None         ,ident)) => (&quote!( #( #attrs )* ),&fn_vis,ident),
+			None => (&fn_attrs,&fn_vis,format_ident!("{}{}",fn_ident_prefix,util::camelcase_to_snakecase(variant.ident.to_string().as_ref())))
+		};
 
 		let pattern = {
 			let variant_ident = &variant.ident;
 			match variant.fields{
-				Fields::Unit => quote! { #ident::#variant_ident },
+				Fields::Unit       => quote! { #ident::#variant_ident },
 				Fields::Unnamed(_) => quote! { #ident::#variant_ident(..) },
-				Fields::Named(_) => quote! { #ident::#variant_ident{..} },
+				Fields::Named(_)   => quote! { #ident::#variant_ident{..} },
 			}
 		};
 
 		quote! {
 			#fn_attrs #fn_vis const fn #fn_ident(&self) -> bool{
-				if let &#pattern = self{true}else{false}
+				if let #pattern = self{true}else{false}
 			}
 		}
 	});

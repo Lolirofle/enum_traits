@@ -64,15 +64,25 @@ fn fields_to_ty_pat_expr(item_ident: &Ident,variant: &Variant) -> (TokenStream,T
 	},
 )}
 
+
 #[cfg(feature = "derive_from")]
 pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
+	use crate::util;
+
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = item.ident;
 
-	//TODO: Whitelist/blacklist specific variants or the kinds of fields
-	let impls = item.variants.iter().filter_map(|variant|{
+	let impls = item.variants.iter().map(|variant|{
+		//Blacklist specific variants (TODO: or the kinds of fields? Whitelist?)
+		{
+			let params = util::try_tokenstream!(util::attr_params!(enum_from,variant.attrs,exclude;));
+			if params.exclude{
+				return quote!{};
+			}
+		}
+
 		let (ty,pattern,expr) = fields_to_ty_pat_expr(&ident,&variant);
-		::core::option::Option::Some(quote!{
+		quote!{
 			#[automatically_derived]
 			impl #impl_generics ::core::convert::From<#ty> for #ident #ty_generics #where_clause{
 				#[inline(always)]
@@ -80,7 +90,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 					#expr
 				}
 			}
-		})
+		}
 	});
 
 	quote!{#( #impls )*}

@@ -1,4 +1,3 @@
-use core::default::Default;
 use core::fmt;
 use proc_macro2::Span;
 use alloc::string::String;
@@ -73,39 +72,6 @@ pub fn filter_attributes<'a,I: 'a>(ident: I,it: impl IntoIterator<Item = &'a syn
 	it.into_iter().filter(move |attr| attr.path().is_ident(&ident))
 }
 
-/*
-use syn::parse::Parse;
-pub fn parse_attributes<'a,I: 'a,T: Parse>(ident: I,it: impl IntoIterator<Item = &'a syn::Attribute>) -> impl Iterator<Item = syn::Result<T>> where
-	Ident: PartialEq<I>
-{
-	it.into_iter().filter_map(move |attr|{
-		if attr.path().is_ident(&ident){
-			Some(attr.parse_args())
-		}else{
-			None
-		}
-	})
-}
-*/
-
-pub fn parse_itemprefix_attributes<'a,const N: usize,I: 'a>(ident: I,item_kinds: [parse::ItemKind; N],it: impl IntoIterator<Item = &'a syn::Attribute>) -> syn::Result<[parse::ItemPrefix<Option<syn::Ident>>; N]> where
-	syn::Ident: PartialEq<I>,
-	[parse::ItemPrefix<Option<syn::Ident>>; N]: Default //TODO: Why is this not implemented in the general case in stdlib?
-{
-	let mut out: [_; _] = Default::default();
-	'attr: for attr in filter_attributes(ident,it){
-		let parse::ItemPrefix(a,v,parse::Successive((k,i))): parse::ItemPrefix<parse::Successive<(parse::ItemKind,syn::Ident)>> = attr.parse_args()?;
-		for n in 0..N{
-			if item_kinds[n] == k{
-				out[n] = parse::ItemPrefix(a,v,Some(i));
-				continue 'attr;
-			}
-		}
-		return Err(syn::Error::new(attr.span(),alloc::format!("Unexpected item kind `{}` in attribute argument. Expected one of the following: {:?}",k,item_kinds)));
-	}
-	Ok(out)
-}
-
 macro_rules! try_tokenstream{
 	($expr:expr $(,)?) => {
 		match $expr{
@@ -115,3 +81,54 @@ macro_rules! try_tokenstream{
 	};
 }
 pub(crate) use try_tokenstream;
+
+/*
+pub struct TokensResult<T>(pub syn::Result<T>);
+impl<T: quote::ToTokens> quote::ToTokens for TokensResult<T>{
+	fn to_tokens(&self,tokens: &mut proc_macro2::TokenStream){
+		match self.0{
+			Ok(ref x) => x.to_tokens(tokens),
+			Err(ref e) => e.to_compile_error().to_tokens(tokens),
+		}
+	}
+}
+*/
+
+macro_rules! attr_params{
+	($name:ident , $attrs:expr , $($idents:ident),* $(,)? ; $($keys:ident : $tys:ty),* $(,)?) => {{
+		struct AttrParams{
+			$($idents: bool,)*
+			$($keys: Option<$tys>,)*
+		}
+		let mut params = AttrParams{
+			$($idents: false,)*
+			$($keys: None,)*
+		};
+		crate::util::filter_attributes(stringify!($name),$attrs.iter()).map(|attr|
+			attr.parse_nested_meta(|meta|{
+				$(
+					if meta.path.is_ident(stringify!($idents)){
+						if params.$idents{
+							return Err(meta.error(concat!("Duplicate parameter ",stringify!($idents)," in attribute ",stringify!($name))));
+						}
+						params.$idents = true;
+						return Ok(());
+					}
+				)*
+				$(
+					if meta.path.is_ident(stringify!($keys)) {
+						if let Some(_) = params.$keys{
+							return Err(meta.error(concat!("Duplicate parameter ",stringify!($keys)," in attribute ",stringify!($name))));
+						}
+						let content;
+						syn::parenthesized!(content in meta.input);
+						params.$keys = Some(content.parse()?);
+						return Ok(());
+					}
+				)*
+				Err(meta.error(concat!("Unrecognised parameter in attribute ",stringify!($name))))
+			})
+		).collect::<syn::Result<()>>().map(|()| params)
+	}};
+}
+pub(crate) use attr_params;

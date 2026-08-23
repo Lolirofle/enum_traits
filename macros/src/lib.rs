@@ -19,7 +19,7 @@ extern crate alloc;
 #[cfg(any(feature = "derive_from_discriminant",feature = "attr_from_discriminant"))] mod enum_from_discriminant;
 #[cfg(any(feature = "derive_from_index"       ,feature = "attr_from_index"))]        mod enum_from_index;
 #[cfg(any(feature = "derive_from"             ,feature = "attr_from"))]              mod enum_from;
-#[cfg(any(feature = "derive_from_str"         ,feature = "attr_from_str"))]          mod enum_from_str;
+#[cfg(any(feature = "derive_from_variant_name",feature = "attr_from_variant_name"))] mod enum_from_variant_name;
 #[cfg(any(feature = "derive_index"            ,feature = "attr_index"))]             mod enum_index;
 #[cfg(any(feature = "derive_is"               ,feature = "attr_is"))]                mod enum_is;
 #[cfg(any(feature = "derive_iterable"         ,feature = "attr_iterable"))]          mod enum_iterable;
@@ -218,7 +218,7 @@ pub fn impl_enum_first(attr: proc_macro::TokenStream,item: proc_macro::TokenStre
 /// 	const END: Self = Enum::F;
 /// }
 /// ```
-#[cfg(feature = "derive_ends")]
+#[cfg(feature = "attr_ends")]
 #[proc_macro_attribute]
 pub fn impl_enum_last(attr: proc_macro::TokenStream,item: proc_macro::TokenStream) -> proc_macro::TokenStream{
 	attr_enum(attr,item,enum_ends::gen_attr_last)
@@ -352,6 +352,18 @@ pub fn impl_enum_to_index(attr: proc_macro::TokenStream,item: proc_macro::TokenS
 #[proc_macro_derive(EnumFromIndex)]
 pub fn derive_EnumFromIndex(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_from_index::gen_derive)}
 
+#[cfg(feature = "attr_from_index")]
+#[proc_macro_attribute]
+pub fn impl_enum_from_index_optional(attr: proc_macro::TokenStream,item: proc_macro::TokenStream) -> proc_macro::TokenStream{
+	attr_enum(attr,item,enum_from_index::gen_attr_optional)
+}
+
+#[cfg(feature = "attr_from_index")]
+#[proc_macro_attribute]
+pub fn impl_enum_from_index_default(attr: proc_macro::TokenStream,item: proc_macro::TokenStream) -> proc_macro::TokenStream{
+	attr_enum(attr,item,enum_from_index::gen_attr_default)
+}
+
 /// Implements [`enum_traits::Index`](../enum_traits/trait.Index.html).
 ///
 /// [`enum_traits::Index::Type`](../enum_traits/trait.Index.html#associatedtype.Type) is computed by the smallest unsigned integer type fitting the number of variants minus one.
@@ -474,7 +486,7 @@ pub fn derive_EnumIndex(input: proc_macro::TokenStream) -> proc_macro::TokenStre
 /// ```
 #[cfg(feature = "derive_iterable")]
 #[proc_macro_derive(EnumIterable)]
-pub fn derive_EnumIter(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_iterable::gen_derive)}
+pub fn derive_EnumIterable(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_iterable::gen_derive)}
 
 /// Implements [`core::iter::Iterator`].
 ///
@@ -558,7 +570,7 @@ pub fn impl_enum_variant_name(attr: proc_macro::TokenStream,item: proc_macro::To
 /// use core::str::FromStr;
 /// use enum_traits_macros::*;
 ///
-/// #[derive(EnumFromStr,Debug,PartialEq)]
+/// #[derive(EnumFromVariantName,Debug,PartialEq)]
 /// enum Enum {
 /// 	A,
 /// 	B(i32),
@@ -603,9 +615,15 @@ pub fn impl_enum_variant_name(attr: proc_macro::TokenStream,item: proc_macro::To
 ///
 /// // <rest is omitted>
 ///	```
-#[cfg(feature = "derive_from_str")]
-#[proc_macro_derive(EnumFromStr)]
-pub fn derive_EnumFromStr(input: proc_macro::TokenStream) -> proc_macro::TokenStream {derive_enum(input,enum_from_str::gen_derive)}
+#[cfg(feature = "derive_from_variant_name")]
+#[proc_macro_derive(EnumFromVariantName)]
+pub fn derive_EnumFromVariantName(input: proc_macro::TokenStream) -> proc_macro::TokenStream {derive_enum(input,enum_from_variant_name::gen_derive)}
+
+#[cfg(feature = "attr_from_variant_name")]
+#[proc_macro_attribute]
+pub fn impl_enum_from_variant_name(attr: proc_macro::TokenStream,item: proc_macro::TokenStream) -> proc_macro::TokenStream{
+	attr_enum(attr,item,enum_from_variant_name::gen_attr)
+}
 
 /// Creates an enum with unit variants from the derived enum, and implements [`enum_traits::Tag`](../enum_traits/trait.Tag.html).
 ///
@@ -896,7 +914,7 @@ pub fn derive_EnumIs(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
 /// // <rest is omitted>
 /// ```
 #[cfg(feature = "derive_from")]
-#[proc_macro_derive(EnumFrom)]
+#[proc_macro_derive(EnumFrom,attributes(enum_from))]
 pub fn derive_EnumFrom(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_from::gen_derive)}
 
 /// Implements [`enum_traits::Step`](../enum_traits/trait.Step.html).
@@ -941,6 +959,18 @@ pub fn derive_EnumFrom(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
 #[cfg(feature = "derive_step")]
 #[proc_macro_derive(EnumStep)]
 pub fn derive_EnumStep(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_step::gen_derive)}
+
+#[cfg(feature = "attr_step")]
+#[proc_macro_attribute]
+pub fn impl_enum_prev(attr: proc_macro::TokenStream,item: proc_macro::TokenStream) -> proc_macro::TokenStream{
+	attr_enum(attr,item,enum_step::gen_attr_prev)
+}
+
+#[cfg(feature = "attr_step")]
+#[proc_macro_attribute]
+pub fn impl_enum_next(attr: proc_macro::TokenStream,item: proc_macro::TokenStream) -> proc_macro::TokenStream{
+	attr_enum(attr,item,enum_step::gen_attr_next)
+}
 
 /// Implements [`enum_traits::FromDiscriminant`](../enum_traits/trait.FromDiscriminant.html) for any discriminant type.
 ///
@@ -1086,12 +1116,7 @@ pub fn derive_EnumStep(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
 /// ```
 #[cfg(feature = "derive_from_discriminant")]
 #[proc_macro_derive(EnumFromDiscriminant)]
-pub fn derive_EnumFromDiscriminant(input: proc_macro::TokenStream) -> proc_macro::TokenStream{
-	derive_enum(input,|item| {
-		//let ty = util::minimum_type_containing_enum(&item);
-		enum_from_discriminant::gen_derive(item)
-	})
-}
+pub fn derive_EnumFromDiscriminant(input: proc_macro::TokenStream) -> proc_macro::TokenStream{derive_enum(input,enum_from_discriminant::gen_derive)}
 
 /// Creates structs for each variant's fields and implements [`core::convert::From`] for every struct to the enum.
 ///

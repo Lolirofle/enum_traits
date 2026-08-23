@@ -1,4 +1,6 @@
+use crate::util;
 use crate::util::occurs;
+use crate::util::parse::ItemPrefix;
 use proc_macro2::TokenStream;
 use syn::{Fields,Generics};
 use syn::visit::Visit;
@@ -8,6 +10,11 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 	let ref visibility = item.vis;
 
 	let variant_structs = item.variants.iter().map(|variant|{
+		let params = util::try_tokenstream!(util::attr_params!(enum_field_structs,variant.attrs , exclude ; name: ItemPrefix<syn::Ident>));
+		if params.exclude{
+			return quote!{};
+		}
+
 		let variant_ident = &variant.ident;
 
 		match variant.fields {
@@ -19,7 +26,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 				let mut generics: Generics = item.generics.clone(); //TODO: Remove all where bounds that mention the removed vars
 				generics.params = syn::punctuated::Punctuated::from_iter(generics.params.into_iter().filter(|param| match param{
 					syn::GenericParam::Lifetime(syn::LifetimeParam{lifetime,..}) => {
-						let mut occurs = occurs::LifetimeOccursVisit::new(lifetime);
+						let mut occurs = occurs::OccursVisit::new(lifetime);
 						occurs.visit_fields_unnamed(fields);
 						occurs.found
 					},
@@ -29,7 +36,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 						occurs.0.found
 					},
 					syn::GenericParam::Const(syn::ConstParam{ident,..}) => {
-						let mut occurs = occurs::IdentOccursVisit::new(ident);
+						let mut occurs = occurs::OccursVisit::new(ident);
 						occurs.visit_fields_unnamed(fields);
 						occurs.found
 					},
@@ -44,7 +51,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 				let mut generics: Generics = item.generics.clone(); //TODO: Remove all where bounds that mention the removed vars
 				generics.params = syn::punctuated::Punctuated::from_iter(generics.params.into_iter().filter(|param| match param{
 					syn::GenericParam::Lifetime(syn::LifetimeParam{lifetime,..}) => {
-						let mut occurs = occurs::LifetimeOccursVisit::new(lifetime);
+						let mut occurs = occurs::OccursVisit::new(lifetime);
 						occurs.visit_fields_named(fields);
 						occurs.found
 					},
@@ -54,7 +61,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 						occurs.0.found
 					},
 					syn::GenericParam::Const(syn::ConstParam{ident,..}) => {
-						let mut occurs = occurs::IdentOccursVisit::new(ident);
+						let mut occurs = occurs::OccursVisit::new(ident);
 						occurs.visit_fields_named(fields);
 						occurs.found
 					},

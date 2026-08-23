@@ -3,6 +3,30 @@ use crate::util::parse::{ItemPrefix,ItemKind};
 use proc_macro2::TokenStream;
 use syn::Fields;
 
+fn gen_unit_variants<'v>(variants: impl Iterator<Item = &'v syn::Variant>) -> impl Iterator<Item = TokenStream>{
+	variants.map(|variant|{
+		let variant_ident = &variant.ident;
+		quote! { #variant_ident, }
+	})
+}
+
+fn gen_match_arms<'v>(unit_enum_ident: syn::Ident,variants: impl Iterator<Item = &'v syn::Variant>) -> impl Iterator<Item = TokenStream>{
+	variants.map(move |variant|{
+		let variant_ident = &variant.ident;
+		match variant.fields{
+			Fields::Unit => {
+				quote! { Self::#variant_ident     => #unit_enum_ident::#variant_ident, }
+			}
+			Fields::Unnamed(_) => {
+				quote! { Self::#variant_ident(..) => #unit_enum_ident::#variant_ident, }
+			}
+			Fields::Named(_) => {
+				quote! { Self::#variant_ident{..} => #unit_enum_ident::#variant_ident, }
+			}
+		}
+	})
+}
+
 #[cfg(feature = "derive_tag")]
 pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
@@ -21,40 +45,9 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 
 	//Generation
 
-	let match_arms = item.variants.iter().map(|variant|{
-		let variant_ident = &variant.ident;
-		match variant.fields{
-			Fields::Unit => {
-				quote! { &#ident::#variant_ident     => #unit_enum_ident::#variant_ident, }
-			}
-			Fields::Unnamed(_) => {
-				quote! { &#ident::#variant_ident(..) => #unit_enum_ident::#variant_ident, }
-			}
-			Fields::Named(_) => {
-				quote! { &#ident::#variant_ident{..} => #unit_enum_ident::#variant_ident, }
-			}
-		}
-	});
-
-	let match_arms_into = item.variants.iter().map(|variant|{
-		let variant_ident = &variant.ident;
-		match variant.fields{
-			Fields::Unit => {
-				quote! { #ident::#variant_ident     => #unit_enum_ident::#variant_ident, }
-			}
-			Fields::Unnamed(_) => {
-				quote! { #ident::#variant_ident(..) => #unit_enum_ident::#variant_ident, }
-			}
-			Fields::Named(_) => {
-				quote! { #ident::#variant_ident{..} => #unit_enum_ident::#variant_ident, }
-			}
-		}
-	});
-
-	let unit_variants = item.variants.iter().map(|variant|{
-		let variant_ident = &variant.ident;
-		quote! { #variant_ident, }
-	});
+	let match_arms = gen_match_arms(unit_enum_ident,item.variants.iter());
+	let match_arms_into = gen_match_arms(unit_enum_ident,item.variants.iter());
+	let unit_variants = gen_unit_variants(item.variants.iter());
 
 	quote!{
 		#[automatically_derived]

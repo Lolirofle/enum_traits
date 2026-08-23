@@ -100,3 +100,27 @@ impl<'l> core::convert::TryFrom<&'l EnumE> for &'l u32{
 	}
 }
 */
+
+/*
+#[derive(EnumFrom)]
+enum Enum1{
+	A,
+	B
+}
+#[derive(EnumFrom)]
+enum Enum2{
+	#[enum_from(disable)] A,
+	B
+}
+*/
+
+/*
+#[derive(EnumIs)]
+enum Enum{
+	#[enum_is(exclude)]
+	A,
+	#[enum_is(name(pub custom_name))]
+	B(u32),
+	C{i: u32},
+}
+*/
