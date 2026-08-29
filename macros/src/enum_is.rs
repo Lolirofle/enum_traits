@@ -2,7 +2,7 @@ use crate::util;
 use proc_macro2::TokenStream;
 
 #[cfg(feature = "derive_is")]
-pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
+pub fn gen_derive(mut item: syn::ItemEnum) -> TokenStream{
 	use alloc::string::ToString as _;
 	use crate::util::parse::{Concat,ItemKind,ItemPrefix,assert_tokenstream_itemkind};
 	use syn::ext::IdentExt as _;
@@ -13,7 +13,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 
 	//Generation
 
-	let fns = item.variants.iter().map(|variant|{
+	let fns = item.variants.iter_mut().map(|variant|{
 		let params = util::try_tokenstream!(util::attr_params!(enum_is,variant.attrs , exclude ; name: ItemPrefix<Concat<ItemKind,syn::Ident>>));
 		if params.exclude{
 			return quote!{};

@@ -4,8 +4,10 @@ use proc_macro2::Span;
 use syn::spanned::Spanned;
 
 #[cfg(any(feature = "derive_field_structs",feature = "attr_field_structs"))] pub mod occurs;
+#[cfg(any(feature = "attr_into"))] pub mod replace_ty;
 pub mod parse;
 
+#[cfg(feature = "derive_index")]
 pub fn minimum_type_from_value(value: usize) -> syn::Ident{
 	if value <= u8::MAX as usize{
 		syn::Ident::new("u8",Span::call_site())
@@ -46,6 +48,7 @@ pub fn check_unit_variants<'v,'s>(variants: impl Iterator<Item = &'v syn::Varian
 /// assert_eq!(camelcase_to_snakecase("ALL_CAPS_AND_NOTHING_MORE")   , "all_caps_and_nothing_more");
 /// assert_eq!(camelcase_to_snakecase("Some kind_of mix Of ALL_hEr") , "some kind_of mix of all_h_er");
 /// ```
+#[cfg(feature = "derive_is")]
 pub fn camelcase_to_snakecase<'s>(s: &'s str) -> String{
 	let mut out = String::with_capacity(s.len() * 2);
 	let mut cs = s.chars();
@@ -90,23 +93,11 @@ macro_rules! try_tokenstream{
 	($expr:expr $(,)?) => {
 		match $expr{
 			core::result::Result::Ok(x) => x,
-			core::result::Result::Err(e) => return e.into_compile_error()
+			core::result::Result::Err(e) => return e.into_compile_error().into()
 		}
 	};
 }
 pub(crate) use try_tokenstream;
-
-/*
-pub struct TokensResult<T>(pub syn::Result<T>);
-impl<T: quote::ToTokens> quote::ToTokens for TokensResult<T>{
-	fn to_tokens(&self,tokens: &mut proc_macro2::TokenStream){
-		match self.0{
-			Ok(ref x) => x.to_tokens(tokens),
-			Err(ref e) => e.to_compile_error().to_tokens(tokens),
-		}
-	}
-}
-*/
 
 macro_rules! attr_params{
 	($name:ident , $attrs:expr , $($idents:ident),* $(,)? ; $($keys:ident : $tys:ty),* $(,)?) => {{
@@ -118,7 +109,8 @@ macro_rules! attr_params{
 			$($idents: false,)*
 			$($keys: None,)*
 		};
-		crate::util::filter_attributes(stringify!($name),$attrs.iter()).map(|attr|
+		let name = stringify!($name);
+		let res = crate::util::filter_attributes(name,$attrs.iter()).map(|attr|
 			attr.parse_nested_meta(|meta|{
 				$(
 					if meta.path.is_ident(stringify!($idents)){
@@ -142,7 +134,10 @@ macro_rules! attr_params{
 				)*
 				Err(meta.error(concat!("Unrecognised parameter in attribute ",stringify!($name))))
 			})
-		).collect::<syn::Result<()>>().map(|()| params)
+		).collect::<syn::Result<()>>();
+		$attrs.retain(|attr| !attr.path().is_ident(&name));
+
+		res.map(|()| params)
 	}};
 }
 pub(crate) use attr_params;

@@ -46,3 +46,15 @@ use enum_traits_macros::*;
 	#[derive(Debug,Eq,PartialEq)] #[impl_enum_last(LAS)] enum T{B(u64),C{c: i32},D}
 	assert_eq!(T::D,T::LAS);
 }
+
+mod first_vis{
+	use enum_traits_macros::*;
+	use enum_traits_tests::*;
+	gen_test_attr_const!(X::A,impl_enum_first()(),#[derive(Debug,Eq,PartialEq)]);
+}
+
+mod last_vis{
+	use enum_traits_macros::*;
+	use enum_traits_tests::*;
+	gen_test_attr_const!(X::C,impl_enum_last()(),#[derive(Debug,Eq,PartialEq)]);
+}

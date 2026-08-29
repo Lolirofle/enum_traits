@@ -14,17 +14,18 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 	}
 }
 
+#[cfg(feature = "attr_len")] use crate::util::parse::{Concat,ItemKind,ItemPrefix,assert_tokenstream_itemkind};
+
 #[cfg(feature = "attr_len")]
-pub fn gen_attr(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
-	use crate::util;
-	use crate::util::parse::{Concat,ItemKind,ItemPrefix,assert_tokenstream_itemkind};
+pub fn gen_attr(
+	ItemPrefix(attrs,vis,Concat(ref kind,const_ident)): ItemPrefix<Concat<ItemKind,syn::Ident>>,
+	item: syn::ItemEnum
+) -> TokenStream{
+	let kind = assert_tokenstream_itemkind!(kind,ItemKind::Const(..),&ItemKind::r#const());
 
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
 	let len = item.variants.len();
-
-	let ItemPrefix(attrs,vis,Concat(ref kind,const_ident)) = util::try_tokenstream!(syn::parse2::<ItemPrefix<Concat<ItemKind,syn::Ident>>>(attr));
-	let kind = assert_tokenstream_itemkind!(kind,ItemKind::Const(..),&ItemKind::r#const());
 
 	quote!{
 		#item

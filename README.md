@@ -1,51 +1,78 @@
 # enum_traits #
 
-A library with traits and accompanying procedural macros that adds functionality to enums.
+Traits and accompanying "derives" (with attributes as an alternative) on enums in the Rust programming language.
 
-Provides traits, "derives" and attributes for enum items in the Rust programming language:
+These crates contain procedural macros that add functionality to, extract additional information from, and generate boilerplate patterns for enums.
 
 ### Derives ###
-- EnumIndex (impl Index)
-- OK EnumFromIndex (impl FromIndex)
-- OK EnumToIndex (impl ToIndex)
-- OK EnumLen (impl Len)
-- OK EnumEnds (impl Ends)
-- EnumDiscriminant (impl Discriminant)
-- EnumIterable (impl Iterable)
-- EnumIterator (impl Iterator)
-- OK EnumVariantName (impl VariantName)
+
+The following derives in `enum_traits_macros` implements traits, both from the standard libraries and from `enum_traits`:
+
+- EnumLen (impl enum_traits::Len)
+- EnumEnds (impl enum_traits::Ends)
+- EnumToIndex (impl enum_traits::ToIndex)
+- EnumFromIndex (impl enum_traits::FromIndex)
+- EnumIndex (impl enum_traits::Index)
+- EnumIterable (impl enum_traits::Iterable)
+- EnumIterator (impl core::iter::Iterator)
+- EnumVariantName (impl enum_traits::VariantName)
+- EnumFromVariantName (impl core::convert::FromStr)
+- EnumTag (impl enum_traits::Tag)
 - EnumIs
-- EnumFromVariantName (impl FromStr)
-- EnumTag
-- EnumFrom (impl From)
-- OK EnumStep (impl Step)
-- EnumFromDiscriminant (impl FromDiscriminant)
-- EnumVariantsArray (impl VariantsArray)
+- EnumFrom (impl core::convert::From)
+- EnumStep (impl enum_traits::Step)
+- EnumFromDiscriminant (impl enum_traits::FromDiscriminant)
+- EnumVariantsArray (impl enum_traits::VariantsArray)
+- EnumFieldStructs
+- EnumInto (impl core::convert::Into)
+- EnumTryInto (impl core::convert::TryInto)
 
 ### Traits ###
+
+The following traits in `enum_traits` can be automatically derived using the "derives" above:
+
 - Index
 - FromIndex
 - ToIndex
 - Len
 - Ends
+- Iterable
 - VariantName
 - Tag
 - Step
 - IntoDiscriminant
 - FromDiscriminant
+- VariantsArray
 
 ### Attributes ###
+
+The attributes are related to the "derives" in the sense that they provide similar functionalities, but often without using any traits at all (no dependency on `enum_traits`).
+
+The following attributes in `enum_traits_macros` with prefix `impl_*` implements items (functions, constants) on the enum item:
+
 - impl_enum_len
 - impl_enum_first
 - impl_enum_last
-- impl_enum_variants_array
 - impl_enum_to_index
-- impl_enum_from_index_default
 - impl_enum_from_index
+- impl_enum_from_index_default
 - impl_enum_variant_name
 - impl_enum_from_variant_name
+- impl_enum_from_variant_name_default
 - impl_enum_prev
 - impl_enum_next
+- impl_enum_prev_default
+- impl_enum_next_default
+- impl_enum_variants_array
+- impl_enum_into
+
+The following attributes creates new items (structs, enums) based on the enum item:
+
+- enum_tag
+
+The following attributes transforms the enum item in some way:
+
+- transform_enum_field_structs
 
 ### Usage ###
 
@@ -56,7 +83,7 @@ enum_traits        = "*"
 enum_traits_macros = "*"
 ```
 
-All derives can be toggled using features.
+All derives/attributes can be toggled using features. See `macros/Cargo.toml` for a list of all of them.
 
 ### Examples ###
 ```rust
@@ -153,4 +180,4 @@ fn f3(){
 ```
 
 See the tests for more examples.
-See the [docs for the library](https://docs.rs/crate/enum_traits/), [docs for the derives](https://docs.rs/crate/enum_traits_macros/), the tests or the source code for more information and additional examples.
+See the [docs for the library](https://docs.rs/crate/enum_traits/), [docs for the derives/attributes](https://docs.rs/crate/enum_traits_macros/), the tests or the source code for more information and additional examples.

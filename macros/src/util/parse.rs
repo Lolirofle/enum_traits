@@ -42,6 +42,19 @@ impl_parse_delimited!(A,B,C,D,E,F);
 impl_parse_delimited!(A,B,C,D,E,F,G);
 impl_parse_delimited!(A,B,C,D,E,F,G,H);
 
+pub struct CommaSeparated<T>(pub Vec<T>);
+impl<T: Parse> Parse for CommaSeparated<T>{
+	fn parse(input: ParseStream) -> Result<Self>{
+		let mut out = Vec::new();
+		out.push(input.parse()?);
+		while input.peek(syn::Token![,]){
+			let _: syn::Token![,] = input.parse()?;
+			out.push(input.parse()?);
+		}
+		Ok(CommaSeparated(out))
+	}
+}
+
 /// An identifier preceded by optional attributes and an optional visibility.
 /// Should loosely follow the initial parts of `syn::ItemConst` and `syn::TraitItemConst`.
 /// Examples:
@@ -140,9 +153,9 @@ impl quote::ToTokens for ItemKind{
 macro_rules! assert_itemkind{
 	($got:expr,$expected:pat,$default:expr) => {
 		match $got{
-			ItemKind::None => $default,
-			$expected      => $got,
-			_              => return Err(syn::Error::new($got.span(),"Unexpected item kind"))
+			crate::util::parse::ItemKind::None => $default,
+			$expected => $got,
+			_ => return Err(syn::Error::new($got.span(),"Unexpected item kind"))
 		}
 	};
 }
@@ -154,9 +167,9 @@ pub(crate) use assert_itemkind;
 macro_rules! assert_tokenstream_itemkind{
 	($got:expr,$expected:pat,$default:expr) => {
 		match $got{
-			ItemKind::None => $default,
-			$expected      => $got,
-			_              => return syn::Error::new($got.span(),"Unexpected item kind").into_compile_error()
+			crate::util::parse::ItemKind::None => $default,
+			$expected => $got,
+			_ => return syn::Error::new($got.span(),"Unexpected item kind").into_compile_error()
 		}
 	};
 }

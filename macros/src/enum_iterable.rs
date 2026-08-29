@@ -5,14 +5,14 @@ use syn::spanned::Spanned as _;
 
 #[cfg(feature = "derive_iterable")]
 pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting output (EnumIterable may not need Option, but then empty enums are not represented. Are they necessary to include?)
+	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"derive(EnumIterable)"));
+
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
 	let visibility = &item.vis;
 
 	let len = item.variants.len();
 	let last = item.variants.last();
-
-	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"derive(EnumIterable)"));
 
 	/*let prev_match_arms = {
 			let iter = item.variants.iter().rev().map(|v| v.ident);

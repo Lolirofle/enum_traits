@@ -7,7 +7,7 @@ documentation = "https://docs.rs/enum_traits"
 repository = "https://github.com/Lolirofle/enum_traits.git"
 readme = "../README.md"
 keywords = ["enum","trait","derive","proc-macros","macro"]
-categories = ["development-tools::procedural-macro-helpers"]
+categories = ["development-tools::procedural-macro-helpers","no-std"]
 license = "MIT"
 edition = "2024"
 
@@ -54,7 +54,7 @@ into              = ["derive_into"             ,"attr_into"]
 
 # Individual features flags that are used in the codebase.
 derive_ends              = []
-derive_field_structs     = []
+derive_field_structs     = ["syn/visit","derive_from"]
 derive_from_discriminant = []
 derive_from_index        = []
 derive_from              = []
@@ -71,7 +71,7 @@ derive_step              = []
 derive_variants_array    = []
 derive_into              = []
 attr_ends              = []
-attr_field_structs     = []
+attr_field_structs     = ["syn/visit"]
 attr_from_discriminant = []
 attr_from_index        = []
 attr_from              = []
@@ -86,7 +86,7 @@ attr_to_index          = []
 attr_variant_name      = []
 attr_step              = []
 attr_variants_array    = []
-attr_into              = []
+attr_into              = ["syn/visit-mut"]
 
 [lib]
 name = "enum_traits_macros"
@@ -94,7 +94,7 @@ proc-macro = true
 
 [dependencies]
 quote = "1.0"
-syn = {version="3.0" , features=["full","visit","extra-traits"]}
+syn = {version="3.0" , features=["full","extra-traits"]}
 proc-macro2 = "1.0"
 
 [dev-dependencies]

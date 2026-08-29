@@ -134,7 +134,7 @@ pub fn gen_attr(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
 
 	let mut out = TokenStream::default();
 	let mut unit_enum_ident: Option<syn::Ident> = None;
-	util::try_tokenstream!(syn::meta::parser(|meta|{
+	util::try_tokenstream!(syn::meta::parser(|meta|{ //TODO: Maybe use Punctuated<MetaList> instead?
 		if meta.path.is_ident("name"){
 			//Parse args
 			let prefix; syn::parenthesized!(prefix in meta.input);

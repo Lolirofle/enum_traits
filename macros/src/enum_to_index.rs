@@ -46,15 +46,16 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 	}
 }
 
-#[cfg(feature = "attr_to_index")]
-pub fn gen_attr(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
-	use crate::util;
-	use crate::util::parse::ItemPrefix;
+#[cfg(feature = "attr_to_index")] use crate::util::parse::ItemPrefix;
 
+#[cfg(feature = "attr_to_index")]
+pub fn gen_attr(
+	ItemPrefix(fn_attrs,fn_vis,fn_sign): ItemPrefix<syn::Signature>,
+	item: syn::ItemEnum
+) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
 
-	let ItemPrefix(fn_attrs,fn_vis,fn_sign) = util::try_tokenstream!(syn::parse2::<ItemPrefix<syn::Signature>>(attr));
 	let match_arms = gen_match_arms(ident,item.variants.iter());
 
 	quote!{

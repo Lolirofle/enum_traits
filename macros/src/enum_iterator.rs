@@ -3,13 +3,14 @@ use proc_macro2::{Literal,TokenStream};
 
 #[cfg(feature = "derive_iterator")]
 pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
+	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"derive(EnumIterator)"));
+
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = item.ident;
 
 	let len = item.variants.len();
 	let last = item.variants.last();
 
-	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"derive(EnumIterator)"));
 
 	/*let prev_match_arms = {
 			let iter = item.variants.iter().rev().map(|v| v.ident);

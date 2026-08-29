@@ -4,6 +4,9 @@ version = "0.0.0"
 authors = ["Lolirofle <1522957+Lolirofle@users.noreply.github.com>"]
 edition = "2024"
 
+[lib]
+name = "enum_traits_tests"
+
 [dependencies]
 enum_traits = {path="../lib"}
 enum_traits_macros = {path="../macros"}

@@ -7,7 +7,7 @@ documentation = "https://docs.rs/enum_traits"
 repository = "https://github.com/Lolirofle/enum_traits.git"
 readme = "../README.md"
 keywords = ["enum","trait","derive","proc-macros","macro"]
-categories = ["development-tools::procedural-macro-helpers"]
+categories = ["development-tools::procedural-macro-helpers","no-std"]
 license = "MIT"
 edition = "2024"
 

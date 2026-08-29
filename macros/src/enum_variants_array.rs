@@ -21,14 +21,18 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 	}
 }
 
+#[cfg(feature = "attr_variants_array")] use crate::util::parse::{Concat,ItemKind,ItemPrefix,assert_tokenstream_itemkind};
+
 #[cfg(feature = "attr_variants_array")]
-pub fn gen_attr(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
-	use crate::util::parse::{Concat,ItemKind,ItemPrefix,assert_tokenstream_itemkind};
+pub fn gen_attr(
+	ItemPrefix(attrs,vis,Concat(ref kind,const_ident)): ItemPrefix<Concat<ItemKind,syn::Ident>>,
+	item: syn::ItemEnum
+) -> TokenStream{
+	let kind = assert_tokenstream_itemkind!(kind,ItemKind::Const(..),&ItemKind::r#const());
+	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"enum_variants_array"));
 
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
-
-	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"enum_variants_array"));
 
 	let len = item.variants.len();
 	let contents = item.variants.iter().map(|variant|{
@@ -36,8 +40,6 @@ pub fn gen_attr(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
 		quote! { #ident::#variant_ident, }
 	});
 
-	let ItemPrefix(attrs,vis,Concat(ref kind,const_ident)) = util::try_tokenstream!(syn::parse2::<ItemPrefix<Concat<ItemKind,syn::Ident>>>(attr));
-	let kind = assert_tokenstream_itemkind!(kind,ItemKind::Const(..),&ItemKind::r#const());
 
 	quote!{
 		#item

@@ -3,7 +3,9 @@ use proc_macro2::{Span,TokenStream};
 
 #[cfg(feature = "derive_from_discriminant")]
 pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
-	let type_param = &syn::Ident::new("__EnumTraitsFromDiscriminantParam",Span::mixed_site());
+	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"derive(EnumFromDiscriminant)"));
+
+	let type_param = &syn::Ident::new("D",Span::mixed_site());
 	let generics_added = {
 		let mut generics = item.generics.clone();
 
@@ -24,8 +26,6 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 		let variant_ident = &variant.ident;
 		quote! { n if n == <Self as ::enum_traits::IntoDiscriminant<#type_param>>::into_discriminant(#ident::#variant_ident) => #ident::#variant_ident }
 	}
-
-	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"derive(EnumFromDiscriminant)"));
 
 	let match_arms1 = item.variants.iter().map(|variant| variant_to_match_arm(ident,variant,type_param));
 	let match_arms2 = item.variants.iter().map(|variant| variant_to_match_arm(ident,variant,type_param));

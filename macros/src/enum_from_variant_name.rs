@@ -29,23 +29,25 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream {
 			fn from_str(str: &str) -> ::core::result::Result<Self,Self::Err>{
 				::core::result::Result::Ok(match str{
 					#( #match_arms )*
-					_ => return Err(())
+					_ => return ::core::result::Result::Err(())
 				})
 			}
 		}
 	}
 }
 
+#[cfg(feature = "attr_from_variant_name")] use crate::util::parse::{Concat,Delimited,ItemKind,ItemPrefix};
+
 #[cfg(feature = "attr_from_variant_name")]
-pub fn gen_attr(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
-	use crate::util;
-	use crate::util::parse::{ItemKind,ItemPrefix,Concat};
+pub fn gen_attr(
+	ItemPrefix(attrs,vis,Concat(kind,fn_ident)): ItemPrefix<Concat<ItemKind,syn::Ident>>,
+	item: syn::ItemEnum
+) -> TokenStream{
+	let kind = kind.or(ItemKind::r#fn());
 
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
 
-	let ItemPrefix(attrs,vis,Concat(kind,fn_ident)) = util::try_tokenstream!(syn::parse2::<ItemPrefix<Concat<ItemKind,syn::Ident>>>(attr));
-	let kind = kind.or(ItemKind::r#fn());
 	let match_arms = gen_match_arms(item.variants.iter());
 
 	quote!{
@@ -56,7 +58,7 @@ pub fn gen_attr(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
 			#( #attrs )* #vis #kind #fn_ident(str: &str) -> ::core::option::Option<Self>{
 				::core::option::Option::Some(match str{
 					#( #match_arms )*
-					_ => return None
+					_ => return ::core::option::Option::None
 				})
 			}
 		}
@@ -64,15 +66,15 @@ pub fn gen_attr(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
 }
 
 #[cfg(feature = "attr_from_variant_name")]
-pub fn gen_attr_default(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
-	use crate::util;
-	use crate::util::parse::{Concat,Delimited,ItemKind,ItemPrefix};
+pub fn gen_attr_default(
+	Delimited((ItemPrefix(attrs,vis,Concat(kind,fn_ident)),default)): Delimited<(ItemPrefix<Concat<ItemKind,syn::Ident>>,syn::Expr)>,
+	item: syn::ItemEnum
+) -> TokenStream{
+	let kind = kind.or(ItemKind::r#fn());
 
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
 
-	let Delimited((ItemPrefix(attrs,vis,Concat(kind,fn_ident)),default)) = util::try_tokenstream!(syn::parse2::<Delimited<(ItemPrefix<Concat<ItemKind,syn::Ident>>,syn::Expr)>>(attr));
-	let kind = kind.or(ItemKind::r#fn());
 	let match_arms = gen_match_arms(item.variants.iter());
 
 	quote!{

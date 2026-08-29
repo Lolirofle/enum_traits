@@ -35,7 +35,6 @@ mod naming{
 	}
 }
 
-
 #[test] fn raw_ident(){
 	#[derive(EnumIs)]
 	enum E{
@@ -77,7 +76,6 @@ mod kinds{
 		assert!(!E::Tuple ::<'static,isize,2>(1,2).is_one());
 	}
 }
-
 
 #[test]
 fn custom_name(){

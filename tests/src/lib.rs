@@ -2,8 +2,60 @@
 #![no_std]
 
 mod attr_ends;
+mod attr_field_structs;
 mod attr_len;
 mod derive_from;
+mod derive_into;
+
+#[macro_export] macro_rules! gen_test_attr_const{
+	($e: expr,$name: tt ($($pre: tt)?) ($($post: tt)?) $(, #[ $($derives: tt)* ])?) => {
+		#[test] fn no_prefix(){
+			$(#[ $($derives)* ])? #[$name($($pre)* NAME $($post)*)] enum X{A,B,C}
+			assert_eq!(X::NAME,$e);
+		}
+
+		#[test] fn const_prefix(){
+			$(#[ $($derives)* ])? #[$name($($pre)* const NAME $($post)*)] enum X{A,B,C}
+			assert_eq!(X::NAME,$e);
+		}
+
+		#[test] fn pub_vis(){
+			mod inner{use super::*; $(#[ $($derives)* ])? #[$name($($pre)* pub NAME $($post)*)] pub enum X{A,B,C}}
+			use inner::*;
+			assert_eq!(X::NAME,$e);
+		}
+
+		#[test] fn pub_crate_vis(){
+			mod inner{use super::*; $(#[ $($derives)* ])? #[$name($($pre)* pub(crate) NAME $($post)*)] pub enum X{A,B,C}}
+			use inner::*;
+			assert_eq!(X::NAME,$e);
+		}
+
+		#[test] fn pub_vis_const(){
+			mod inner{use super::*; $(#[ $($derives)* ])? #[$name($($pre)* pub const NAME $($post)*)] pub enum X{A,B,C}}
+			use inner::*;
+			assert_eq!(X::NAME,$e);
+		}
+
+		#[test] fn pub_super_vis(){
+			mod inner{use super::*; $(#[ $($derives)* ])? #[$name($($pre)* pub(super) NAME $($post)*)] pub enum X{A,B,C}}
+			use inner::*;
+			assert_eq!(X::NAME,$e);
+		}
+
+		#[test] fn pub_in_path_vis(){
+			mod inner{use super::*; $(#[ $($derives)* ])? #[$name($($pre)* pub(in super) NAME $($post)*)] pub enum X{A,B,C}}
+			use inner::*;
+			assert_eq!(X::NAME,$e);
+		}
+
+		#[test] fn attr_conditional(){
+			$(#[ $($derives)* ])? #[$name(#[cfg(all(test,not(test)))] $($pre)* NAME $($post)*)] enum X{A,B,C}
+			impl X{const NAME: u64 = 0x85ce938eaf004a38;}
+			assert_eq!(X::NAME,0x85ce938eaf004a38);
+		}
+	};
+}
 
 //Useful commands for testing:
 //  cargo rustc -- -Z unstable-options --pretty=expanded --test
@@ -14,13 +66,13 @@ mod derive_from;
 
 use enum_traits_macros::*;
 
-#[derive(EnumInto)]
+/*#[derive(EnumInto)]
 enum Enum{
 	A(u8,u16,u32),
 	B(i32,u16,u8),
 	C{x: i32,y: u8,z: u16,w: &'static str},
 	D{o: u8,p: u16,q: u8},
-}
+}*/
 
 /*
 #[derive(EnumInto)]
@@ -31,44 +83,22 @@ enum Enum2{
 }
 */
 
+/*
+#[derive(EnumInto)]
+enum Enum3{
+	A(u8,u16),
+	B(&'static str,u8),
+	C{i: u8,b: bool},
+}
+*/
+
+/*
 #[derive(EnumInto)]
 enum Enum3{
 	A(u8,u16,u32,i64),
 	B{x: u32,y: i64},
 	C{z: i64,y: i64,w: u32},
 	D{x: i64,y: i64,z: i64,a: u32,b: u32},
-}
-
-/*#[derive(EnumFieldStructs)]
-enum Fields<'a,X,Y>{
-	A(i8),
-	B(i32),
-	C(u8,u16,u32),
-	D{d: (u8,i32)},
-	E{a: i32,b: i32,c: i32,d: i32,e: (u16,i32)},
-	F,
-	G(X),
-	H(&'a Y),
-	I{x: X,y: &'a Y},
-	J{x: i8},
-}*/
-
-/*
-//TODO: Also write tests on this
-#[allow(non_snake_case)]
-#[derive(EnumFieldStructs)]
-enum Fields<'a,X,Y>{
-	VariantA(i8),
-	VariantB(i32),
-	VariantC(u8,u16,u32),
-	VariantD{d: (u8,i32)},
-	VariantE{a: i32,b: i32,c: i32,d: i32,e: (u16,i32)},
-	VariantF,
-	VariantG(X),
-	VariantH(&'a X),
-	VariantI(&'a Y),
-	VariantJ{x: X,y: &'a Y},
-	VariantK{x: i8},
 }
 */
 
@@ -114,4 +144,3 @@ enum Enum{
 	C{i: u32},
 }
 */
-
