@@ -3,9 +3,6 @@ use crate::util::parse::{Concat,ItemKind,ItemPrefix,assert_itemkind};
 use proc_macro2::TokenStream;
 use syn::ext::IdentExt as _;
 
-//TODO: Attributes and naming on the generated variants
-//TODO: Maybe split the attirbute arguments into multiple different attributes instead?
-
 fn gen_unit_variants<'v>(variants: impl Iterator<Item = &'v syn::Variant>) -> impl Iterator<Item = TokenStream>{
 	variants.map(|variant|{
 		let variant_ident = &variant.ident;
@@ -37,7 +34,7 @@ fn gen_match_arms_is<'v>(unit_enum_ident: &syn::Ident,variants: impl Iterator<It
 	})
 }
 
-fn gen_unit_enum(ItemPrefix(unit_enum_attrs,unit_enum_vis,Concat(kind,unit_enum_ident)): ItemPrefix<Concat<ItemKind,syn::Ident>>,item: &syn::ItemEnum) -> TokenStream{
+fn gen_unit_enum(ItemPrefix(unit_enum_attrs,unit_enum_vis,Concat((kind,unit_enum_ident))): ItemPrefix<Concat<(ItemKind,syn::Ident)>>,item: &syn::ItemEnum) -> TokenStream{
 	let unit_variants = gen_unit_variants(item.variants.iter());
 	quote!{
 		#[automatically_derived]
@@ -83,10 +80,10 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 					ItemPrefix(
 						alloc::vec![syn::parse_quote!(#[derive(Copy,Clone,Debug,PartialEq,Eq,Hash)])],
 						item.vis.clone(),
-						Concat(
+						Concat((
 							ItemKind::Enum(syn::parse_quote!(enum)),
 							unit_enum_ident
-						)
+						))
 					),
 					&item
 				),
@@ -138,16 +135,16 @@ pub fn gen_attr(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
 		if meta.path.is_ident("name"){
 			//Parse args
 			let prefix; syn::parenthesized!(prefix in meta.input);
-			let mut prefix: ItemPrefix<Concat<ItemKind,syn::Ident>> = prefix.parse()?;
-			prefix.2.0 = assert_itemkind!(prefix.2.0,ItemKind::Enum(..),ItemKind::r#enum());
+			let mut prefix: ItemPrefix<Concat<(ItemKind,syn::Ident)>> = prefix.parse()?;
+			prefix.2.0.0 = assert_itemkind!(prefix.2.0.0,ItemKind::Enum(..),ItemKind::r#enum());
 
-			unit_enum_ident = Some(prefix.2.1.clone());
+			unit_enum_ident = Some(prefix.2.0.1.clone());
 			out.extend(gen_unit_enum(prefix,&item))
 		}else if meta.path.is_ident("to"){
 			if let Some(ref unit_enum_ident) = unit_enum_ident{
 				//Parse args
 				let prefix; syn::parenthesized!(prefix in meta.input);
-				let ItemPrefix(attrs,vis,Concat(kind,fn_ident)): ItemPrefix<Concat<ItemKind,syn::Ident>> = prefix.parse()?;
+				let ItemPrefix(attrs,vis,Concat((kind,fn_ident))): ItemPrefix<Concat<(ItemKind,syn::Ident)>> = prefix.parse()?;
 				let kind = assert_itemkind!(kind,ItemKind::Fn(..),ItemKind::const_fn());
 
 				let match_arms = gen_match_arms(&unit_enum_ident,item.variants.iter());
@@ -169,7 +166,7 @@ pub fn gen_attr(attr: TokenStream,item: syn::ItemEnum) -> TokenStream{
 			if let Some(ref unit_enum_ident) = unit_enum_ident{
 				//Parse args
 				let prefix; syn::parenthesized!(prefix in meta.input);
-				let ItemPrefix(attrs,vis,Concat(kind,fn_ident)): ItemPrefix<Concat<ItemKind,syn::Ident>> = prefix.parse()?;
+				let ItemPrefix(attrs,vis,Concat((kind,fn_ident))): ItemPrefix<Concat<(ItemKind,syn::Ident)>> = prefix.parse()?;
 				let kind = assert_itemkind!(kind,ItemKind::Fn(..),ItemKind::const_fn());
 
 				let match_arms = gen_match_arms_is(&unit_enum_ident,item.variants.iter());

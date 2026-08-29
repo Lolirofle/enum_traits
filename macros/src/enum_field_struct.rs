@@ -94,7 +94,7 @@ pub fn gen_derive(mut item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 
 	let variant_structs = item.variants.iter_mut().map(|variant|{
-		let params = util::try_tokenstream!(util::attr_params!(enum_field_structs,variant.attrs , exclude ; name: ItemPrefix<syn::Ident>));
+		let params = util::try_tokenstream!(util::attr_params!(enum_field_struct,variant.attrs , exclude ; name: ItemPrefix<syn::Ident>));
 		if params.exclude{
 			return quote!{};
 		}
@@ -140,7 +140,7 @@ pub fn gen_derive(mut item: syn::ItemEnum) -> TokenStream{
 #[cfg(feature = "attr_field_structs")]
 pub fn gen_attr(_param: TokenStream,mut item: syn::ItemEnum) -> TokenStream{
 	let variant_structs: TokenStream = item.variants.iter_mut().map(|variant|{
-		let params = util::try_tokenstream!(util::attr_params!(enum_field_structs,variant.attrs , exclude ; name: ItemPrefix<syn::Ident>));
+		let params = util::try_tokenstream!(util::attr_params!(enum_field_struct,variant.attrs , exclude ; name: ItemPrefix<syn::Ident>));
 		if params.exclude{
 			return quote!{};
 		}

@@ -4,7 +4,7 @@ use proc_macro2::Span;
 use syn::spanned::Spanned;
 
 #[cfg(any(feature = "derive_field_structs",feature = "attr_field_structs"))] pub mod occurs;
-#[cfg(any(feature = "attr_into"))] pub mod replace_ty;
+#[cfg(any(feature = "attr_into",feature = "attr_from_index",feature = "attr_step"))] pub mod replace_ty;
 pub mod parse;
 
 #[cfg(feature = "derive_index")]
@@ -141,3 +141,16 @@ macro_rules! attr_params{
 	}};
 }
 pub(crate) use attr_params;
+
+#[cfg(any(feature = "attr_into",feature = "attr_from_index",feature = "attr_step"))]
+pub fn is_option_ret(ty: &syn::ReturnType) -> bool{
+	use core::ops::Deref;
+
+	if let syn::ReturnType::Type(_,ty) = ty
+	&& let syn::Type::Path(ty) = ty.deref()
+	&& let Some(p) = ty.path.segments.last(){
+		p.ident == "Option"
+	}else{
+		false
+	}
+}

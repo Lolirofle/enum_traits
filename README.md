@@ -23,7 +23,7 @@ The following derives in `enum_traits_macros` implements traits, both from the s
 - EnumStep (impl enum_traits::Step)
 - EnumFromDiscriminant (impl enum_traits::FromDiscriminant)
 - EnumVariantsArray (impl enum_traits::VariantsArray)
-- EnumFieldStructs
+- EnumFieldStruct
 - EnumInto (impl core::convert::Into)
 - EnumTryInto (impl core::convert::TryInto)
 
@@ -55,14 +55,11 @@ The following attributes in `enum_traits_macros` with prefix `impl_*` implements
 - impl_enum_last
 - impl_enum_to_index
 - impl_enum_from_index
-- impl_enum_from_index_default
 - impl_enum_variant_name
 - impl_enum_from_variant_name
 - impl_enum_from_variant_name_default
 - impl_enum_prev
 - impl_enum_next
-- impl_enum_prev_default
-- impl_enum_next_default
 - impl_enum_variants_array
 - impl_enum_into
 
@@ -72,7 +69,7 @@ The following attributes creates new items (structs, enums) based on the enum it
 
 The following attributes transforms the enum item in some way:
 
-- transform_enum_field_structs
+- transform_enum_field_struct
 
 ### Usage ###
 

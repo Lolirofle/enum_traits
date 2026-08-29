@@ -42,59 +42,63 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 }
 
 #[cfg(feature = "attr_from_index")]
-use crate::util::parse::{Concat,Delimited,ItemKind,ItemPrefix};
+use crate::util::parse::{DelimitedOpt,ItemPrefix};
 
 #[cfg(feature = "attr_from_index")]
-pub fn gen_attr_default(
-	Delimited((ItemPrefix(attrs,vis,Concat(kind,fn_ident)),index_ty,default)): Delimited<(ItemPrefix<Concat<ItemKind,syn::Ident>>,syn::Type,syn::Expr)>,
+pub fn gen_attr(
+	DelimitedOpt((ItemPrefix(attrs,vis,mut sign),),default): DelimitedOpt<(ItemPrefix<syn::Signature>,),Option<syn::Expr>>,
 	item: syn::ItemEnum
 ) -> TokenStream{
+	use crate::util::replace_ty::replace_infer_ret;
+	use syn::spanned::Spanned;
+
 	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"impl_enum_from_index_default"));
-	let kind = kind.or(ItemKind::r#fn());
+	if sign.inputs.len() == 1 && let Some(syn::FnArg::Typed(param)) = sign.inputs.first_mut(){
+		*param.pat = syn::parse_quote!{ index }; //Replaces pattern to a binding of our choice.
+	}else{
+		return syn::Error::new(sign.inputs.span(),"`impl_enum_from_index` expects a function signature with a single parameter of a numeric type.").into_compile_error();
+	}
+	sign.output = replace_infer_ret(sign.output,&syn::parse_quote!{ Self });
 
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
 
 	let match_arms = gen_match_arms(item.variants.iter());
 
-	quote!{
-		#item
+	if util::is_option_ret(&sign.output){
+		if let Some(default) = default{
+			return syn::Error::new(default.span(),"`impl_enum_from_index` with an `Option` as return type does not accept a parameter for the default value.").into_compile_error();
+		}
 
-		#[automatically_derived]
-		impl #impl_generics #ident #ty_generics #where_clause{
-			#( #attrs )* #vis #kind #fn_ident(index: #index_ty) -> Self{
-				match index{
-					#( #match_arms )*
-					_ => #default
+		quote!{
+			#item
+
+			#[automatically_derived]
+			impl #impl_generics #ident #ty_generics #where_clause{
+				#( #attrs )* #vis #sign{
+					::core::option::Option::Some(match index{
+						#( #match_arms )*
+						_ => return ::core::option::Option::None
+					})
 				}
 			}
 		}
-	}
-}
+	}else{
+		let Some(default) = default else{
+			return syn::Error::new(sign.span(),"`impl_enum_from_index` requires a parameter for the default value.").into_compile_error();
+		};
 
-#[cfg(feature = "attr_from_index")]
-pub fn gen_attr_optional(
-	Delimited((ItemPrefix(attrs,vis,Concat(kind,fn_ident)),index_ty)): Delimited<(ItemPrefix<Concat<ItemKind,syn::Ident>>,syn::Type)>,
-	item: syn::ItemEnum
-) -> TokenStream{
-	util::try_tokenstream!(util::check_unit_variants(item.variants.iter(),"impl_enum_from_index"));
-	let kind = kind.or(ItemKind::r#fn());
+		quote!{
+			#item
 
-	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
-	let ident = &item.ident;
-
-	let match_arms = gen_match_arms(item.variants.iter());
-
-	quote!{
-		#item
-
-		#[automatically_derived]
-		impl #impl_generics #ident #ty_generics #where_clause{
-			#( #attrs )* #vis #kind #fn_ident(index: #index_ty) -> ::core::option::Option<Self>{
-				::core::option::Option::Some(match index{
-					#( #match_arms )*
-					_ => return ::core::option::Option::None
-				})
+			#[automatically_derived]
+			impl #impl_generics #ident #ty_generics #where_clause{
+				#( #attrs )* #vis #sign{
+					match index{
+						#( #match_arms )*
+						_ => #default
+					}
+				}
 			}
 		}
 	}

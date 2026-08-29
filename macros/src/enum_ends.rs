@@ -36,7 +36,7 @@ use crate::util::parse::{Concat,ItemKind,ItemPrefix,assert_tokenstream_itemkind}
 
 #[cfg(feature = "attr_ends")]
 pub fn gen_attr_first(
-	ItemPrefix(attrs,vis,Concat(ref kind,const_ident)): ItemPrefix<Concat<ItemKind,syn::Ident>>,
+	ItemPrefix(attrs,vis,Concat((ref kind,const_ident))): ItemPrefix<Concat<(ItemKind,syn::Ident)>>,
 	item: syn::ItemEnum
 ) -> TokenStream{
 	let kind = assert_tokenstream_itemkind!(kind,ItemKind::Const(..),&ItemKind::r#const());
@@ -57,7 +57,7 @@ pub fn gen_attr_first(
 
 #[cfg(feature = "attr_ends")]
 pub fn gen_attr_last(
-	ItemPrefix(attrs,vis,Concat(ref kind,const_ident)): ItemPrefix<Concat<ItemKind,syn::Ident>>,
+	ItemPrefix(attrs,vis,Concat((ref kind,const_ident))): ItemPrefix<Concat<(ItemKind,syn::Ident)>>,
 	item: syn::ItemEnum
 ) -> TokenStream{
 	let kind = assert_tokenstream_itemkind!(kind,ItemKind::Const(..),&ItemKind::r#const());

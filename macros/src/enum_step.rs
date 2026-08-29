@@ -66,64 +66,51 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 	}
 }
 
-#[cfg(feature = "attr_step")] use crate::util::parse::{Delimited,ItemPrefix};
+#[cfg(feature = "attr_step")] use crate::util::parse::{DelimitedOpt,ItemPrefix};
 
 #[cfg(feature = "attr_step")]
 pub fn gen_attr_prev(
-	ItemPrefix(attrs,vis,sign): ItemPrefix<syn::Signature>,
+	DelimitedOpt((ItemPrefix(attrs,vis,mut sign),),default): DelimitedOpt<(ItemPrefix<syn::Signature>,),Option<syn::Expr>>,
 	item: syn::ItemEnum
 ) -> TokenStream{
+	use crate::util::replace_ty::replace_infer_ret;
+	use syn::spanned::Spanned;
+
+	sign.output = replace_infer_ret(sign.output,&syn::parse_quote!{ Self });
+
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
-	let body = gen_prev_fn_body(item.variants.iter());
 
-	quote!{
-		#item
-
-		#[automatically_derived]
-		impl #impl_generics #ident #ty_generics #where_clause{
-			#( #attrs )* #vis #sign{#body}
+	if util::is_option_ret(&sign.output){
+		if let Some(default) = default{
+			return syn::Error::new(default.span(),"`impl_enum_prev` with an `Option` as return type does not accept a parameter for the default value.").into_compile_error();
 		}
-	}
-}
 
-#[cfg(feature = "attr_step")]
-pub fn gen_attr_next(
-	ItemPrefix(attrs,vis,sign): ItemPrefix<syn::Signature>,
-	item: syn::ItemEnum
-) -> TokenStream{
-	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
-	let ident = &item.ident;
-	let body = gen_next_fn_body(item.variants.iter());
+		let body = gen_prev_fn_body(item.variants.iter());
+		quote!{
+			#item
 
-	quote!{
-		#item
-
-		#[automatically_derived]
-		impl #impl_generics #ident #ty_generics #where_clause{
-			#( #attrs )* #vis #sign{#body}
+			#[automatically_derived]
+			impl #impl_generics #ident #ty_generics #where_clause{
+				#( #attrs )* #vis #sign{#body}
+			}
 		}
-	}
-}
+	}else{
+		let Some(default) = default else{
+			return syn::Error::new(sign.span(),"`impl_enum_prev` requires a parameter for the default value.").into_compile_error();
+		};
 
-#[cfg(feature = "attr_step")]
-pub fn gen_attr_prev_default(
-	Delimited((ItemPrefix(attrs,vis,sign),default)): Delimited<(ItemPrefix<syn::Signature>,syn::Expr)>,
-	item: syn::ItemEnum
-) -> TokenStream{
-	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
-	let ident = &item.ident;
-	let match_arms = gen_prev_match_arms(item.variants.iter());
+		let match_arms = gen_prev_match_arms(item.variants.iter());
+		quote!{
+			#item
 
-	quote!{
-		#item
-
-		#[automatically_derived]
-		impl #impl_generics #ident #ty_generics #where_clause{
-			#( #attrs )* #vis #sign{
-				match self{
-					#( #match_arms )*
-					_ => #default
+			#[automatically_derived]
+			impl #impl_generics #ident #ty_generics #where_clause{
+				#( #attrs )* #vis #sign{
+					match self{
+						#( #match_arms )*
+						_ => #default
+					}
 				}
 			}
 		}
@@ -131,23 +118,49 @@ pub fn gen_attr_prev_default(
 }
 
 #[cfg(feature = "attr_step")]
-pub fn gen_attr_next_default(
-	Delimited((ItemPrefix(attrs,vis,sign),default)): Delimited<(ItemPrefix<syn::Signature>,syn::Expr)>,
+pub fn gen_attr_next(
+	DelimitedOpt((ItemPrefix(attrs,vis,mut sign),),default): DelimitedOpt<(ItemPrefix<syn::Signature>,),Option<syn::Expr>>,
 	item: syn::ItemEnum
 ) -> TokenStream{
+	use crate::util::replace_ty::replace_infer_ret;
+	use syn::spanned::Spanned;
+
+	sign.output = replace_infer_ret(sign.output,&syn::parse_quote!{ Self });
+
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
-	let match_arms = gen_next_match_arms(item.variants.iter());
 
-	quote!{
-		#item
 
-		#[automatically_derived]
-		impl #impl_generics #ident #ty_generics #where_clause{
-			#( #attrs )* #vis #sign{
-				match self{
-					#( #match_arms )*
-					_ => #default
+	if util::is_option_ret(&sign.output){
+		if let Some(default) = default{
+			return syn::Error::new(default.span(),"`impl_enum_next` with an `Option` as return type does not accept a parameter for the default value.").into_compile_error();
+		}
+
+		let body = gen_next_fn_body(item.variants.iter());
+		quote!{
+			#item
+
+			#[automatically_derived]
+			impl #impl_generics #ident #ty_generics #where_clause{
+				#( #attrs )* #vis #sign{#body}
+			}
+		}
+	}else{
+		let Some(default) = default else{
+			return syn::Error::new(sign.span(),"`impl_enum_next` requires a parameter for the default value.").into_compile_error();
+		};
+
+		let match_arms = gen_next_match_arms(item.variants.iter());
+		quote!{
+			#item
+
+			#[automatically_derived]
+			impl #impl_generics #ident #ty_generics #where_clause{
+				#( #attrs )* #vis #sign{
+					match self{
+						#( #match_arms )*
+						_ => #default
+					}
 				}
 			}
 		}

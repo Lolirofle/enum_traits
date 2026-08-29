@@ -3,8 +3,6 @@ use core::iter;
 use proc_macro2::TokenStream;
 use syn::spanned::Spanned;
 
-//TODO: derive(EnumTryInto)
-
 pub enum FieldPos<'i>{
 	Unnamed(usize),
 	Named(&'i syn::Ident),
@@ -18,6 +16,13 @@ impl<'i> FieldPos<'i>{
 		},
 		FieldPos::Named(i) => syn::parse_quote!{ #variant_path{#i: #ident,..} },
 	}}
+
+	fn gen_match_arm<'v>(self,enum_ident: &syn::Ident,variant: &'v syn::Variant) -> TokenStream{
+		let variant_ident = &variant.ident;
+		let var_ident = &syn::Ident::new("x",proc_macro2::Span::mixed_site());
+		let pat = self.to_pat(&syn::parse_quote!{ #enum_ident::#variant_ident },var_ident);
+		quote!{ #pat => #var_ident, }
+	}
 }
 
 fn find_field_by_type<'f>(fields: &'f syn::Fields,ty: &syn::Type,preferred_names: impl Iterator<Item = &'f syn::Ident>) -> Option<FieldPos<'f>>{
@@ -58,13 +63,6 @@ fn find_field_by_index<'f>(fields: &'f syn::Fields,i: usize) -> Option<(&'f syn:
 	}
 }
 
-fn gen_match_arm<'v,'i>(enum_ident: &syn::Ident,variant: &'v syn::Variant,pos: FieldPos<'i>) -> TokenStream{
-	let variant_ident = &variant.ident;
-	let var_ident = &syn::Ident::new("x",proc_macro2::Span::mixed_site());
-	let pat = pos.to_pat(&syn::parse_quote!{ #enum_ident::#variant_ident },var_ident);
-	quote!{ #pat => #var_ident, }
-}
-
 #[cfg(feature = "derive_into")]
 fn count_named_fields<'v>(variants: impl Iterator<Item = &'v syn::Variant>) -> Vec<(&'v syn::Ident,usize)>{
     let mut counts: Vec<(&'v syn::Ident,usize)> = Vec::new();
@@ -83,7 +81,8 @@ fn count_named_fields<'v>(variants: impl Iterator<Item = &'v syn::Variant>) -> V
     counts
 }
 #[cfg(feature = "derive_into")]
-fn common_field_types<'v>(variants: impl Iterator<Item = &'v syn::Variant> + Clone) -> Vec<(syn::Type,Vec<FieldPos<'v>>)>{
+fn common_field_types<'v>(variants: impl Iterator<Item = &'v syn::Variant> + ExactSizeIterator + Clone) -> Vec<(syn::Type,Vec<(&'v syn::Variant,FieldPos<'v>)>)>{
+	let max_size = variants.len();
 	let mut out = Vec::new();
 	let names = count_named_fields(variants.clone());
 	if let Some(first) = variants.clone().next(){
@@ -94,7 +93,7 @@ fn common_field_types<'v>(variants: impl Iterator<Item = &'v syn::Variant> + Clo
 			syn::Fields::Unit           => return out,
 		}.iter(){
 			if out.iter().all(|(ty,_)| ty != &field.ty){
-				out.push((field.ty.clone(),Vec::new()))
+				out.push((field.ty.clone(),Vec::with_capacity(max_size)))
 			}
 		}
 
@@ -102,7 +101,7 @@ fn common_field_types<'v>(variants: impl Iterator<Item = &'v syn::Variant> + Clo
 		for variant in variants{
 			out.retain_mut(|(ty,poss)|
 				match find_field_by_type(&variant.fields,ty,names.iter().cloned().map(|(x,_)| x)){
-					Some(pos) => {poss.push(pos); true},
+					Some(pos) => {poss.push((variant,pos)); true},
 					None => false
 				}
 			);
@@ -112,7 +111,8 @@ fn common_field_types<'v>(variants: impl Iterator<Item = &'v syn::Variant> + Clo
 }
 
 #[cfg(feature = "derive_into")]
-fn unique_field_types<'v>(variants: impl Iterator<Item = &'v syn::Variant> + Clone) -> Vec<(syn::Type,Vec<(&'v syn::Variant,FieldPos<'v>)>)>{
+fn unique_field_types<'v>(variants: impl Iterator<Item = &'v syn::Variant> + ExactSizeIterator) -> Vec<(syn::Type,Vec<(&'v syn::Variant,FieldPos<'v>)>)>{
+	let max_size = variants.len();
 	let mut out = Vec::<(syn::Type,Vec<(&'v syn::Variant,FieldPos<'v>)>)>::new();
 	for variant in variants{
 		for (f,field) in match variant.fields{
@@ -120,14 +120,14 @@ fn unique_field_types<'v>(variants: impl Iterator<Item = &'v syn::Variant> + Clo
 			syn::Fields::Unnamed(ref f) => &f.unnamed,
 			syn::Fields::Unit           => continue,
 		}.iter().enumerate(){
-			let pos = match field.ident{
+			let pos = (variant,match field.ident{
 				Some(ref i) => FieldPos::Named(i),
 				None => FieldPos::Unnamed(f),
-			};
+			});
 
 			match out.iter_mut().find(|(ty,_)| ty == &field.ty){
-				Some((_,o)) => o.push((variant,pos)),
-				None => out.push((field.ty.clone(),{let mut o = Vec::new(); o.push((variant,pos)); o})),
+				Some((_,o)) => o.push(pos),
+				None => out.push((field.ty.clone(),{let mut o = Vec::with_capacity(max_size); o.push(pos); o})),
 			}
 		}
 	}
@@ -142,7 +142,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 	let impls = common_field_types(item.variants.iter());
 	if impls.len() == 0{return syn::Error::new(item.span(),"`derive(EnumInto)` is applied to an enum without any common types shared by all its fields.").into_compile_error();}
 	let impls = impls.into_iter().map(|(ty,poss)|{
-		let match_arms = item.variants.iter().zip(poss.into_iter()).map(|(variant,pos)| gen_match_arm(ident,variant,pos));
+		let match_arms = poss.into_iter().map(|(variant,pos)| pos.gen_match_arm(ident,variant));
 		quote!{
 			#[automatically_derived]
 			impl #impl_generics ::core::convert::From<#ident #ty_generics> for #ty #where_clause{
@@ -164,7 +164,7 @@ pub fn gen_derive_try(item: syn::ItemEnum) -> TokenStream{
 	let ident = &item.ident;
 
 	let impls = unique_field_types(item.variants.iter()).into_iter().map(|(ty,poss)|{
-		let match_arms = poss.into_iter().map(|(variant,pos)| gen_match_arm(ident,variant,pos));
+		let match_arms = poss.into_iter().map(|(variant,pos)| pos.gen_match_arm(ident,variant));
 		quote!{
 			#[automatically_derived]
 			impl #impl_generics ::core::convert::TryFrom<#ident #ty_generics> for #ty #where_clause{
@@ -183,32 +183,22 @@ pub fn gen_derive_try(item: syn::ItemEnum) -> TokenStream{
 }
 
 #[cfg(feature = "attr_into")] use crate::util::try_tokenstream;
-#[cfg(feature = "attr_into")] use crate::util::parse::{CommaSeparated,Concat,ItemPrefix};
+#[cfg(feature = "attr_into")] use crate::util::parse::{Concat,Delimited,ItemPrefix};
 
 #[cfg(feature = "attr_into")]
 pub fn gen_attr_names(
-	CommaSeparated(params): CommaSeparated<syn::MetaList>,
+	Delimited(params): Delimited<Vec<syn::MetaList>>,
 	item: syn::ItemEnum
 ) -> TokenStream{
+	use crate::util;
 	use crate::util::replace_ty::replace_infer_ret;
-
-	pub fn is_option_ret(ty: &syn::ReturnType) -> bool{
-		if let syn::ReturnType::Type(_,ty) = ty{
-			if let syn::Type::Path(ref tp) = **ty{
-				if let Some(p) = tp.path.segments.last(){
-					return p.ident == "Option";
-				}
-			}
-		}
-		false
-	}
 
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
 
 	let fns = params.iter().map(|param|{
 		if param.path.is_ident("name"){
-			let Concat(ref field_ident,Concat(_,ItemPrefix(attrs,vis,mut sign))): Concat<syn::Ident,Concat<syn::Token![=>],ItemPrefix<syn::Signature>>> = try_tokenstream!(param.parse_args());
+			let Concat((ref field_ident,_,ItemPrefix(attrs,vis,mut sign))): Concat<(syn::Ident,syn::Token![=>],ItemPrefix<syn::Signature>)> = try_tokenstream!(param.parse_args());
 
 			let never_ty = syn::parse_quote!{!};
 			let ty = item.variants
@@ -218,10 +208,10 @@ pub fn gen_attr_names(
 			;
 			sign.output = replace_infer_ret(sign.output,ty);
 			let match_arms = item.variants.iter().filter_map(|variant|{
-				find_field_by_name(&variant.fields,None,field_ident).map(|(_,pos)| gen_match_arm(ident,variant,pos))
+				find_field_by_name(&variant.fields,None,field_ident).map(|(_,pos)| pos.gen_match_arm(ident,variant))
 			});
 
-			if is_option_ret(&sign.output){quote!{
+			if util::is_option_ret(&sign.output){quote!{
 				#( #attrs )* #vis #sign{
 					::core::option::Option::Some(match self{#( #match_arms )* _ => return ::core::option::Option::None})
 				}
@@ -231,14 +221,14 @@ pub fn gen_attr_names(
 				}
 			}}
 		}else if param.path.is_ident("ty"){
-			let Concat(ref ty,Concat(_,ItemPrefix(attrs,vis,mut sign))): Concat<syn::Type,Concat<syn::Token![=>],ItemPrefix<syn::Signature>>> = try_tokenstream!(param.parse_args());
+			let Concat((ref ty,_,ItemPrefix(attrs,vis,mut sign))): Concat<(syn::Type,syn::Token![=>],ItemPrefix<syn::Signature>)> = try_tokenstream!(param.parse_args());
 			sign.output = replace_infer_ret(sign.output,ty);
 
 			let match_arms = item.variants.iter().filter_map(|variant|{
-				find_field_by_type(&variant.fields,ty,iter::empty()).map(|pos| gen_match_arm(ident,variant,pos))
+				find_field_by_type(&variant.fields,ty,iter::empty()).map(|pos| pos.gen_match_arm(ident,variant))
 			});
 
-			if is_option_ret(&sign.output){quote!{
+			if util::is_option_ret(&sign.output){quote!{
 				#( #attrs )* #vis #sign{
 					::core::option::Option::Some(match self{#( #match_arms )* _ => return ::core::option::Option::None})
 				}
@@ -248,7 +238,7 @@ pub fn gen_attr_names(
 				}
 			}}
 		}else if param.path.is_ident("index"){
-			let Concat(ref field_index,Concat(_,ItemPrefix(attrs,vis,mut sign))): Concat<syn::Index,Concat<syn::Token![=>],ItemPrefix<syn::Signature>>> = try_tokenstream!(param.parse_args());
+			let Concat((ref field_index,_,ItemPrefix(attrs,vis,mut sign))): Concat<(syn::Index,syn::Token![=>],ItemPrefix<syn::Signature>)> = try_tokenstream!(param.parse_args());
 
 			let never_ty = syn::parse_quote!{!};
 			let ty = item.variants
@@ -258,10 +248,10 @@ pub fn gen_attr_names(
 			;
 			sign.output = replace_infer_ret(sign.output,ty);
 			let match_arms = item.variants.iter().filter_map(|variant|{
-				find_field_by_index(&variant.fields,field_index.index as usize).map(|(_,pos)| gen_match_arm(ident,variant,pos))
+				find_field_by_index(&variant.fields,field_index.index as usize).map(|(_,pos)| pos.gen_match_arm(ident,variant))
 			});
 
-			if is_option_ret(&sign.output){quote!{
+			if util::is_option_ret(&sign.output){quote!{
 				#( #attrs )* #vis #sign{
 					::core::option::Option::Some(match self{#( #match_arms )* _ => return ::core::option::Option::None})
 				}

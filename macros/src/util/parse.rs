@@ -2,14 +2,18 @@ use alloc::vec::Vec;
 use core::default::Default;
 use syn::parse::{Parse,ParseStream,Result};
 
-pub struct Concat<A,B>(pub A,pub B);
-impl<A: Parse,B: Parse> Parse for Concat<A,B>{
-	fn parse(input: ParseStream) -> Result<Self>{
-		let a = input.parse::<A>()?;
-		let b = input.parse::<B>()?;
-		Ok(Concat(a,b))
-	}
+pub struct Concat<T>(pub T);
+macro_rules! impl_parse_concat{
+	($head:ident $(,$tail:ident)*) => {
+		impl<$head: Parse $(,$tail: Parse)*> Parse for Concat<($head,$($tail,)*)>{
+			fn parse(input: ParseStream) -> Result<Self>{
+				Ok(Concat((input.parse::<$head>()?,$(input.parse::<$tail>()?,)*)))
+			}
+		}
+	};
 }
+impl_parse_concat!(A,B);
+impl_parse_concat!(A,B,C);
 
 pub struct Delimited<T>(pub T);
 macro_rules! impl_parse_delimited{
@@ -42,8 +46,7 @@ impl_parse_delimited!(A,B,C,D,E,F);
 impl_parse_delimited!(A,B,C,D,E,F,G);
 impl_parse_delimited!(A,B,C,D,E,F,G,H);
 
-pub struct CommaSeparated<T>(pub Vec<T>);
-impl<T: Parse> Parse for CommaSeparated<T>{
+impl<T: Parse> Parse for Delimited<Vec<T>>{
 	fn parse(input: ParseStream) -> Result<Self>{
 		let mut out = Vec::new();
 		out.push(input.parse()?);
@@ -51,9 +54,74 @@ impl<T: Parse> Parse for CommaSeparated<T>{
 			let _: syn::Token![,] = input.parse()?;
 			out.push(input.parse()?);
 		}
-		Ok(CommaSeparated(out))
+		Ok(Delimited(out))
 	}
 }
+
+pub struct DelimitedOpt<T,O>(pub T,pub O);
+macro_rules! impl_parse_delimited{
+	(@ty $ty:ident) => {
+		Option<$ty>
+	};
+	(@ty $ty:ident $(, $tys:ident)+ $(,)?) => {
+		Option<($ty,impl_parse_delimited!(@ty $($tys,)+))>
+	};
+
+	(@parse $input:ident , $ty:ident) => {
+		if $input.peek(syn::Token![,]){
+			let _: syn::Token![,] = $input.parse()?;
+			Some($input.parse::<$ty>()?)
+		}else{
+			None
+		}
+	};
+	(@parse $input:ident, $ty:ident $(, $tys:ident)+ $(,)?) => {
+		if $input.peek(syn::Token![,]){
+			let _: syn::Token![,] = $input.parse()?;
+			Some((
+				$input.parse::<$ty>()?,
+				impl_parse_delimited!(@parse $input , $($tys,)+)
+			))
+		}else{
+			None
+		}
+	};
+
+	($head:ident $(,$tail:ident)*  $(,?$opt_tail:ident)*) => {
+
+		impl<$head: Parse $(,$tail: Parse)* $(,$opt_tail: Parse)*> Parse for DelimitedOpt<($head,$($tail,)*),impl_parse_delimited!(@ty $($opt_tail),*)>{
+			fn parse(input: ParseStream) -> Result<Self>{
+				let req = (
+					input.parse::<$head>()?,
+					$(
+						{
+							let _: syn::Token![,] = input.parse()?;
+							input.parse::<$tail>()?
+						},
+					)*
+				);
+
+				let opt = impl_parse_delimited!(@parse input, $($opt_tail),*);
+
+				Ok(DelimitedOpt(req,opt))
+			}
+		}
+	};
+}
+impl_parse_delimited!(A,?B);
+impl_parse_delimited!(A,B,?C);
+
+/*impl<A: Parse,B: Parse> Parse for Delimited<(A,Option<B>)>{
+	fn parse(input: ParseStream) -> Result<Self>{Ok(Delimited((
+		input.parse::<A>()?,
+		if input.peek(syn::Token![,]){
+			let _: syn::Token![,] = input.parse()?;
+			Some(input.parse()?)
+		}else{
+			None
+		}
+	)))}
+}*/
 
 /// An identifier preceded by optional attributes and an optional visibility.
 /// Should loosely follow the initial parts of `syn::ItemConst` and `syn::TraitItemConst`.

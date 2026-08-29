@@ -25,7 +25,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 
 #[cfg(feature = "attr_variants_array")]
 pub fn gen_attr(
-	ItemPrefix(attrs,vis,Concat(ref kind,const_ident)): ItemPrefix<Concat<ItemKind,syn::Ident>>,
+	ItemPrefix(attrs,vis,Concat((ref kind,const_ident))): ItemPrefix<Concat<(ItemKind,syn::Ident)>>,
 	item: syn::ItemEnum
 ) -> TokenStream{
 	let kind = assert_tokenstream_itemkind!(kind,ItemKind::Const(..),&ItemKind::r#const());

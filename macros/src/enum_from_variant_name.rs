@@ -40,7 +40,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream {
 
 #[cfg(feature = "attr_from_variant_name")]
 pub fn gen_attr(
-	ItemPrefix(attrs,vis,Concat(kind,fn_ident)): ItemPrefix<Concat<ItemKind,syn::Ident>>,
+	ItemPrefix(attrs,vis,Concat((kind,fn_ident))): ItemPrefix<Concat<(ItemKind,syn::Ident)>>,
 	item: syn::ItemEnum
 ) -> TokenStream{
 	let kind = kind.or(ItemKind::r#fn());
@@ -67,7 +67,7 @@ pub fn gen_attr(
 
 #[cfg(feature = "attr_from_variant_name")]
 pub fn gen_attr_default(
-	Delimited((ItemPrefix(attrs,vis,Concat(kind,fn_ident)),default)): Delimited<(ItemPrefix<Concat<ItemKind,syn::Ident>>,syn::Expr)>,
+	Delimited((ItemPrefix(attrs,vis,Concat((kind,fn_ident))),default)): Delimited<(ItemPrefix<Concat<(ItemKind,syn::Ident)>>,syn::Expr)>,
 	item: syn::ItemEnum
 ) -> TokenStream{
 	let kind = kind.or(ItemKind::r#fn());

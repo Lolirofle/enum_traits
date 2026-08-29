@@ -14,13 +14,13 @@ pub fn gen_derive(mut item: syn::ItemEnum) -> TokenStream{
 	//Generation
 
 	let fns = item.variants.iter_mut().map(|variant|{
-		let params = util::try_tokenstream!(util::attr_params!(enum_is,variant.attrs , exclude ; name: ItemPrefix<Concat<ItemKind,syn::Ident>>));
+		let params = util::try_tokenstream!(util::attr_params!(enum_is,variant.attrs , exclude ; name: ItemPrefix<Concat<(ItemKind,syn::Ident)>>));
 		if params.exclude{
 			return quote!{};
 		}
 
 		let (fn_attrs,fn_vis,fn_kind,fn_ident) = match params.name{
-			Some(ItemPrefix(attrs,ref vis,Concat(kind,ident))) => {
+			Some(ItemPrefix(attrs,ref vis,Concat((kind,ident)))) => {
 				let kind = assert_tokenstream_itemkind!(kind,ItemKind::Fn(..),ItemKind::const_fn());
 				(&quote!( #( #attrs )* ),vis,kind,ident)
 			},

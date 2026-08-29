@@ -4,13 +4,13 @@ use enum_traits_macros::*;
 
 #[test]
 fn empty(){
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum X{}
 }
 
 #[test]
 fn fields(){
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum Fields<'a,X,Y>{
 		A(i8),
 		B(i32),
@@ -50,7 +50,7 @@ fn fields(){
 //Enum has three params but variants uses only one => struct gets only that.
 #[test]
 fn pruned_generics(){
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum X<'a,T,U>{
 		OnlyT(T),
 		OnlyU(U),
@@ -68,7 +68,7 @@ fn pruned_generics(){
 //X of params in the generated struct follows the enum's declaration, not the order they first appear in the fields.
 #[test]
 fn param_order_is_declaration_order(){
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum X<'a,T,U>{
 		Reordered(U,T,&'a str),
 	}
@@ -79,7 +79,7 @@ fn param_order_is_declaration_order(){
 
 #[test]
 fn const_generics(){
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum X<const N: usize,T>{
 		Arr([u8; N]),
 		Val(T),
@@ -97,7 +97,7 @@ fn const_generics(){
 fn where_bounds(){
 	struct S;
 
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum X<T> where T: Copy{
 		V(T),
 	}
@@ -109,7 +109,7 @@ fn where_bounds(){
 fn param_bounds(){
 	struct S;
 
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum X<T: ?Sized + 'static>{
 		V(&'static T),
 	}
@@ -121,7 +121,7 @@ fn param_bounds(){
 fn phantom_data(){
 	use core::marker::PhantomData;
 
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum X<T,U>{
 		A(T,PhantomData<U>),
 		B(PhantomData<T>),
@@ -134,9 +134,9 @@ fn phantom_data(){
 
 #[test]
 fn rename(){
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum Renamed{
-		#[enum_field_structs(name(Rep))]
+		#[enum_field_struct(name(Rep))]
 		Original(i8),
 	}
 	let r: Rep = Rep(7i8);
@@ -148,9 +148,9 @@ fn vis_rename(){
 	mod inner{
 		use super::*;
 
-		#[transform_enum_field_structs]
+		#[transform_enum_field_struct]
 		pub enum E{
-			#[enum_field_structs(name(pub RenamedPub))]
+			#[enum_field_struct(name(pub RenamedPub))]
 			A(pub i8),
 		}
 	}
@@ -159,9 +159,9 @@ fn vis_rename(){
 
 #[test]
 fn attr_rename(){
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum X{
-		#[enum_field_structs(name(#[derive(Debug,Clone,PartialEq,Eq)] Renamed))]
+		#[enum_field_struct(name(#[derive(Debug,Clone,PartialEq,Eq)] Renamed))]
 		A(i8),
 	}
 	let _ = X::A(Renamed(5i8));
@@ -169,9 +169,9 @@ fn attr_rename(){
 
 #[test]
 fn attrs_and_visibility_together(){
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum X{
-		#[enum_field_structs(name(#[derive(Debug)] pub Renamed))]
+		#[enum_field_struct(name(#[derive(Debug)] pub Renamed))]
 		A(i8),
 	}
 	let _ = X::A(Renamed(1));
@@ -179,9 +179,9 @@ fn attrs_and_visibility_together(){
 
 #[test]
 fn rename_record_variant(){
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum X{
-		#[enum_field_structs(name(MyRec))]
+		#[enum_field_struct(name(MyRec))]
 		A{x: i8,y: i16},
 	}
 	let r = MyRec{x: 1,y: 2};
@@ -190,9 +190,9 @@ fn rename_record_variant(){
 
 #[test]
 fn rename_unit_variant(){
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum X{
-		#[enum_field_structs(name(UnitVar))]
+		#[enum_field_struct(name(UnitVar))]
 		A,
 	}
 	let v: UnitVar = UnitVar;
@@ -201,9 +201,9 @@ fn rename_unit_variant(){
 
 #[test]
 fn excluded_variant_keeps_fields(){
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum E{
-		#[enum_field_structs(exclude)]
+		#[enum_field_struct(exclude)]
 		Kept(i8,i16),
 		Wrapped(u8,u16),
 	}
@@ -213,9 +213,9 @@ fn excluded_variant_keeps_fields(){
 
 #[test]
 fn excluded_record_variant(){
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum X{
-		#[enum_field_structs(exclude)]
+		#[enum_field_struct(exclude)]
 		Kept{x: i8},
 		Wrapped{x: i8},
 	}
@@ -225,9 +225,9 @@ fn excluded_record_variant(){
 
 #[test]
 fn excluded_unit_variant(){
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum U{
-		#[enum_field_structs(exclude)]
+		#[enum_field_struct(exclude)]
 		Kept,
 		Wrapped,
 	}
@@ -238,9 +238,9 @@ fn excluded_unit_variant(){
 #[test]
 fn exclude_prevents_struct_gen(){
 	struct A;
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum X{
-		#[enum_field_structs(exclude)]
+		#[enum_field_struct(exclude)]
 		A(i8),
 		B(u8),
 	}
@@ -252,14 +252,14 @@ fn exclude_prevents_struct_gen(){
 fn raw_ident(){
 	#![allow(non_camel_case_types,nonstandard_style)]
 
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum X{r#type(i8)}
 	let _ = X::r#type(r#type(1));
 }
 
 #[test]
 fn zero_sized_field(){
-	#[transform_enum_field_structs]
+	#[transform_enum_field_struct]
 	enum X{A(())}
     let _ = X::A(A(()));
 }
