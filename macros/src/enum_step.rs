@@ -50,7 +50,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 	let next_body = gen_next_fn_body(item.variants.iter());
 	quote!{
 		#[automatically_derived]
-		impl #impl_generics ::enum_traits::Step for #ident #ty_generics #where_clause{
+		impl #impl_generics ::enum_traits::EnumStep for #ident #ty_generics #where_clause{
 			#[inline]
 			#[allow(unreachable_code)]
 			fn next(self) -> ::core::option::Option<Self>{

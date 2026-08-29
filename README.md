@@ -8,21 +8,21 @@ These crates contain procedural macros that add functionality to, extract additi
 
 The following derives in `enum_traits_macros` implements traits, both from the standard libraries and from `enum_traits`:
 
-- EnumLen (impl enum_traits::Len)
-- EnumEnds (impl enum_traits::Ends)
-- EnumToIndex (impl enum_traits::ToIndex)
-- EnumFromIndex (impl enum_traits::FromIndex)
-- EnumIndex (impl enum_traits::Index)
-- EnumIterable (impl enum_traits::Iterable)
+- EnumLen (impl enum_traits::EnumLen)
+- EnumEnds (impl enum_traits::EnumEnds)
+- EnumToIndex (impl enum_traits::EnumToIndex)
+- EnumFromIndex (impl enum_traits::EnumFromIndex)
+- EnumIndex (impl enum_traits::EnumIndex)
+- EnumIterable (impl enum_traits::EnumIterable)
 - EnumIterator (impl core::iter::Iterator)
-- EnumVariantName (impl enum_traits::VariantName)
+- EnumVariantName (impl enum_traits::EnumVariantName)
 - EnumFromVariantName (impl core::convert::FromStr)
-- EnumTag (impl enum_traits::Tag)
+- EnumTag (impl enum_traits::EnumTag)
 - EnumIs
 - EnumFrom (impl core::convert::From)
-- EnumStep (impl enum_traits::Step)
-- EnumFromDiscriminant (impl enum_traits::FromDiscriminant)
-- EnumVariantsArray (impl enum_traits::VariantsArray)
+- EnumStep (impl enum_traits::EnumStep)
+- EnumFromDiscriminant (impl enum_traits::EnumFromDiscriminant)
+- EnumVariantsArray (impl enum_traits::EnumVariantsArray)
 - EnumFieldStruct
 - EnumInto (impl core::convert::Into)
 - EnumTryInto (impl core::convert::TryInto)
@@ -31,18 +31,18 @@ The following derives in `enum_traits_macros` implements traits, both from the s
 
 The following traits in `enum_traits` can be automatically derived using the "derives" above:
 
-- Index
-- FromIndex
-- ToIndex
-- Len
-- Ends
-- Iterable
-- VariantName
-- Tag
-- Step
-- IntoDiscriminant
-- FromDiscriminant
-- VariantsArray
+- EnumIndex
+- EnumFromIndex
+- EnumToIndex
+- EnumLen
+- EnumEnds
+- EnumIterable
+- EnumVariantName
+- EnumTag
+- EnumStep
+- EnumIntoDiscriminant
+- EnumFromDiscriminant
+- EnumVariantsArray
 
 ### Attributes ###
 
@@ -137,7 +137,7 @@ fn f2(){
 	});
 
 	//From EnumEnds
-	assert!(match <Enum as Ends>::LAST{
+	assert!(match <Enum as EnumEnds>::LAST{
 		Enum::VariantC => true,
 		_ => false
 	});

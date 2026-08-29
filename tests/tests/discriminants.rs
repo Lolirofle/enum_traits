@@ -14,6 +14,6 @@ enum SomeDiscriminants{
 
 #[test]
 fn len(){
-	assert_eq!(6,<Discriminants as Len>::LEN);
-	assert_eq!(6,<SomeDiscriminants as Len>::LEN);
+	assert_eq!(6,<Discriminants as EnumLen>::LEN);
+	assert_eq!(6,<SomeDiscriminants as EnumLen>::LEN);
 }

@@ -21,9 +21,9 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 
 	quote!{
 		#[automatically_derived]
-		impl #impl_generics ::enum_traits::FromIndex for #ident #ty_generics #where_clause{
+		impl #impl_generics ::enum_traits::EnumFromIndex for #ident #ty_generics #where_clause{
 			#[inline]
-			fn from_index(index: <Self as ::enum_traits::Index>::Type) -> ::core::option::Option<Self>{
+			fn from_index(index: <Self as ::enum_traits::EnumIndex>::Type) -> ::core::option::Option<Self>{
 				::core::option::Option::Some(match index{
 					#( #match_arms )*
 					_ => return ::core::option::Option::None
@@ -31,7 +31,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 			}
 
 			#[inline]
-			unsafe fn from_index_unchecked(index: <Self as ::enum_traits::Index>::Type) -> Self{
+			unsafe fn from_index_unchecked(index: <Self as ::enum_traits::EnumIndex>::Type) -> Self{
 				match index{
 					#( #match_arms2 )*
 					_ => unreachable!()

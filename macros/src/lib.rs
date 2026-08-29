@@ -53,7 +53,7 @@ fn attr_enum<P,F>(attr: TokenStream,input: TokenStream,gen_derive: F) -> TokenSt
 	TokenStream::from(gen_derive(p,item))
 }
 
-/// Implements [`enum_traits::Len`](../enum_traits/trait.Len.html).
+/// Implements [`enum_traits::EnumLen`](../enum_traits/trait.EnumLen.html).
 ///
 /// The length is computed from the number of variants in the enum item.
 ///
@@ -77,7 +77,7 @@ fn attr_enum<P,F>(attr: TokenStream,input: TokenStream,gen_derive: F) -> TokenSt
 ///
 /// enum Enum{A,B,C,D,E,F}
 ///
-/// impl Len for Enum{
+/// impl EnumLen for Enum{
 /// 	const LEN: usize = 6;
 /// }
 ///
@@ -123,7 +123,7 @@ pub fn impl_enum_len(attr: TokenStream,item: TokenStream) -> TokenStream{
 	attr_enum(attr,item,enum_len::gen_attr)
 }
 
-/// Implements [`enum_traits::Ends`](../enum_traits/trait.Ends.html).
+/// Implements [`enum_traits::EnumEnds`](../enum_traits/trait.EnumEnds.html).
 ///
 /// The ends are computed by using the first and the last variant of the enum in the defined order.
 ///
@@ -151,7 +151,7 @@ pub fn impl_enum_len(attr: TokenStream,item: TokenStream) -> TokenStream{
 ///
 /// enum Enum{A,B,C,D,E,F}
 ///
-/// impl Ends for Enum{
+/// impl EnumEnds for Enum{
 /// 	const FIRST: Self = Enum::A;
 /// 	const LAST: Self = Enum::F;
 /// }
@@ -240,7 +240,7 @@ pub fn impl_enum_last(attr: TokenStream,item: TokenStream) -> TokenStream{
 	attr_enum(attr,item,enum_ends::gen_attr_last)
 }
 
-/// Implements [`enum_traits::ToIndex`](../enum_traits/trait.ToIndex.html).
+/// Implements [`enum_traits::EnumToIndex`](../enum_traits/trait.EnumToIndex.html).
 ///
 /// A variant's index is computed by its index in the defined order of the enum item.
 ///
@@ -283,11 +283,11 @@ pub fn impl_enum_last(attr: TokenStream,item: TokenStream) -> TokenStream{
 /// 	F{f: u64},
 /// }
 ///
-/// impl Index for Enum{
+/// impl EnumIndex for Enum{
 /// 	type Type = u8;
 /// }
-/// impl ToIndex for Enum{
-/// 	fn into_index(self) -> <Self as Index>::Type{
+/// impl EnumToIndex for Enum{
+/// 	fn into_index(self) -> <Self as EnumIndex>::Type{
 /// 		match self{
 /// 			Enum::A     => 0,
 /// 			Enum::B(..) => 1,
@@ -297,7 +297,7 @@ pub fn impl_enum_last(attr: TokenStream,item: TokenStream) -> TokenStream{
 /// 			Enum::F{..} => 5,
 /// 		}
 /// 	}
-/// 	fn index(&self) -> <Self as Index>::Type{
+/// 	fn index(&self) -> <Self as EnumIndex>::Type{
 /// 		match self{
 /// 			&Enum::A     => 0,
 /// 			&Enum::B(..) => 1,
@@ -377,7 +377,7 @@ pub fn impl_enum_to_index(attr: TokenStream,item: TokenStream) -> TokenStream{
 	attr_enum(attr,item,enum_to_index::gen_attr)
 }
 
-/// Implements [`enum_traits::FromIndex`](../enum_traits/trait.FromIndex.html).
+/// Implements [`enum_traits::EnumFromIndex`](../enum_traits/trait.EnumFromIndex.html).
 ///
 /// A variant's index is computed by its index in the defined order of the enum item.
 ///
@@ -407,11 +407,11 @@ pub fn impl_enum_to_index(attr: TokenStream,item: TokenStream) -> TokenStream{
 ///
 /// enum Enum{A,B,C,D,E,F}
 ///
-/// impl Index for Enum{
+/// impl EnumIndex for Enum{
 /// 	type Type = u8;
 /// }
-/// impl FromIndex for Enum {
-/// 	fn from_index(index: <Self as Index>::Type) -> Option<Self>{
+/// impl EnumFromIndex for Enum {
+/// 	fn from_index(index: <Self as EnumIndex>::Type) -> Option<Self>{
 /// 		Some(match index{
 /// 			 0 => Enum::A,
 /// 			 1 => Enum::B,
@@ -422,7 +422,7 @@ pub fn impl_enum_to_index(attr: TokenStream,item: TokenStream) -> TokenStream{
 /// 			 _ => return None,
 /// 		})
 /// 	}
-/// 	unsafe fn from_index_unchecked(index: <Self as Index>::Type) -> Self{
+/// 	unsafe fn from_index_unchecked(index: <Self as EnumIndex>::Type) -> Self{
 /// 		match index{
 /// 			0 => Enum::A,
 /// 			1 => Enum::B,
@@ -542,9 +542,9 @@ pub fn impl_enum_from_index(attr: TokenStream,item: TokenStream) -> TokenStream{
 	attr_enum(attr,item,enum_from_index::gen_attr)
 }
 
-/// Implements [`enum_traits::Index`](../enum_traits/trait.Index.html).
+/// Implements [`enum_traits::EnumIndex`](../enum_traits/trait.EnumIndex.html).
 ///
-/// [`enum_traits::Index::Type`](../enum_traits/trait.Index.html#associatedtype.Type) is computed by the smallest unsigned integer type fitting the number of variants minus one.
+/// [`enum_traits::EnumIndex::Type`](../enum_traits/trait.EnumIndex.html#associatedtype.Type) is computed by the smallest unsigned integer type fitting the number of variants minus one.
 ///
 /// # Requirements
 ///
@@ -577,15 +577,15 @@ pub fn impl_enum_from_index(attr: TokenStream,item: TokenStream) -> TokenStream{
 /// #[repr(u64)]
 /// enum Enum3{A,B,C,D,E,F}
 ///
-/// impl Index for Enum{
+/// impl EnumIndex for Enum{
 /// 	type Type = u8;
 /// }
 ///
-/// impl Index for Enum2{
+/// impl EnumIndex for Enum2{
 /// 	type Type = u8;
 /// }
 ///
-/// impl Index for Enum3{
+/// impl EnumIndex for Enum3{
 /// 	type Type = u8;
 /// }
 ///
@@ -597,10 +597,10 @@ pub fn derive_EnumIndex(input: TokenStream) -> TokenStream{
 	derive_enum(input,enum_index::gen_derive)
 }
 
-/// Creates a struct representing the iterator state and implements [`enum_traits::Iterable`](../enum_traits/trait.Iterable.html).
+/// Creates a struct representing the iterator state and implements [`enum_traits::EnumIterable`](../enum_traits/trait.EnumIterable.html).
 ///
 /// A struct named `<name of Self> + "Iter"` will be generated with the same visibility as `Self`.
-/// This struct will then implement [`core::iter::Iterator`] and [`core::iter::Iterator::Item`] will be assigned to it when implementing [`enum_traits::Iterable`](../enum_traits/trait.Iterable.html) for `Self`.
+/// This struct will then implement [`core::iter::Iterator`] and [`core::iter::Iterator::Item`] will be assigned to it when implementing [`enum_traits::EnumIterable`](../enum_traits/trait.EnumIterable.html) for `Self`.
 ///
 /// # Requirements
 /// - The derived item is an enum.
@@ -613,49 +613,49 @@ pub fn derive_EnumIndex(input: TokenStream) -> TokenStream{
 /// use enum_traits_macros::*;
 ///
 /// #[derive(EnumIterable)]
-/// enum Enum{A,B,C,D,E,F}
+/// enum Choices{A,B,C,D,E,F}
 /// ```
 /// automatically expands to the following:
 /// ```rust
 /// use enum_traits::*;
 ///
-/// enum Enum{A,B,C,D,E,F}
+/// enum Choices{A,B,C,D,E,F}
 ///
-/// struct EnumIterable(pub Option<Enum>);
+/// struct ChoicesIterable(pub Option<Choices>);
 ///
-/// impl Iterable for Enum{
-/// 	type Iter = EnumIterable;
+/// impl EnumIterable for Choices{
+/// 	type Iter = ChoicesIterable;
 ///
-/// 	fn variants() -> Self::Iter { EnumIterable(None) }
+/// 	fn variants() -> Self::Iter { ChoicesIterable(None) }
 /// }
 ///
-/// impl Iterator for EnumIterable{
-/// 	type Item = Enum;
+/// impl Iterator for ChoicesIterable{
+/// 	type Item = Choices;
 ///
 /// 	fn next(&mut self) -> Option<Self::Item>{
 /// 		Some(match &self.0{
 /// 			&None => {
-/// 				self.0 = Some(Enum::A);
-/// 				Enum::A }
-/// 			&Some(Enum::A) => {
-/// 				self.0 = Some(Enum::B);
-/// 				Enum::B
+/// 				self.0 = Some(Choices::A);
+/// 				Choices::A }
+/// 			&Some(Choices::A) => {
+/// 				self.0 = Some(Choices::B);
+/// 				Choices::B
 /// 			}
-/// 			&Some(Enum::B) => {
-/// 				self.0 = Some(Enum::C);
-/// 				Enum::C
+/// 			&Some(Choices::B) => {
+/// 				self.0 = Some(Choices::C);
+/// 				Choices::C
 /// 			}
-/// 			&Some(Enum::C) => {
-/// 				self.0 = Some(Enum::D);
-/// 				Enum::D
+/// 			&Some(Choices::C) => {
+/// 				self.0 = Some(Choices::D);
+/// 				Choices::D
 /// 			}
-/// 			&Some(Enum::D) => {
-/// 				self.0 = Some(Enum::E);
-/// 				Enum::E
+/// 			&Some(Choices::D) => {
+/// 				self.0 = Some(Choices::E);
+/// 				Choices::E
 /// 			}
-/// 			&Some(Enum::E) => {
-/// 				self.0 = Some(Enum::F);
-/// 				Enum::F
+/// 			&Some(Choices::E) => {
+/// 				self.0 = Some(Choices::F);
+/// 				Choices::F
 /// 			}
 /// 			_ => return None,
 /// 		})
@@ -677,7 +677,7 @@ pub fn derive_EnumIterable(input: TokenStream) -> TokenStream{derive_enum(input,
 #[proc_macro_derive(EnumIterator)]
 pub fn derive_EnumIterator(input: TokenStream) -> TokenStream{derive_enum(input,enum_iterator::gen_derive)}
 
-/// Implements [`enum_traits::VariantName`](../enum_traits/trait.VariantName.html).
+/// Implements [`enum_traits::EnumVariantName`](../enum_traits/trait.EnumVariantName.html).
 ///
 /// The names are generated from the variant names.
 ///
@@ -720,7 +720,7 @@ pub fn derive_EnumIterator(input: TokenStream) -> TokenStream{derive_enum(input,
 /// 	F{f: u64},
 /// }
 ///
-/// impl VariantName for Enum{
+/// impl EnumVariantName for Enum{
 /// 	fn variant_name(&self) -> &'static str{
 /// 		match self{
 /// 			&Enum::A     => "A",
@@ -989,13 +989,13 @@ pub fn impl_enum_from_variant_name_default(attr: TokenStream,item: TokenStream) 
 	attr_enum(attr,item,enum_from_variant_name::gen_attr_default)
 }
 
-/// Implements [`enum_traits::Tag`](../enum_traits/trait.Tag.html).
+/// Implements [`enum_traits::EnumTag`](../enum_traits/trait.EnumTag.html).
 ///
-/// If there is no [`enum_tag`](fn@enum_tag) attribute on the derived enum, an enum named `<name of Self> + "Tag"` with only unit variants is automatically created from the derived enum.
-/// The unit variant enum will be assigned to [`enum_traits::Tag::Tag`](../enum_traits/trait.Tag.html#associatedtype.Tag) when implementing [`enum_traits::Tag`](../enum_traits/trait.Tag.html) for `Self` with the following defaults:
+/// If there is no [`enum_tag`](fn@enum_tag) attribute on the derived enum, an enum named `<name of Self> + "EnumTag"` with only unit variants is automatically created from the derived enum.
+/// The unit variant enum will be assigned to [`enum_traits::EnumTag::EnumTag`](../enum_traits/trait.EnumTag.html#associatedtype.EnumTag) when implementing [`enum_traits::EnumTag`](../enum_traits/trait.EnumTag.html) for `Self` with the following defaults:
 /// - The default attributes on the tag enum is: `#[derive(Copy,Clone,Debug,PartialEq,Eq,Hash)]`).
 /// - The default visibility of the tag enum is the same as the original enum.
-/// - The default name of the tag enum is `<name of Self> + "Tag"`.
+/// - The default name of the tag enum is `<name of Self> + "EnumTag"`.
 ///
 /// # Arguments
 /// The optional supplemental attribute [`enum_tag`](fn@enum_tag) can specify options in the generated enum.
@@ -1003,14 +1003,14 @@ pub fn impl_enum_from_variant_name_default(attr: TokenStream,item: TokenStream) 
 /// # Requirements
 /// - The derived item is an enum.
 ///
-/// # Example
+/// # Example 1
 ///
 /// ```rust
 /// use enum_traits::*;
 /// use enum_traits_macros::*;
 ///
 /// #[derive(EnumTag)]
-/// enum Enum{
+/// enum Fields{
 /// 	A,
 /// 	B(u8),
 /// 	C{c: u16},
@@ -1019,22 +1019,70 @@ pub fn impl_enum_from_variant_name_default(attr: TokenStream,item: TokenStream) 
 /// 	F{f: u64},
 /// }
 ///
+/// assert_eq!(Fields::A.tag()       , FieldsTag::A);
+/// assert_eq!(Fields::B(0).tag()    , FieldsTag::B);
+/// assert_eq!(Fields::C{c: 1}.tag() , FieldsTag::C);
+/// assert_eq!(Fields::D.tag()       , FieldsTag::D);
+/// assert_eq!(Fields::E(2).tag()    , FieldsTag::E);
+/// assert_eq!(Fields::F{f: 3}.tag() , FieldsTag::F);
+/// ```
+/// automatically expands to the following:
+/// ```rust
+/// use enum_traits::*;
+///
+/// enum Fields{
+/// 	A,
+/// 	B(u8),
+/// 	C{c: u16},
+/// 	D,
+/// 	E(u32),
+/// 	F{f: u64},
+/// }
+///
+/// enum FieldsTag{A,B,C,D,E,F}
+///
+/// impl EnumTag for Fields{
+/// 	type Tag = FieldsTag;
+///
+/// 	fn into_tag(self) -> Self::Tag{
+/// 		match self {
+/// 			Fields::A     => FieldsTag::A,
+/// 			Fields::B(..) => FieldsTag::B,
+/// 			Fields::C{..} => FieldsTag::C,
+/// 			Fields::D     => FieldsTag::D,
+/// 			Fields::E(..) => FieldsTag::E,
+/// 			Fields::F{..} => FieldsTag::F,
+/// 		}
+/// 	}
+///
+/// 	fn tag(&self) -> Self::Tag{
+/// 		match self {
+/// 			&Fields::A     => FieldsTag::A,
+/// 			&Fields::B(..) => FieldsTag::B,
+/// 			&Fields::C{..} => FieldsTag::C,
+/// 			&Fields::D     => FieldsTag::D,
+/// 			&Fields::E(..) => FieldsTag::E,
+/// 			&Fields::F{..} => FieldsTag::F,
+/// 		}
+/// 	}
+/// }
+/// ```
+///
+/// # Example 2
+///
+/// ```rust
+/// use enum_traits::*;
+/// use enum_traits_macros::*;
+///
 /// #[derive(EnumTag)]
-/// #[enum_tag(name(#[deprecated] #[derive(Debug,Eq,PartialEq)] pub(crate) Enum2HasACustomName))]
-/// enum Enum2{
+/// #[enum_tag(name(#[deprecated] #[derive(Debug,Eq,PartialEq)] pub(crate) EnumHasACustomName))]
+/// enum Enum{
 /// 	A,
 /// 	B
 /// }
 ///
-/// assert_eq!(Enum::A.tag()       , EnumTag::A);
-/// assert_eq!(Enum::B(0).tag()    , EnumTag::B);
-/// assert_eq!(Enum::C{c: 1}.tag() , EnumTag::C);
-/// assert_eq!(Enum::D.tag()       , EnumTag::D);
-/// assert_eq!(Enum::E(2).tag()    , EnumTag::E);
-/// assert_eq!(Enum::F{f: 3}.tag() , EnumTag::F);
-///
-/// assert_eq!(Enum2::A.tag() , Enum2HasACustomName::A);
-/// assert_eq!(Enum2::B.tag() , Enum2HasACustomName::B);
+/// assert_eq!(Enum::A.tag() , EnumHasACustomName::A);
+/// assert_eq!(Enum::B.tag() , EnumHasACustomName::B);
 /// ```
 /// automatically expands to the following:
 /// ```rust
@@ -1042,68 +1090,32 @@ pub fn impl_enum_from_variant_name_default(attr: TokenStream,item: TokenStream) 
 ///
 /// enum Enum{
 /// 	A,
-/// 	B(u8),
-/// 	C{c: u16},
-/// 	D,
-/// 	E(u32),
-/// 	F{f: u64},
-/// }
-///
-/// enum EnumTag{A,B,C,D,E,F}
-///
-/// impl Tag for Enum{
-/// 	type Tag = EnumTag;
-///
-/// 	fn into_tag(self) -> Self::Tag{
-/// 		match self {
-/// 			Enum::A     => EnumTag::A,
-/// 			Enum::B(..) => EnumTag::B,
-/// 			Enum::C{..} => EnumTag::C,
-/// 			Enum::D     => EnumTag::D,
-/// 			Enum::E(..) => EnumTag::E,
-/// 			Enum::F{..} => EnumTag::F,
-/// 		}
-/// 	}
-///
-/// 	fn tag(&self) -> Self::Tag{
-/// 		match self {
-/// 			&Enum::A     => EnumTag::A,
-/// 			&Enum::B(..) => EnumTag::B,
-/// 			&Enum::C{..} => EnumTag::C,
-/// 			&Enum::D     => EnumTag::D,
-/// 			&Enum::E(..) => EnumTag::E,
-/// 			&Enum::F{..} => EnumTag::F,
-/// 		}
-/// 	}
-/// }
-///
-/// enum Enum2{
-/// 	A,
 /// 	B
 /// }
 ///
-/// #[deprecated] #[derive(Debug,Eq,PartialEq)] pub(crate) enum Enum2HasACustomName{A,B}
+/// #[deprecated] #[derive(Debug,Eq,PartialEq)] pub(crate) enum EnumHasACustomName{A,B}
 ///
-/// impl Tag for Enum2{
-/// 	type Tag = Enum2HasACustomName;
+/// impl EnumTag for Enum{
+/// 	type Tag = EnumHasACustomName;
 ///
 /// 	fn into_tag(self) -> Self::Tag{
 /// 		match self {
-/// 			Enum2::A => Enum2HasACustomName::A,
-/// 			Enum2::B => Enum2HasACustomName::B,
+/// 			Enum::A => EnumHasACustomName::A,
+/// 			Enum::B => EnumHasACustomName::B,
 /// 		}
 /// 	}
 ///
 /// 	fn tag(&self) -> Self::Tag{
 /// 		match self {
-/// 			&Enum2::A => Enum2HasACustomName::A,
-/// 			&Enum2::B => Enum2HasACustomName::B,
+/// 			&Enum::A => EnumHasACustomName::A,
+/// 			&Enum::B => EnumHasACustomName::B,
 /// 		}
 /// 	}
 /// }
 ///
 /// // <rest is omitted>
 /// ```
+
 #[cfg(feature = "derive_tag")]
 #[proc_macro_derive(EnumTag)]
 pub fn derive_EnumTag(input: TokenStream) -> TokenStream{derive_enum(input,enum_tag::gen_derive)}
@@ -1432,7 +1444,7 @@ pub fn derive_EnumIs(input: TokenStream) -> TokenStream{derive_enum(input,enum_i
 #[proc_macro_derive(EnumFrom,attributes(enum_from))]
 pub fn derive_EnumFrom(input: TokenStream) -> TokenStream{derive_enum(input,enum_from::gen_derive)}
 
-/// Implements [`enum_traits::Step`](../enum_traits/trait.Step.html).
+/// Implements [`enum_traits::EnumStep`](../enum_traits/trait.EnumStep.html).
 ///
 /// The next and previous functions are computed by using the variants of the enum in their defined order.
 ///
@@ -1466,7 +1478,7 @@ pub fn derive_EnumFrom(input: TokenStream) -> TokenStream{derive_enum(input,enum
 ///
 /// enum Enum{A,B,C,D}
 ///
-/// impl Step for Enum{
+/// impl EnumStep for Enum{
 /// 	fn next(self) -> Option<Self>{match self{
 /// 		Enum::A => Some(Enum::B),
 /// 		Enum::B => Some(Enum::C),
@@ -1639,11 +1651,11 @@ pub fn impl_enum_next(attr: TokenStream,item: TokenStream) -> TokenStream{
 	attr_enum(attr,item,enum_step::gen_attr_next)
 }
 
-/// Implements [`enum_traits::FromDiscriminant`](../enum_traits/trait.FromDiscriminant.html) for any discriminant type.
+/// Implements [`enum_traits::EnumFromDiscriminant`](../enum_traits/trait.EnumFromDiscriminant.html) for any discriminant type.
 ///
-/// The implementation is using pattern matching on the values of [`enum_traits::IntoDiscriminant`](../enum_traits/trait.IntoDiscriminant.html) and therefore requires an explicit `impl IntoDiscriminant` of the desired discriminant type.
+/// The implementation is using pattern matching on the values of [`enum_traits::EnumIntoDiscriminant`](../enum_traits/trait.EnumIntoDiscriminant.html) and therefore requires an explicit `impl EnumIntoDiscriminant` of the desired discriminant type.
 ///
-/// See [`enum_traits::impl_IntoDiscriminant_of_numeric`](../enum_traits/macro.impl_IntoDiscriminant_of_numeric.html) for a standard definition of [`IntoDiscriminant`](../enum_traits/trait.IntoDiscriminant.html).
+/// See [`enum_traits::impl_IntoDiscriminant_of_numeric`](../enum_traits/macro.impl_IntoDiscriminant_of_numeric.html) for a standard definition of [`EnumIntoDiscriminant`](../enum_traits/trait.EnumIntoDiscriminant.html).
 ///
 /// # Requirements
 /// - The derived item is an enum.
@@ -1683,8 +1695,8 @@ pub fn impl_enum_next(attr: TokenStream,item: TokenStream) -> TokenStream{
 /// 	D = 7,
 /// }
 ///
-/// impl<T> FromDiscriminant<T> for Enum where
-/// 	Self: IntoDiscriminant<T>,
+/// impl<T> EnumFromDiscriminant<T> for Enum where
+/// 	Self: EnumIntoDiscriminant<T>,
 /// 	T: PartialEq
 /// {
 /// 	#[inline]
@@ -1731,7 +1743,7 @@ pub fn impl_enum_next(attr: TokenStream,item: TokenStream) -> TokenStream{
 /// 	D = 7,
 /// }
 ///
-/// impl IntoDiscriminant<u8> for Enum{
+/// impl EnumIntoDiscriminant<u8> for Enum{
 /// 	#[inline(always)] fn into_discriminant(self) -> u8{self as u8}
 /// }
 ///
@@ -2054,7 +2066,7 @@ pub fn transform_enum_field_struct(attr: TokenStream,item: TokenStream) -> Token
 	attr_enum(attr,item,enum_field_struct::gen_attr)
 }
 
-/// Implements [`enum_traits::VariantsArray`](../enum_traits/trait.VariantsArray.html).
+/// Implements [`enum_traits::EnumVariantsArray`](../enum_traits/trait.EnumVariantsArray.html).
 ///
 /// The array is constructed by the variants in order.
 ///
@@ -2079,7 +2091,7 @@ pub fn transform_enum_field_struct(attr: TokenStream,item: TokenStream) -> Token
 ///
 /// enum Enum{A,B,C,D,E,F}
 ///
-/// impl VariantsArray for Enum{
+/// impl EnumVariantsArray for Enum{
 /// 	const VARIANTS: &'static [Self] = &[Self::A,Self::B,Self::C,Self::D,Self::E,Self::F];
 /// }
 ///

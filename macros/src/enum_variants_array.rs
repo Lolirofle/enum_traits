@@ -15,7 +15,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 
 	quote!{
 		#[automatically_derived]
-		impl #impl_generics ::enum_traits::VariantsArray for #ident #ty_generics #where_clause{
+		impl #impl_generics ::enum_traits::EnumVariantsArray for #ident #ty_generics #where_clause{
 			const VARIANTS: &'static [Self] = &[#( #contents )*];
 		}
 	}

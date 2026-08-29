@@ -65,14 +65,14 @@
 //! use enum_traits::*;
 //!
 //! #[derive(Debug,PartialEq,EnumIndex,EnumToIndex,EnumLen,EnumVariantName,EnumIs,EnumFrom,EnumTag)]
-//! enum Enum<'l,T: ?Sized,const LEN: usize,I> where I: Iterator<Item = T>{
+//! enum En<'l,T: ?Sized,const LEN: usize,I> where I: Iterator<Item = T>{
 //! 	None,
 //! 	List([&'l T; LEN]),
 //! 	NonEmpty(&'l T,I),
 //! 	Join{first: I , middle: &'l T , last: I},
 //! }
 //!
-//! type E = Enum<'static,u8,3,::core::ops::Range<u8>>;
+//! type E = En<'static,u8,3,::core::ops::Range<u8>>;
 //!
 //! //Functions based on a variant's position.
 //! assert_eq!(E::None.into_index()                , 0);
@@ -90,8 +90,8 @@
 //! assert_eq!(E::from((&1,2..3))                  , E::NonEmpty(&1,2..3));
 //!
 //! //Fieldless version of an enum.
-//! assert_eq!(E::List([&1,&2,&3]).tag()           , EnumTag::List);
-//! assert_eq!(E::NonEmpty(&1,2..3).tag()          , EnumTag::NonEmpty);
+//! assert_eq!(E::List([&1,&2,&3]).tag()           , EnTag::List);
+//! assert_eq!(E::NonEmpty(&1,2..3).tag()          , EnTag::NonEmpty);
 //!
 //! ```
 
@@ -104,15 +104,15 @@ pub use enum_traits_macros::*;
 
 /// Represents the type used for indexing the variants of an enum item type.
 ///
-/// This is primarily used by [`FromIndex`] and [`ToIndex`].
+/// This is primarily used by [`EnumFromIndex`] and [`EnumToIndex`].
 ///
 /// Derive this trait for an enum automatically using [`#[derive(EnumIndex)]`][enum_traits_macros::EnumIndex].
 ///
 /// # Requirements
 ///
-/// - [`Type`][`Index::Type`] should be a primitive unsigned integer type.
-/// - The number of variants of `Self` should be lesser than or equal the number of values of [`Type`][`Index::Type`].
-pub trait Index{
+/// - [`Type`][`EnumIndex::Type`] should be a primitive unsigned integer type.
+/// - The number of variants of `Self` should be lesser than or equal the number of values of [`Type`][`EnumIndex::Type`].
+pub trait EnumIndex{
 	/// Type used as an index for the variants of `Self`.
 	type Type;
 }
@@ -219,12 +219,12 @@ pub trait Index{
 /// 	assert_eq!(T::Z,unsafe{T::from_index_unchecked(24)});
 /// }
 /// ```
-pub trait FromIndex: Index + Sized{
+pub trait EnumFromIndex: EnumIndex + Sized{
 	/// Tries to construct `Self` from an index based on the variants' defined order.
-	fn from_index(index: <Self as Index>::Type) -> Option<Self>;
+	fn from_index(index: <Self as EnumIndex>::Type) -> Option<Self>;
 
 	/// Constructs `Self` from an index based on the variants' defined order.
-	unsafe fn from_index_unchecked(index: <Self as Index>::Type) -> Self;
+	unsafe fn from_index_unchecked(index: <Self as EnumIndex>::Type) -> Self;
 }
 
 /// Indices based on an order on the variants of an enum type.
@@ -354,12 +354,12 @@ pub trait FromIndex: Index + Sized{
 /// 	assert_eq!(7,T::H.into_index());
 /// }
 /// ```
-pub trait ToIndex: Index{
-	/// Index in the defined order of an enum
-	fn into_index(self) -> <Self as Index>::Type;
+pub trait EnumToIndex: EnumIndex{
+	/// EnumIndex in the defined order of an enum
+	fn into_index(self) -> <Self as EnumIndex>::Type;
 
-	/// Index in the defined order of an enum
-	fn index(&self) -> <Self as Index>::Type;
+	/// EnumIndex in the defined order of an enum
+	fn index(&self) -> <Self as EnumIndex>::Type;
 }
 
 /// Number of variants in an enum type.
@@ -403,7 +403,7 @@ pub trait ToIndex: Index{
 /// 	assert_eq!(8,T::LEN);
 /// }
 /// ```
-pub trait Len{
+pub trait EnumLen{
 	/// Number of variants in an item.
 	const LEN: usize;
 }
@@ -470,7 +470,7 @@ pub trait Len{
 /// 	assert_eq!(T::H , T::LAST);
 /// }
 /// ```
-pub trait Ends: Sized{
+pub trait EnumEnds: Sized{
 	/// The first variant in a defined order of the enum.
 	const FIRST: Self;
 
@@ -481,7 +481,7 @@ pub trait Ends: Sized{
 /// An enum item type that have a corresponding iterator iterating over all variants.
 ///
 /// Derive this trait for an enum automatically using [`#[derive(EnumIterable)]`][enum_traits_macros::EnumIterable].
-pub trait Iterable{
+pub trait EnumIterable{
 	/// The type of the iterator
 	type Iter: Iterator<Item = Self>;
 
@@ -510,7 +510,7 @@ pub trait Iterable{
 /// assert_eq!(Enum::Cat(0).variant_name(), "Cat");
 /// assert_eq!(Enum::Robot{speed: 0.0}.variant_name(), "Robot");
 /// ```
-pub trait VariantName{
+pub trait EnumVariantName{
 	/// The name of the currently instantiated variant
 	fn variant_name(&self) -> &'static str;
 }
@@ -526,15 +526,15 @@ pub trait VariantName{
 /// use enum_traits_macros::*;
 ///
 /// #[derive(EnumTag)]
-/// enum Enum{
+/// enum E{
 /// 	Dog,
 /// 	Cat(i32),
 /// 	Robot{speed: f32},
 /// }
 ///
-/// assert_eq!(EnumTag::Dog  ,Enum::Dog.tag());
-/// assert_eq!(EnumTag::Cat  ,Enum::Cat(0).tag());
-/// assert_eq!(EnumTag::Robot,Enum::Robot{speed: 0.0}.tag());
+/// assert_eq!(ETag::Dog  ,E::Dog.tag());
+/// assert_eq!(ETag::Cat  ,E::Cat(0).tag());
+/// assert_eq!(ETag::Robot,E::Robot{speed: 0.0}.tag());
 /// ```
 ///
 /// # Expanded example
@@ -542,41 +542,41 @@ pub trait VariantName{
 /// ```rust
 /// use enum_traits::*;
 ///
-/// enum Enum{
+/// enum E{
 /// 	Dog,
 /// 	Cat(i32),
 /// 	Robot{speed: f32},
 /// }
 ///
-/// enum EnumTag{
+/// enum ETag{
 /// 	Dog,
 /// 	Cat,
 /// 	Robot,
 /// }
 ///
-/// impl Tag for Enum{
-/// 	type Tag = EnumTag;
+/// impl EnumTag for E{
+/// 	type Tag = ETag;
 ///
 /// 	fn into_tag(self) -> Self::Tag{
 /// 		match self {
-/// 			Enum::Dog       => EnumTag::Dog,
-/// 			Enum::Cat(..)   => EnumTag::Cat,
-/// 			Enum::Robot{..} => EnumTag::Robot,
+/// 			E::Dog       => ETag::Dog,
+/// 			E::Cat(..)   => ETag::Cat,
+/// 			E::Robot{..} => ETag::Robot,
 /// 		}
 /// 	}
 ///
 /// 	fn tag(&self) -> Self::Tag{
 /// 		match self {
-/// 			&Enum::Dog       => EnumTag::Dog,
-/// 			&Enum::Cat(..)   => EnumTag::Cat,
-/// 			&Enum::Robot{..} => EnumTag::Robot,
+/// 			&E::Dog       => ETag::Dog,
+/// 			&E::Cat(..)   => ETag::Cat,
+/// 			&E::Robot{..} => ETag::Robot,
 /// 		}
 /// 	}
 /// }
 ///
 /// // <rest is omitted>
 /// ```
-pub trait Tag{
+pub trait EnumTag{
 	type Tag;
 
 	/// The tag (unit variant) of the currently instantiated variant
@@ -646,7 +646,7 @@ pub trait Tag{
 /// 	assert_eq!(Some(T::F) , T::G.previous());
 /// }
 /// ```
-pub trait Step: Sized{
+pub trait EnumStep: Sized{
 	/// The next variant in a defined order of the enum.
 	fn next(self) -> Option<Self>;
 
@@ -666,23 +666,23 @@ pub trait Step: Sized{
 /// #[repr(u8)]
 /// pub enum Enum{A,B,C,D}
 ///
-/// impl IntoDiscriminant<u8> for Enum{
+/// impl EnumIntoDiscriminant<u8> for Enum{
 /// 	#[inline(always)] fn into_discriminant(self) -> u8{self as u8}
 /// }
 /// ```
-pub trait IntoDiscriminant<D>{
+pub trait EnumIntoDiscriminant<D>{
 	/// Converts a value of the enum to its discriminant value.
 	fn into_discriminant(self) -> D;
 }
 
-impl<T> IntoDiscriminant<mem::Discriminant<T>> for T{
+impl<T> EnumIntoDiscriminant<mem::Discriminant<T>> for T{
 	#[inline(always)]
 	fn into_discriminant(self) -> mem::Discriminant<T>{
 		mem::discriminant(&self)
 	}
 }
 
-/// Implements [`IntoDiscriminant`] for a numeric type using an `as`-cast.
+/// Implements [`EnumIntoDiscriminant`] for a numeric type using an `as`-cast.
 ///
 /// # Example
 ///
@@ -701,7 +701,7 @@ impl<T> IntoDiscriminant<mem::Discriminant<T>> for T{
 ///
 /// enum Enum{A,B,C}
 ///
-/// impl IntoDiscriminant<u8> for Enum{
+/// impl EnumIntoDiscriminant<u8> for Enum{
 /// 	#[inline(always)]
 /// 	fn into_discriminant(self) -> u8{
 /// 		self as u8
@@ -711,7 +711,7 @@ impl<T> IntoDiscriminant<mem::Discriminant<T>> for T{
 #[macro_export]
 macro_rules! impl_IntoDiscriminant_of_numeric{
 	($num:ty,$ty:ty) => {
-		impl ::enum_traits::IntoDiscriminant<$num> for $ty{
+		impl ::enum_traits::EnumIntoDiscriminant<$num> for $ty{
 			#[inline(always)]
 			fn into_discriminant(self) -> $num{
 				self as $num
@@ -739,7 +739,7 @@ macro_rules! impl_IntoDiscriminant_of_numeric{
 /// 	D = 7,
 /// }
 ///
-/// impl IntoDiscriminant<u8> for Enum{
+/// impl EnumIntoDiscriminant<u8> for Enum{
 /// 	#[inline(always)] fn into_discriminant(self) -> u8{self as u8}
 /// }
 ///
@@ -768,7 +768,7 @@ macro_rules! impl_IntoDiscriminant_of_numeric{
 /// 	E,
 /// }
 ///
-/// impl IntoDiscriminant<u8> for Enum{
+/// impl EnumIntoDiscriminant<u8> for Enum{
 /// 	#[inline(always)] fn into_discriminant(self) -> u8{self as u8}
 /// }
 ///
@@ -785,7 +785,7 @@ macro_rules! impl_IntoDiscriminant_of_numeric{
 /// assert_eq!(Enum::D , unsafe{Enum::from_discriminant_unchecked(Enum::D as u8)});
 /// assert_eq!(Enum::E , unsafe{Enum::from_discriminant_unchecked(Enum::E as u8)});
 /// ```
-pub trait FromDiscriminant<D>: Sized{
+pub trait EnumFromDiscriminant<D>: Sized{
 	/// Constructs a possible value of the enum from a discriminant value, returning `None` if it is not a discriminant value of the enum.
 	fn from_discriminant(d: D) -> Option<Self>;
 
@@ -813,7 +813,7 @@ pub trait FromDiscriminant<D>: Sized{
 ///
 /// assert_eq!([Enum::A,Enum::B,Enum::C,Enum::D] , Enum::VARIANTS);
 /// ```
-pub trait VariantsArray: Sized where Self: 'static{
+pub trait EnumVariantsArray: Sized where Self: 'static{
 	/// An array containing all the variants.
 	const VARIANTS: &'static [Self];
 }

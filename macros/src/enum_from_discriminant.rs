@@ -10,7 +10,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 		let mut generics = item.generics.clone();
 
 		let where_clause = generics.make_where_clause();
-		where_clause.predicates.push(syn::parse_quote!{ Self: ::enum_traits::IntoDiscriminant<#type_param> });
+		where_clause.predicates.push(syn::parse_quote!{ Self: ::enum_traits::EnumIntoDiscriminant<#type_param> });
 		where_clause.predicates.push(syn::parse_quote!{ #type_param: ::core::cmp::PartialEq });
 
 		let type_param: syn::TypeParam = type_param.clone().into();
@@ -24,7 +24,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 
 	fn variant_to_match_arm(ident: &syn::Ident,variant: &syn::Variant,type_param: &syn::Ident) -> TokenStream{
 		let variant_ident = &variant.ident;
-		quote! { n if n == <Self as ::enum_traits::IntoDiscriminant<#type_param>>::into_discriminant(#ident::#variant_ident) => #ident::#variant_ident }
+		quote! { n if n == <Self as ::enum_traits::EnumIntoDiscriminant<#type_param>>::into_discriminant(#ident::#variant_ident) => #ident::#variant_ident }
 	}
 
 	let match_arms1 = item.variants.iter().map(|variant| variant_to_match_arm(ident,variant,type_param));
@@ -32,7 +32,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 
 	quote!{
 		#[automatically_derived]
-		impl #impl_generics ::enum_traits::FromDiscriminant<#type_param> for #ident #ty_generics #where_clause{
+		impl #impl_generics ::enum_traits::EnumFromDiscriminant<#type_param> for #ident #ty_generics #where_clause{
 			#[inline]
 			fn from_discriminant(discriminant: #type_param) -> ::core::option::Option<Self>{
 				::core::option::Option::Some(match discriminant{

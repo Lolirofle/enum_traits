@@ -100,7 +100,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 		#unit_enum
 
 		#[automatically_derived]
-		impl #impl_generics ::enum_traits::Tag for #ident #ty_generics #where_clause{
+		impl #impl_generics ::enum_traits::EnumTag for #ident #ty_generics #where_clause{
 			type Tag = #unit_enum_ident;
 
 			#[inline]

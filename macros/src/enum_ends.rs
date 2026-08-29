@@ -19,12 +19,12 @@ fn enum_last_variant_ident<'i>(item: &'i syn::ItemEnum,error_ctx: &'static str) 
 pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 	let (impl_generics,ty_generics,where_clause) = item.generics.split_for_impl();
 	let ident = &item.ident;
-	let variant_first_ident = util::try_tokenstream!(enum_first_variant_ident(&item,"derive(Ends)"));
-	let variant_last_ident  = util::try_tokenstream!(enum_last_variant_ident(&item,"derive(Ends)"));
+	let variant_first_ident = util::try_tokenstream!(enum_first_variant_ident(&item,"derive(EnumEnds)"));
+	let variant_last_ident  = util::try_tokenstream!(enum_last_variant_ident(&item,"derive(EnumEnds)"));
 
 	quote!{
 		#[automatically_derived]
-		impl #impl_generics ::enum_traits::Ends for #ident #ty_generics #where_clause{
+		impl #impl_generics ::enum_traits::EnumEnds for #ident #ty_generics #where_clause{
 			const FIRST: Self = #ident::#variant_first_ident;
 			const LAST : Self = #ident::#variant_last_ident;
 		}

@@ -30,7 +30,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream {
 
 	quote!{
 		#[automatically_derived]
-		impl #impl_generics ::enum_traits::VariantName for #ident #ty_generics #where_clause{
+		impl #impl_generics ::enum_traits::EnumVariantName for #ident #ty_generics #where_clause{
 			#[inline]
 			fn variant_name(&self) -> &'static str{
 				match self{

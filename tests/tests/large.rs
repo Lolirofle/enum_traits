@@ -89,12 +89,12 @@ enum Enum_u16_3{
 #[test]
 fn index(){
 	//Type checking
-	let n: <Enum_u8_1 as Index>::Type = 0; let _ = n == 0u8;
-	let n: <Enum_u8_2 as Index>::Type = 0; let _ = n == 0u8;
-	let n: <Enum_u8_3 as Index>::Type = 0; let _ = n == 0u8;
-	let n: <Enum_u8_4 as Index>::Type = 0; let _ = n == 0u8;
+	let n: <Enum_u8_1 as EnumIndex>::Type = 0; let _ = n == 0u8;
+	let n: <Enum_u8_2 as EnumIndex>::Type = 0; let _ = n == 0u8;
+	let n: <Enum_u8_3 as EnumIndex>::Type = 0; let _ = n == 0u8;
+	let n: <Enum_u8_4 as EnumIndex>::Type = 0; let _ = n == 0u8;
 
-	let n: <Enum_u16_1 as Index>::Type = 0; let _ = n == 0u16;
-	let n: <Enum_u16_2 as Index>::Type = 0; let _ = n == 0u8;
-	let n: <Enum_u16_3 as Index>::Type = 0; let _ = n == 0u8;
+	let n: <Enum_u16_1 as EnumIndex>::Type = 0; let _ = n == 0u16;
+	let n: <Enum_u16_2 as EnumIndex>::Type = 0; let _ = n == 0u8;
+	let n: <Enum_u16_3 as EnumIndex>::Type = 0; let _ = n == 0u8;
 }

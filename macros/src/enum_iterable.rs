@@ -112,7 +112,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting
 		}
 	};
 
-	//TODO: May be an incorrect use of DoubleEndedIterator. Use Step instead?
+	//TODO: May be an incorrect use of DoubleEndedIterator. Use EnumStep instead?
 	/*let impl_diter = quote!{
 		#[automatically_derived]
 		impl #impl_generics ::core::iter::Iterator for ::core::iter::Rev<#struct_ident> #ty_generics #where_clause{
@@ -143,7 +143,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{//TODO: Consider rewriting
 
 	let impl_iterable = quote!{
 		#[automatically_derived]
-		impl #impl_generics ::enum_traits::Iterable for #ident #ty_generics #where_clause{
+		impl #impl_generics ::enum_traits::EnumIterable for #ident #ty_generics #where_clause{
 			type Iter = #struct_ident #ty_generics;
 			#[inline(always)]fn variants() -> Self::Iter{#struct_ident(::core::option::Option::None)}
 		}

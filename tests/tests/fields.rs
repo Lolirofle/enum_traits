@@ -41,7 +41,7 @@ fn index(){
 	assert_eq!(5,e.into_index());
 
 	e = Fields::VariantF;
-	let _: <Fields<i32> as Index>::Type = e.index();
+	let _: <Fields<i32> as EnumIndex>::Type = e.index();
 }
 
 #[test]

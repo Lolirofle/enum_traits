@@ -12,7 +12,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 
 	quote!{
 		#[automatically_derived]
-		impl #impl_generics ::enum_traits::Index for #ident #ty_generics #where_clause{
+		impl #impl_generics ::enum_traits::EnumIndex for #ident #ty_generics #where_clause{
 			type Type = #ty;
 		}
 	}

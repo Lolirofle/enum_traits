@@ -8,7 +8,7 @@ enum NoFields{
 
 #[test]
 fn index(){
-	let _ = NoFields::E.index() as <NoFields as Index>::Type;
+	let _ = NoFields::E.index() as <NoFields as EnumIndex>::Type;
 }
 
 #[test]
@@ -40,7 +40,7 @@ fn to_index(){
 
 #[test]
 fn len(){
-	assert_eq!(6,<NoFields as Len>::LEN);
+	assert_eq!(6,<NoFields as EnumLen>::LEN);
 }
 
 #[test]

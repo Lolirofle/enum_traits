@@ -30,13 +30,13 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 
 	quote!{
 		#[automatically_derived]
-		impl #impl_generics ::enum_traits::ToIndex for #ident #ty_generics #where_clause{
-			fn into_index(self) -> <Self as ::enum_traits::Index>::Type{
+		impl #impl_generics ::enum_traits::EnumToIndex for #ident #ty_generics #where_clause{
+			fn into_index(self) -> <Self as ::enum_traits::EnumIndex>::Type{
 				match self{
 					#( #match_arms_into )*
 				}
 			}
-			fn index(&self) -> <Self as ::enum_traits::Index>::Type{
+			fn index(&self) -> <Self as ::enum_traits::EnumIndex>::Type{
 				match self{
 					#( #match_arms_to )*
 					_ => unreachable!()

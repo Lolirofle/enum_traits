@@ -8,7 +8,7 @@ pub fn gen_derive(item: syn::ItemEnum) -> TokenStream{
 
 	quote!{
 		#[automatically_derived]
-		impl #impl_generics ::enum_traits::Len for #ident #ty_generics #where_clause{
+		impl #impl_generics ::enum_traits::EnumLen for #ident #ty_generics #where_clause{
 			const LEN: usize = #len;
 		}
 	}
