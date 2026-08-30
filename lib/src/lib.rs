@@ -1,10 +1,8 @@
 //! Traits for enum items.
 //!
-//! Also see [`enum_traits_macros`], the crate where the implementations of these traits are automatically generated.
+//! Also see [`enum_traits_macros`], the crate where the implementations of these traits are automatically generated. [`enum_traits_macros`] require this crate for the derives to function.
 //!
-//! These crates together generate various additional functionalities for enums based on their definitions.
-//!
-//! Note that this library is not required for [`enum_traits_macros`] to function.
+//! The procedural macros generate various additional functionalities for enums based on their definitions that this crate provides an interface for.
 //!
 //! # Import
 //!
@@ -43,7 +41,7 @@
 //! assert_eq!(Enum::from_index(0)         , Some(Enum::A));
 //! assert_eq!(Enum::B.into_index()        , 1);
 //! assert_eq!(Enum::LEN                   , 6);
-//! assert_eq!(Enum::LAST                , Enum::F);
+//! assert_eq!(Enum::LAST                  , Enum::F);
 //! assert_eq!(Enum::B.next()              , Some(Enum::C));
 //!
 //! //Functions based on a variant's name.

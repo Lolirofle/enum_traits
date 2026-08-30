@@ -1,4 +1,4 @@
-#[cfg(feature = "derive_into")] use alloc::vec::Vec;
+use alloc::vec::Vec;
 use core::iter;
 use proc_macro2::TokenStream;
 use syn::spanned::Spanned;

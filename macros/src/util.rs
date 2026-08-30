@@ -1,6 +1,4 @@
-use alloc::string::String;
 use core::fmt;
-use proc_macro2::Span;
 use syn::spanned::Spanned;
 
 #[cfg(any(feature = "derive_field_structs",feature = "attr_field_structs"))] pub mod occurs;
@@ -9,6 +7,7 @@ pub mod parse;
 
 #[cfg(feature = "derive_index")]
 pub fn minimum_type_from_value(value: usize) -> syn::Ident{
+	use proc_macro2::Span;
 	if value <= u8::MAX as usize{
 		syn::Ident::new("u8",Span::call_site())
 	}else if value <= u16::MAX as usize{
@@ -49,8 +48,8 @@ pub fn check_unit_variants<'v,'s>(variants: impl Iterator<Item = &'v syn::Varian
 /// assert_eq!(camelcase_to_snakecase("Some kind_of mix Of ALL_hEr") , "some kind_of mix of all_h_er");
 /// ```
 #[cfg(feature = "derive_is")]
-pub fn camelcase_to_snakecase<'s>(s: &'s str) -> String{
-	let mut out = String::with_capacity(s.len() * 2);
+pub fn camelcase_to_snakecase<'s>(s: &'s str) -> alloc::string::String{
+	let mut out = alloc::string::String::with_capacity(s.len() * 2);
 	let mut cs = s.chars();
 	let mut prev_is_separation = true;
 	if let Some(c) = cs.next(){
@@ -75,6 +74,7 @@ pub fn filter_attributes<'a,I: 'a>(ident: I,it: impl IntoIterator<Item = &'a syn
 	it.into_iter().filter(move |attr| attr.path().is_ident(&ident))
 }
 
+#[cfg(feature = "derive_tag")]
 pub fn find_unique_attribute<'a,I: 'a>(ident: I,it: impl IntoIterator<Item = &'a syn::Attribute>) -> syn::Result<Option<&'a syn::Attribute>> where
 	syn::Ident: PartialEq<I>,
 	I: Copy + core::fmt::Display

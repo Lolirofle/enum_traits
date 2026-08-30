@@ -210,3 +210,83 @@ fn force_choice_by_alias(){
 	assert_eq!(5u8,E::B(4,5).into());
 	assert_eq!(6u8,E::C(6).into());
 }
+
+mod test1{
+	use super::*;
+
+	#[derive(EnumInto)]
+	enum Enum{
+		A(u8,u16,u32),
+		B(i32,u16,u8),
+		C{x: i32,y: u8,z: u16,w: &'static str},
+		D{o: u8,p: u16,q: u8},
+	}
+
+	#[test]
+	fn enum_u8(){
+		assert_eq!(1u8,Enum::A(1,0,0).into());
+		assert_eq!(2u8,Enum::B(0,0,2).into());
+		assert_eq!(3u8,Enum::C{x: 0,y: 3,z: 0,w: ""}.into());
+		assert_eq!(4u8,Enum::D{o: 4,p: 0,q: 4}.into());
+	}
+
+	#[test]
+	fn enum_u16(){
+		assert_eq!(10u16,Enum::A(0,10,0).into());
+		assert_eq!(11u16,Enum::B(0,11,0).into());
+		assert_eq!(12u16,Enum::C{x: 0,y: 0,z: 12,w: ""}.into());
+		assert_eq!(13u16,Enum::D{o: 0,p: 13,q: 0}.into());
+	}
+
+	#[test]
+	fn enum_d_u8(){
+		let d = Enum::D{o: 1,p: 0,q: 2};
+		assert_eq!(1u8,d.into());
+	}
+}
+
+#[test]
+fn enum3_u8(){
+	#[derive(EnumInto)]
+	enum Enum3{
+		A(u8,u16),
+		B(&'static str,u8),
+		C{i: u8,b: bool},
+	}
+	assert_eq!(1u8,Enum3::A(1,10).into());
+	assert_eq!(2u8,Enum3::B("",2).into());
+	assert_eq!(3u8,Enum3::C{i: 3,b: true}.into());
+}
+
+mod test4{
+	use super::*;
+
+	#[derive(EnumInto)]
+	enum Enum4{
+		A(u8,u16,u32,i64),
+		B{x: u32,y: i64},
+		C{z: i64,y: i64,w: u32},
+		D{x: i64,y: i64,z: i64,a: u32,b: u32},
+	}
+
+	#[test]
+	fn enum4_i64(){
+		assert_eq!(10i64,Enum4::A(0,0,0,10).into());
+		assert_eq!(20i64,Enum4::B{x: 0,y: 20}.into());
+		assert_eq!(30i64,Enum4::C{z: 999,y: 30,w: 0}.into());
+		assert_eq!(40i64,Enum4::D{x: 111,y: 40,z: 222,a: 0,b: 0}.into());
+	}
+
+	#[test]
+	fn enum4_u32(){
+		assert_eq!(1u32,Enum4::A(0,0,1,0).into());
+		assert_eq!(2u32,Enum4::B{x: 2,y: 0}.into());
+		assert_eq!(3u32,Enum4::C{z: 0,y: 0,w: 3}.into());
+		assert_eq!(4u32,Enum4::D{x: 0,y: 0,z: 0,a: 4,b: 4}.into());
+	}
+
+	#[test]
+	fn enum4_d_u32_tie_break(){
+		assert_eq!(1u32,Enum4::D{x: 0,y: 0,z: 0,a: 1,b: 2}.into());
+	}
+}

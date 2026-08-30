@@ -51,6 +51,44 @@ variant_name      = ["derive_variant_name"     ,"attr_variant_name"]
 step              = ["derive_step"             ,"attr_step"]
 variants_array    = ["derive_variants_array"   ,"attr_variants_array"]
 into              = ["derive_into"             ,"attr_into"]
+derives = [
+	"derive_ends",
+	"derive_field_structs",
+	"derive_from_discriminant",
+	"derive_from_index",
+	"derive_from",
+	"derive_from_variant_name",
+	"derive_index",
+	"derive_is",
+	"derive_iterable",
+	"derive_iterator",
+	"derive_len",
+	"derive_tag",
+	"derive_to_index",
+	"derive_variant_name",
+	"derive_step",
+	"derive_variants_array",
+	"derive_into"
+]
+attrs = [
+	"attr_ends",
+	"attr_field_structs",
+	"attr_from_discriminant",
+	"attr_from_index",
+	"attr_from",
+	"attr_from_variant_name",
+	"attr_index",
+	"attr_is",
+	"attr_iterable",
+	"attr_iterator",
+	"attr_len",
+	"attr_tag",
+	"attr_to_index",
+	"attr_variant_name",
+	"attr_step",
+	"attr_variants_array",
+	"attr_into"
+]
 
 # Individual features flags that are used in the codebase.
 derive_ends              = []

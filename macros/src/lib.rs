@@ -6,35 +6,37 @@
 //!
 //! All of the functionality in this library can be toggled by using feature flags. See `Cargo.toml` for all the flags. This can be useful if only a few macros are used or if some features break in the future.
 
+#![cfg_attr(any(docsrs,doc),feature(doc_cfg))]
 #![allow(non_snake_case)]
 #![no_std]
 
 extern crate alloc;
 #[macro_use] extern crate quote;
 
-#[cfg(any(feature = "derive_ends"             ,feature = "attr_ends"))]              mod enum_ends;
-#[cfg(any(feature = "derive_field_structs"    ,feature = "attr_field_structs"))]     mod enum_field_struct;
-#[cfg(any(feature = "derive_from_discriminant",feature = "attr_from_discriminant"))] mod enum_from_discriminant;
-#[cfg(any(feature = "derive_from_index"       ,feature = "attr_from_index"))]        mod enum_from_index;
-#[cfg(any(feature = "derive_from"             ,feature = "attr_from"))]              mod enum_from;
-#[cfg(any(feature = "derive_from_variant_name",feature = "attr_from_variant_name"))] mod enum_from_variant_name;
-#[cfg(any(feature = "derive_index"            ,feature = "attr_index"))]             mod enum_index;
-#[cfg(any(feature = "derive_is"               ,feature = "attr_is"))]                mod enum_is;
-#[cfg(any(feature = "derive_iterable"         ,feature = "attr_iterable"))]          mod enum_iterable;
-#[cfg(any(feature = "derive_iterator"         ,feature = "attr_iterator"))]          mod enum_iterator;
-#[cfg(any(feature = "derive_len"              ,feature = "attr_len"))]               mod enum_len;
-#[cfg(any(feature = "derive_tag"              ,feature = "attr_tag"))]               mod enum_tag;
-#[cfg(any(feature = "derive_to_index"         ,feature = "attr_to_index"))]          mod enum_to_index;
-#[cfg(any(feature = "derive_variant_name"     ,feature = "attr_variant_name"))]      mod enum_variant_name;
-#[cfg(any(feature = "derive_step"             ,feature = "attr_step"))]              mod enum_step;
-#[cfg(any(feature = "derive_variants_array"   ,feature = "attr_variants_array"))]    mod enum_variants_array;
-#[cfg(any(feature = "derive_into"             ,feature = "attr_into"))]              mod enum_into;
+#[doc(hidden)] #[cfg(any(feature = "derive_ends"             ,feature = "attr_ends"))]              mod enum_ends;
+#[doc(hidden)] #[cfg(any(feature = "derive_field_structs"    ,feature = "attr_field_structs"))]     mod enum_field_struct;
+#[doc(hidden)] #[cfg(any(feature = "derive_from_discriminant",feature = "attr_from_discriminant"))] mod enum_from_discriminant;
+#[doc(hidden)] #[cfg(any(feature = "derive_from_index"       ,feature = "attr_from_index"))]        mod enum_from_index;
+#[doc(hidden)] #[cfg(any(feature = "derive_from"             ,feature = "attr_from"))]              mod enum_from;
+#[doc(hidden)] #[cfg(any(feature = "derive_from_variant_name",feature = "attr_from_variant_name"))] mod enum_from_variant_name;
+#[doc(hidden)] #[cfg(any(feature = "derive_index"            ,feature = "attr_index"))]             mod enum_index;
+#[doc(hidden)] #[cfg(any(feature = "derive_is"               ,feature = "attr_is"))]                mod enum_is;
+#[doc(hidden)] #[cfg(any(feature = "derive_iterable"         ,feature = "attr_iterable"))]          mod enum_iterable;
+#[doc(hidden)] #[cfg(any(feature = "derive_iterator"         ,feature = "attr_iterator"))]          mod enum_iterator;
+#[doc(hidden)] #[cfg(any(feature = "derive_len"              ,feature = "attr_len"))]               mod enum_len;
+#[doc(hidden)] #[cfg(any(feature = "derive_tag"              ,feature = "attr_tag"))]               mod enum_tag;
+#[doc(hidden)] #[cfg(any(feature = "derive_to_index"         ,feature = "attr_to_index"))]          mod enum_to_index;
+#[doc(hidden)] #[cfg(any(feature = "derive_variant_name"     ,feature = "attr_variant_name"))]      mod enum_variant_name;
+#[doc(hidden)] #[cfg(any(feature = "derive_step"             ,feature = "attr_step"))]              mod enum_step;
+#[doc(hidden)] #[cfg(any(feature = "derive_variants_array"   ,feature = "attr_variants_array"))]    mod enum_variants_array;
+#[doc(hidden)] #[cfg(any(feature = "derive_into"             ,feature = "attr_into"))]              mod enum_into;
 mod util;
 
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use syn::ItemEnum;
 
+#[doc(hidden)]
 #[inline(always)]
 fn derive_enum<F>(input: TokenStream,gen_derive: F) -> TokenStream where
 	F: FnOnce(ItemEnum) -> TokenStream2
@@ -43,6 +45,7 @@ fn derive_enum<F>(input: TokenStream,gen_derive: F) -> TokenStream where
 	TokenStream::from(gen_derive(item))
 }
 
+#[doc(hidden)]
 #[inline(always)]
 fn attr_enum<P,F>(attr: TokenStream,input: TokenStream,gen_derive: F) -> TokenStream where
 	P: syn::parse::Parse,
@@ -2149,6 +2152,8 @@ pub fn impl_enum_variants_array(attr: TokenStream,item: TokenStream) -> TokenStr
 /// - The derived item is an enum.
 /// - All variants must have at least one type in common.
 /// - The enum have no unit variants.
+/// - The resulting `impl`'s follow the trait coherence rules.
+///   For every type in common `T` in the fields, there will be a `impl From<_> for T`. So for example, there may be issues if `T` is a generic type.
 ///
 /// # Example 1
 ///
@@ -2281,6 +2286,8 @@ pub fn derive_EnumInto(input: TokenStream) -> TokenStream{derive_enum(input,enum
 ///
 /// # Requirements
 /// - The derived item is an enum.
+/// - The resulting `impl`'s follow the trait coherence rules.
+///   For every type `T` in the fields, there will be a `impl TryFrom<_> for T`. So for example, there may be issues if `T` is a generic type.
 ///
 /// # Example
 /// ```rust

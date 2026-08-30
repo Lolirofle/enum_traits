@@ -22,6 +22,7 @@ fn gen_match_arms<'v>(unit_enum_ident: &syn::Ident,variants: impl Iterator<Item 
 	})
 }
 
+#[cfg(feature = "attr_tag")]
 fn gen_match_arms_is<'v>(unit_enum_ident: &syn::Ident,variants: impl Iterator<Item = &'v syn::Variant>) -> impl Iterator<Item = TokenStream>{
 	use syn::Fields;
 	variants.map(move |variant|{
@@ -45,6 +46,7 @@ fn gen_unit_enum(ItemPrefix(unit_enum_attrs,unit_enum_vis,Concat((kind,unit_enum
 	}
 }
 
+#[cfg(feature = "derive_tag")]
 fn find_tag_attribute_name(item: &syn::ItemEnum) -> syn::Result<Option<syn::Ident>>{
 	Ok(match util::find_unique_attribute("enum_tag",item.attrs.iter())?{
 		Some(attr) => {
