@@ -263,3 +263,18 @@ fn zero_sized_field(){
 	enum X{A(())}
     let _ = X::A(A(()));
 }
+
+#[test]
+fn fields_vis(){
+	mod inner{
+		use super::*;
+
+		#[transform_enum_field_struct]
+		pub enum X{
+			A(pub u8),
+			B{pub x: u16},
+		}
+	}
+    let _ = inner::A(1);
+    let _ = inner::B{x: 2};
+}

@@ -65,4 +65,4 @@ mod derive_is;
 //  cargo expand --ugly --all-features > [FILE]
 //  cargo -v rustc --release -- --emit=llvm-ir
 
-use enum_traits_macros::*;
+//use enum_traits_macros::*;

@@ -1,11 +1,11 @@
 use proc_macro2::TokenStream;
 use syn::{Fields,FieldsNamed,FieldsUnnamed,Index,Member};
 
-fn fields_to_ty(variant: &syn::Variant) -> TokenStream{
-	match variant.fields{
+fn fields_to_ty(fields: &syn::Fields) -> TokenStream{
+	match fields{
 		Fields::Unit => quote! { () },
-		Fields::Unnamed(FieldsUnnamed{unnamed: ref fields,..}) |
-		Fields::Named(FieldsNamed{named: ref fields,..}) => {
+		Fields::Unnamed(FieldsUnnamed{unnamed: fields,..}) |
+		Fields::Named(FieldsNamed{named: fields,..}) => {
 			match fields.len(){
 				1 => {
 					let ty = &fields.first().unwrap().ty;
@@ -20,11 +20,11 @@ fn fields_to_ty(variant: &syn::Variant) -> TokenStream{
 	}
 }
 
-fn fields_to_pat(variant: &syn::Variant) -> TokenStream{
-	match variant.fields{
+fn fields_to_pat(fields: &syn::Fields) -> TokenStream{
+	match fields{
 		Fields::Unit => quote! { () },
-		Fields::Unnamed(FieldsUnnamed{unnamed: ref fields,..}) |
-		Fields::Named(FieldsNamed{named: ref fields,..}) => {
+		Fields::Unnamed(FieldsUnnamed{unnamed: fields,..}) |
+		Fields::Named(FieldsNamed{named: fields,..}) => {
 			match fields.len(){
 				1 => quote! { x0 },
 				_ => {
@@ -38,17 +38,16 @@ fn fields_to_pat(variant: &syn::Variant) -> TokenStream{
 	}
 }
 
-pub fn fields_to_expr(variant: &syn::Variant) -> TokenStream{
-	let variant_ident = &variant.ident;
-	match variant.fields{
+pub fn fields_to_expr(variant_ident: &syn::Ident,fields: &syn::Fields) -> TokenStream{
+	match fields{
 		Fields::Unit => quote! { #variant_ident },
-		Fields::Unnamed(FieldsUnnamed{unnamed: ref fields,..}) => {
+		Fields::Unnamed(FieldsUnnamed{unnamed: fields,..}) => {
 			let args = fields.iter()
 				.enumerate()
 				.map(|(i,_field)| format_ident!("x{}",i));
 			quote! { #variant_ident( #(#args),* ) }
 		},
-		Fields::Named(FieldsNamed{named: ref fields,..}) => {
+		Fields::Named(FieldsNamed{named: fields,..}) => {
 			let args = fields.iter()
 				.enumerate()
 				.map(|(i,_field)| format_ident!("x{}",i));
@@ -79,9 +78,9 @@ pub fn gen_derive(mut item: syn::ItemEnum) -> TokenStream{
 			}
 		}
 
-		let ty = fields_to_ty(&variant);
-		let pattern = fields_to_pat(&variant);
-		let expr = fields_to_expr(&variant);
+		let ty = fields_to_ty(&variant.fields);
+		let pattern = fields_to_pat(&variant.fields);
+		let expr = fields_to_expr(&variant.ident,&variant.fields);
 		Some(quote!{
 			#[automatically_derived]
 			impl #impl_generics ::core::convert::From<#ty> for #ident #ty_generics #where_clause{

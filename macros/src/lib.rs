@@ -1118,7 +1118,6 @@ pub fn impl_enum_from_variant_name_default(attr: TokenStream,item: TokenStream) 
 ///
 /// // <rest is omitted>
 /// ```
-
 #[cfg(feature = "derive_tag")]
 #[proc_macro_derive(EnumTag)]
 pub fn derive_EnumTag(input: TokenStream) -> TokenStream{derive_enum(input,enum_tag::gen_derive)}
@@ -1808,6 +1807,8 @@ pub fn derive_EnumFromDiscriminant(input: TokenStream) -> TokenStream{derive_enu
 ///
 /// By default, structs named `<name of variant>` will be created with the same visibility as `Self`.
 ///
+/// Visibility on the generated structs' fields inherit the struct's visibility.
+///
 /// # Arguments
 /// A supplemental attribute `enum_field_struct` on the variants specifies options in the generated code using the following syntax:
 ///
@@ -1964,6 +1965,8 @@ pub fn derive_EnumFieldStruct(input: TokenStream) -> TokenStream{derive_enum(inp
 ///
 /// By default, structs named `<name of variant>` will be created with the same visibility as `Self`.
 ///
+/// Visibility on the generated structs' fields can be specified in the enum.
+///
 /// # Arguments
 /// A supplemental attribute `enum_field_struct` on the variants specifies options in the generated code using the following syntax:
 ///
@@ -1984,7 +1987,7 @@ pub fn derive_EnumFieldStruct(input: TokenStream) -> TokenStream{derive_enum(inp
 /// #[transform_enum_field_struct]
 /// #[derive(EnumFrom)]
 /// enum Fields<'a,X,Y>{
-/// 	A(i8),
+/// 	A(pub i8),
 /// 	B(i32),
 /// 	C(u8,u16,u32),
 /// 	D{d: (u8,i32)},
@@ -2012,7 +2015,7 @@ pub fn derive_EnumFieldStruct(input: TokenStream) -> TokenStream{derive_enum(inp
 /// 	J(J),
 /// }
 ///
-/// struct A(i8);
+/// struct A(pub i8);
 /// struct B(i32);
 /// struct C(u8,u16,u32);
 /// struct D{d: (u8,i32)}

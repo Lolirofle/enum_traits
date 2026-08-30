@@ -202,3 +202,31 @@ fn renamed_collides_with_default(){}
 ///}
 ///```
 fn renamed_collides_with_existing(){}
+
+/// ```compile_fail
+/// mod inner{
+/// 	use enum_traits_macros::*;
+///
+/// 	#[transform_enum_field_struct]
+/// 	pub enum X{
+/// 		A(u8),
+/// 		B{x: u16},
+/// 	}
+/// }
+/// inner::A(1);
+/// ```
+fn fields_vis1(){}
+
+/// ```compile_fail
+/// mod inner{
+/// 	use enum_traits_macros::*;
+///
+/// 	#[transform_enum_field_struct]
+/// 	pub enum X{
+/// 		A(u8),
+/// 		B{x: u16},
+/// 	}
+/// }
+/// inner::B{x: 2};
+/// ```
+fn fields_vis2(){}

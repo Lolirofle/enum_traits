@@ -99,24 +99,31 @@ pub fn gen_derive(mut item: syn::ItemEnum) -> TokenStream{
 			return quote!{};
 		}
 
-		let item = gen_struct(
+		let mut struct_item = gen_struct(
 			variant,
 			&item.generics,
 			params.name.map_or(ItemPrefix(Default::default(),item.vis.clone(),None),|ItemPrefix(attrs,vis,ident)| ItemPrefix(attrs,vis,Some(ident)))
 		);
-		let expr = crate::enum_from::fields_to_expr(&variant);
+		//Inherit visibility on fields.
+		for field in struct_item.fields.iter_mut(){
+			field.vis = struct_item.vis.clone();
+		}
 
-		let struct_ident = &item.ident;
-		let struct_generics = generic_params_to_args(&item.generics);
+		let enum_expr = crate::enum_from::fields_to_expr(&variant.ident,&variant.fields);
+
+		let struct_expr = crate::enum_from::fields_to_expr(&struct_item.ident,&variant.fields);
+		let struct_ident = &struct_item.ident;
+		let struct_generics = generic_params_to_args(&struct_item.generics);
+
 
 		quote!{
-			#item
+			#struct_item
 
 			#[automatically_derived]
 			impl #impl_generics ::core::convert::From<#struct_ident #struct_generics> for #enum_ident #ty_generics #where_clause{
 				#[inline(always)]
-				fn from(#expr: #struct_ident #struct_generics) -> Self{
-					#enum_ident::#expr
+				fn from(#struct_expr: #struct_ident #struct_generics) -> Self{
+					#enum_ident::#enum_expr
 				}
 			}
 
@@ -126,7 +133,7 @@ pub fn gen_derive(mut item: syn::ItemEnum) -> TokenStream{
 
 				#[inline(always)]
 				fn try_from(e: #enum_ident #ty_generics) -> ::core::result::Result<Self,Self::Error>{
-					if let #enum_ident::#expr = e {::core::result::Result::Ok(#expr)} else {::core::result::Result::Err(())}
+					if let #enum_ident::#enum_expr = e {::core::result::Result::Ok(#struct_expr)} else {::core::result::Result::Err(())}
 				}
 			}
 		}
@@ -161,6 +168,13 @@ pub fn gen_attr(_param: TokenStream,mut item: syn::ItemEnum) -> TokenStream{
 			#item
 		}
 	}).collect();
+
+	//Remove visibility from fields.
+	for variant in item.variants.iter_mut(){
+		for field in variant.fields.iter_mut(){
+			field.vis = syn::Visibility::Inherited;
+		}
+	}
 
 	quote!{
 		#item
